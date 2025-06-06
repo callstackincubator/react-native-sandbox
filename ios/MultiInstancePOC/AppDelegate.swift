@@ -24,10 +24,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     window = UIWindow(frame: UIScreen.main.bounds)
 
     factory.startReactNative(
-      withModuleName: "MultiInstancePOC",
+      withModuleName: "A",
       in: window,
       launchOptions: launchOptions
     )
+    
+    
+    if let bridge = self.reactNativeFactory?.
 
     return true
   }
