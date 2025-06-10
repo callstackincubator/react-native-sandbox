@@ -8,29 +8,39 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   var window: UIWindow?
 
   var reactNativeDelegate: ReactNativeDelegate?
-  var reactNativeFactory: RCTReactNativeFactory?
+  var reactNativeFactory1: RCTReactNativeFactory?
+  var reactNativeFactory2: RCTReactNativeFactory?
 
   func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
     let delegate = ReactNativeDelegate()
-    let factory = RCTReactNativeFactory(delegate: delegate)
+    let factory1 = RCTReactNativeFactory(delegate: delegate)
+    let factory2 = RCTReactNativeFactory(delegate: delegate)
+    
     delegate.dependencyProvider = RCTAppDependencyProvider()
 
     reactNativeDelegate = delegate
-    reactNativeFactory = factory
+    reactNativeFactory1 = factory1
+    reactNativeFactory2 = factory2
 
     window = UIWindow(frame: UIScreen.main.bounds)
+    let splitViewController = SplitViewController()
 
-    factory.startReactNative(
+    let rnView1 = factory1.startReactNative(
       withModuleName: "A",
-      in: window,
       launchOptions: launchOptions
     )
     
+    let rnView2 = factory2.startReactNative(
+      withModuleName: "B",
+      launchOptions: launchOptions
+    )
     
-    if let bridge = self.reactNativeFactory?.
+    splitViewController.setViews(topView: rnView1, bottomView: rnView2)
+    window?.rootViewController = splitViewController
+    window?.makeKeyAndVisible()
 
     return true
   }
