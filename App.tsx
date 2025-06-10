@@ -5,7 +5,9 @@
  * @format
  */
 
-import React from 'react';
+import NativeMessanger from './specs/NativeMessanger';
+
+import React, { useEffect } from 'react';
 import type {PropsWithChildren} from 'react';
 import {
   ScrollView,
@@ -71,6 +73,10 @@ function App(): React.JSX.Element {
    * https://github.com/react-native-community/discussions-and-proposals/discussions/827
    */
   const safePadding = '5%';
+
+  useEffect(() => {
+    NativeMessanger.sendMessage('Hello', 'B');
+  }, []);
 
   return (
     <View style={backgroundStyle}>

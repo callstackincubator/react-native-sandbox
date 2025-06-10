@@ -28,9 +28,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       in: window,
       launchOptions: launchOptions
     )
-    
-    
-    if let bridge = self.reactNativeFactory?.
 
     return true
   }
