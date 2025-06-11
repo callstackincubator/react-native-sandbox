@@ -28,13 +28,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     window = UIWindow(frame: UIScreen.main.bounds)
     let splitViewController = SplitViewController()
 
-    let rnView1 = factory1.startReactNative(
+    let rnView1 = factory1.rootViewFactory.view(
       withModuleName: "A",
+      initialProperties: ["sourceName": "A", "targetName": "B"],
       launchOptions: launchOptions
     )
     
-    let rnView2 = factory2.startReactNative(
+    let rnView2 = factory2.rootViewFactory.view(
       withModuleName: "B",
+      initialProperties: ["sourceName": "B", "targetName": "A"],
       launchOptions: launchOptions
     )
     

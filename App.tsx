@@ -5,126 +5,103 @@
  * @format
  */
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
+import React, {useState} from 'react';
 import {
-  ScrollView,
-  StatusBar,
-  StyleSheet,
+  TextInput,
   Text,
+  TouchableOpacity,
   useColorScheme,
   View,
+  StyleSheet
 } from 'react-native';
 
 import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
+  Colors
 } from 'react-native/Libraries/NewAppScreen';
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+import IPCTurboModule from './specs/NativeIPCTurboModule'
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
-
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
+function App({sourceName, targetName}: {sourceName: string, targetName: string}): React.JSX.Element {
   const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+    backgroundColor: useColorScheme() === 'dark' ? Colors.darker : Colors.lighter,
   };
 
-  /*
-   * To keep the template simple and small we're adding padding to prevent view
-   * from rendering under the System UI.
-   * For bigger apps the recommendation is to use `react-native-safe-area-context`:
-   * https://github.com/AppAndFlow/react-native-safe-area-context
-   *
-   * You can read more about it here:
-   * https://github.com/react-native-community/discussions-and-proposals/discussions/827
-   */
-  const safePadding = '5%';
+  const [runtimeName, setRuntimeName] = useState<string>(sourceName);
+  const [targetInput, setTargetInput] = useState<string>(`Some payload from ${runtimeName}`);
+  const [targetRuntimeName, setTargetRuntimeName] = useState<string>(targetName);
+
+  const registerRuntime = () => {
+    IPCTurboModule.registerRuntime(runtimeName, (payload: unknown) => {
+      console.log(`[${runtimeName}] got payload`, payload);
+    })
+  };
+
+  const sendInput = () => {
+    IPCTurboModule.sendToRuntime(targetRuntimeName, { data: targetInput });
+  };
 
   return (
-    <View style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
+    <View style={[styles.container, backgroundStyle]}>
+      <TextInput
+        style={styles.input}
+        placeholder="Current runtime name..."
+        value={runtimeName}
+        onChangeText={setRuntimeName}
       />
-      <ScrollView
-        style={backgroundStyle}>
-        <View style={{paddingRight: safePadding}}>
-          <Header/>
-        </View>
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            paddingHorizontal: safePadding,
-            paddingBottom: safePadding,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
+      <TouchableOpacity style={styles.button} onPress={registerRuntime}><Text>Register Runtime</Text></TouchableOpacity>
+
+      <View style={{ height: 40 }} />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Target runtime name..."
+        value={targetRuntimeName}
+        onChangeText={setTargetRuntimeName}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Payload to send to target runtime..."
+        value={targetInput}
+        onChangeText={setTargetInput}
+      />
+      <TouchableOpacity style={styles.button} onPress={sendInput}><Text>Send Data</Text></TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  container: {
+    flex: 1,
+    width: '100%',               // full screen width
+    paddingVertical: '5%',       // vertical padding 5% of container height
+    paddingHorizontal: 5,        // horizontal padding 5px
+    backgroundColor: 'white',    // fallback background
+    paddingTop: 80,
   },
-  sectionTitle: {
-    fontSize: 24,
+  input: {
+    borderWidth: 1,
+    borderColor: '#888',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 12,
+    fontSize: 16,
+    width: '100%',
+  },
+  button: {
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    borderRadius: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+    backgroundColor: '#e6f0ff',
+  },
+  buttonText: {
+    color: '#007AFF',
     fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
+    fontSize: 16,
   },
 });
 
