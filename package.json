@@ -42,7 +42,7 @@
     },
     "ios": {
       "modulesProvider": {
-        "IPCTurboModule": "IPCTurboModuleProvider"
+        "MultiReactMediatorModule": "MultiReactMediatorModuleProvider"
       }
     }
   },

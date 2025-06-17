@@ -4,7 +4,7 @@ type Payload = unknown;
 
 export interface Spec extends TurboModule {
   readonly registerRuntime: (name: string, processor: (payload: Payload) => void) => void;
-  readonly sendToRuntime: (name: string, payload: Payload) => void;
+  readonly postMessage: (name: string, payload: Payload) => void;
 }
 
-export default TurboModuleRegistry.getEnforcing<Spec>('IPCTurboModule');
+export default TurboModuleRegistry.getEnforcing<Spec>('MultiReactMediatorModule');

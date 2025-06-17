@@ -11,7 +11,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface IPCTurboModuleProvider : NSObject <RCTModuleProvider>
+@interface MultiReactMediatorModuleProvider : NSObject <RCTModuleProvider>
 
 @end
 

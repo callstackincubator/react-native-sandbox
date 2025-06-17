@@ -5,6 +5,8 @@
 #include <thread>
 #include <format>
 
+#include <fmt/format.h>
+
 #if __APPLE__
 #include <TargetConditionals.h>
 #if TARGET_OS_IOS || TARGET_OS_MAC
@@ -98,24 +100,8 @@ inline void enableConsoleLog(jsi::Runtime* rt) {
   logRt = rt;
 }
 
-inline std::string threadIdToString() {
-  std::ostringstream ss;
-  ss << std::this_thread::get_id();
-  return ss.str();
-}
-
-inline std::string pointerToString(void const *pointer) {
-  std::ostringstream address;
-  address << pointer;
-  return address.str();
-}
-
 inline void log(LogLevel level, const std::string& tag, const std::string& message, jsi::Runtime* argRt = nullptr) {
-  std::ostringstream oss;
-  oss << "[" << levelToString(level) << "] "
-      << std::hex << "[TID:" << std::hash<std::thread::id>{}(std::this_thread::get_id()) << "] "
-      << tag << ": " << message;
-  std::string finalMsg = oss.str();
+  std::string finalMsg = fmt::format("[{}] TID:{} TAG:{} | {}", levelToString(level), std::hash<std::thread::id>{}(std::this_thread::get_id()), tag, message);
 
   logToPlatform(level, tag, finalMsg);
 
