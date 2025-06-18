@@ -10,6 +10,7 @@ namespace facebook::react {
 
 // Define static fields
 std::map<std::string, std::pair<jsi::Runtime*, jsi::Function>> MultiReactMediatorModule::callbackMap_;
+std::map<jsi::Runtime*, MultiReactMediatorModule*> MultiReactMediatorModule::runtimeToModuleMap_;
 std::mutex MultiReactMediatorModule::mapMutex_;
 
 constexpr std::string LOGTAG = "MultiReactMediator";
@@ -19,17 +20,36 @@ MultiReactMediatorModule::MultiReactMediatorModule(std::shared_ptr<CallInvoker> 
   logger::logDebug(LOGTAG, fmt::format("module={} constructor", static_cast<void*>(this)));
 
   jsInvoker_->invokeAsync([this](jsi::Runtime &rt) {
-    std::string componentName = rt.global()
-          .getPropertyAsObject(rt, "RN$AppRegistry")
+    // NOTE: it seems lile race happens here
+    // Error: getPropertyAsObject: property 'RN$AppRegistry' is undefined, expected an Object, js engine: hermes
+
+    {
+      std::lock_guard<std::mutex> lock(mapMutex_);
+      runtimeToModuleMap_[&rt] = this;
+    }
+
+    jsi::Object appRegistry = rt.global()
+          .getPropertyAsObject(rt, "RN$AppRegistry");
+
+    jsi::Array appKeys = appRegistry
           .getPropertyAsFunction(rt, "getAppKeys")
           .call(rt)
           .asObject(rt)
-          .asArray(rt)
-          .getValueAtIndex(rt, 1)
+          .asArray(rt);
+    
+    std::string componentName = appKeys.getValueAtIndex(rt, 1)
           .asString(rt)
           .utf8(rt);
-    logger::logDebug(LOGTAG, fmt::format("module={} runtime={} componentName={}", static_cast<void*>(this) , static_cast<void*>(&rt), componentName));
+
+    logger::logDebug(LOGTAG, fmt::format("module={} runtime={} componentName={} constructor's invokeAsync", static_cast<void*>(this) , static_cast<void*>(&rt), componentName));
   });
+}
+
+MultiReactMediatorModule::~MultiReactMediatorModule() {
+  {
+    std::lock_guard<std::mutex> lock(mapMutex_);
+    std::erase_if(runtimeToModuleMap_, [this](const auto& pair) { return pair.second == this; });
+  }logger::logDebug(LOGTAG, fmt::format("module={} destructor", static_cast<void*>(this)));
 }
 
 void MultiReactMediatorModule::registerRuntime(
@@ -76,8 +96,6 @@ void MultiReactMediatorModule::postMessage(
         .call(sourceRuntime, message)
         .asString(sourceRuntime)
         .utf8(sourceRuntime);
-  jsi::String jsiJson = jsi::String::createFromAscii(*targetRuntime, json);
-  jsi::Value cloned = targetRuntime->global().getPropertyAsObject(*targetRuntime, "JSON").getPropertyAsFunction(*targetRuntime, "parse").call(*targetRuntime, jsiJson);
 
   // Example: String
   // std::string valueStr = value.utf8(runtime);
@@ -106,7 +124,14 @@ void MultiReactMediatorModule::postMessage(
   // Function - not supported
   // Symbol - not supported
 
-  callback.call(*targetRuntime, { std::move(cloned) });
+  runtimeToModuleMap_[targetRuntime]->jsInvoker_->invokeAsync([json, &callback](jsi::Runtime &rt) {
+    jsi::String jsiJson = jsi::String::createFromAscii(rt, json);
+    jsi::Value cloned = rt.global()
+          .getPropertyAsObject(rt, "JSON")
+          .getPropertyAsFunction(rt, "parse")
+          .call(rt, jsiJson);
+    callback.call(rt, { std::move(cloned) });
+  });
 }
 
 } // namespace facebook::react

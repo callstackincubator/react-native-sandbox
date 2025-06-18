@@ -34,13 +34,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     let rnView1 = factory1.rootViewFactory.view(
       withModuleName: "A",
-      initialProperties: ["sourceName": "A", "targetName": "B"],
+      initialProperties: [
+        "sourceName": "A",
+        "targetName": "B",
+        "backgroundColor": "#CCFFCC"
+      ],
       launchOptions: launchOptions
     )
 
     let rnView2 = factory2.rootViewFactory.view(
       withModuleName: "B",
-      initialProperties: ["sourceName": "B", "targetName": "A"],
+      initialProperties: [
+        "sourceName": "B",
+        "targetName": "A",
+        "backgroundColor": "#CCCCFF"
+      ],
       launchOptions: launchOptions
     )
 

@@ -11,6 +11,7 @@ namespace facebook::react {
 class MultiReactMediatorModule final : public NativeMultiReactMediatorCxxSpec<MultiReactMediatorModule> {
 public:
   MultiReactMediatorModule(std::shared_ptr<CallInvoker> jsInvoker);
+  ~MultiReactMediatorModule();
 
   void registerRuntime(
     jsi::Runtime& runtime,
@@ -26,6 +27,7 @@ public:
 
 private:
   static std::map<std::string, std::pair<jsi::Runtime*, jsi::Function>> callbackMap_;
+  static std::map<jsi::Runtime*, MultiReactMediatorModule*> runtimeToModuleMap_;
   static std::mutex mapMutex_;
 };
 

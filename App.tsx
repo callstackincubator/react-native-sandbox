@@ -5,34 +5,47 @@
  * @format
  */
 
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
+  FlatList,
   TextInput,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
-  StyleSheet
+  StyleSheet,
+  ColorValue,
+  SafeAreaView
 } from 'react-native';
-
-import {
-  Colors
-} from 'react-native/Libraries/NewAppScreen';
 
 import MultiReactMediatorModule from './specs/NativeMultiReactMediator'
 
-function App({sourceName, targetName}: {sourceName: string, targetName: string}): React.JSX.Element {
-  const backgroundStyle = {
-    backgroundColor: useColorScheme() === 'dark' ? Colors.darker : Colors.lighter,
-  };
+type AppProps = {
+  sourceName: string,
+  targetName: string,
+  backgroundColor: ColorValue
+}
 
+function App({sourceName, targetName, backgroundColor}: AppProps): React.JSX.Element {
   const [counter, setCounter] = useState<number>(0);
   const [runtimeName, setRuntimeName] = useState<string>(sourceName);
   const [targetInput, setTargetInput] = useState<string>(`Some payload from ${runtimeName}`);
   const [targetRuntimeName, setTargetRuntimeName] = useState<string>(targetName);
 
+  const [items, setItems] = useState<string[]>([]);
+  const flatListRef = useRef<FlatList>(null);
+
+  const addItem = (newItem: string) => {
+    setItems(prev => [...prev, newItem]);
+
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
+
   const onMessage = (payload: unknown) => {
-    console.log(`[${runtimeName}] got payload`, payload);
+    let payloadString = JSON.stringify(payload);
+    console.log(`[${runtimeName}] onMessage`, payloadString);
+    addItem(payloadString)
   };
 
   const registerRuntime = () => {
@@ -41,7 +54,10 @@ function App({sourceName, targetName}: {sourceName: string, targetName: string})
 
   const sendInput = () => {
     setCounter((c) => c + 1);
-    MultiReactMediatorModule.postMessage(targetRuntimeName, { data: targetInput, origin: runtimeName, counter });
+    MultiReactMediatorModule.postMessage(
+      targetRuntimeName,
+      { data: targetInput, origin: runtimeName, counter }
+    );
   };
 
   useEffect(() => {
@@ -49,54 +65,70 @@ function App({sourceName, targetName}: {sourceName: string, targetName: string})
   }, []);
 
   return (
-    <View style={[styles.container, backgroundStyle]}>
-      <Text>Origin Instance (Runtime) Name:</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Current runtime name..."
-        value={runtimeName}
-        onChangeText={setRuntimeName}
-        editable={false}
-      />
-      <TouchableOpacity
-        style={styles.button}
-        onPress={registerRuntime}>
-          <Text>Register Runtime</Text>
-      </TouchableOpacity>
+    <SafeAreaView style={[styles.safeRoot, {backgroundColor}]}>
+      <View style={styles.container}>
+        <Text>Origin Instance (Runtime) Name:</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Current runtime name..."
+          value={runtimeName}
+          onChangeText={setRuntimeName}
+          editable={false}
+        />
+        <TouchableOpacity
+          style={styles.button}
+          onPress={registerRuntime}>
+            <Text>Register Runtime</Text>
+        </TouchableOpacity>
 
-      <Text>Target Instance (Runtime) Name:</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Target runtime name..."
-        value={targetRuntimeName}
-        onChangeText={setTargetRuntimeName}
-      />
-      <Text>Payload to send:</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Payload to send to target runtime..."
-        value={targetInput}
-        onChangeText={setTargetInput}
-      />
-      <TouchableOpacity
-        style={styles.button}
-        onPress={sendInput}>
-          <Text>Send Data</Text>
-      </TouchableOpacity>
+        <Text>Target Instance (Runtime) Name:</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Target runtime name..."
+          value={targetRuntimeName}
+          onChangeText={setTargetRuntimeName}
+        />
+        <Text>Payload to send:</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Payload to send to target runtime..."
+          value={targetInput}
+          onChangeText={setTargetInput}
+        />
+        <TouchableOpacity
+          style={styles.button}
+          onPress={sendInput}>
+            <Text>Send Data</Text>
+        </TouchableOpacity>
 
-      <View style={{ height: 1, backgroundColor: 'gray' }} />
-    </View>
+        <View style={{ flex: 1 }}>
+          <FlatList
+            style={styles.list}
+            ref={flatListRef}
+            data={items}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.item}>
+                <Text>{item}</Text>
+              </View>
+            )}
+          />
+        </View>
+        {/* <View style={{ height: 1, backgroundColor: 'gray' }} />
+        <Text>Total Items: {items.length}</Text> */}
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeRoot: {
+    flex: 1,
+    width: '100%'
+  },
   container: {
     flex: 1,
-    width: '100%',               // full screen width
-    paddingVertical: '5%',       // vertical padding 5% of container height
-    paddingHorizontal: 5,        // horizontal padding 5px
-    backgroundColor: 'white',    // fallback background
-    paddingTop: 80,
+    paddingHorizontal: 5
   },
   input: {
     borderWidth: 1,
@@ -122,6 +154,14 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '600',
     fontSize: 16,
+  },
+  list: {
+    flex: 1,
+  },
+  item: {
+    padding: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
   },
 });
 
