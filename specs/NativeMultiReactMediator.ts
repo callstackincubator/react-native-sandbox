@@ -7,4 +7,8 @@ export interface Spec extends TurboModule {
   readonly postMessage: (name: string, payload: Payload) => void;
 }
 
-export default TurboModuleRegistry.getEnforcing<Spec>('MultiReactMediatorModule');
+const NativeMultiReactMediator = TurboModuleRegistry.getEnforcing<Spec>('MultiReactMediatorModule');
+
+export default NativeMultiReactMediator;
+
+(globalThis as any).postMessage = (message: any, targetOrigin: string) => NativeMultiReactMediator.postMessage(targetOrigin, message);

@@ -20,7 +20,7 @@ MultiReactMediatorModule::MultiReactMediatorModule(std::shared_ptr<CallInvoker> 
   logger::logDebug(LOGTAG, fmt::format("module={} constructor", static_cast<void*>(this)));
 
   jsInvoker_->invokeAsync([this](jsi::Runtime &rt) {
-    // NOTE: it seems lile race happens here
+    // NOTE: it seems like race happens here
     // Error: getPropertyAsObject: property 'RN$AppRegistry' is undefined, expected an Object, js engine: hermes
 
     {

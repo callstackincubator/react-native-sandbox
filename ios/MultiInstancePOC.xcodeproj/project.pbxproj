@@ -9,8 +9,11 @@
 /* Begin PBXBuildFile section */
 		0C80B921A6F3F58F76C31292 /* libPods-MultiInstancePOC.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-MultiInstancePOC.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		4377328B2DF85D2000898FE2 /* SplitViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4377328A2DF85D2000898FE2 /* SplitViewController.swift */; };
+		436E7C812E08A144004DD6D0 /* SandboxReactNativeViewManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 436E7C802E08A0AB004DD6D0 /* SandboxReactNativeViewManager.m */; };
+		436E7C8F2E0C50E2004DD6D0 /* SandboxReactNativeDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 436E7C8D2E0C49F1004DD6D0 /* SandboxReactNativeDelegate.mm */; };
 		437732942DF88D5D00898FE2 /* MultiReactMediatorModuleProvider.mm in Sources */ = {isa = PBXBuildFile; fileRef = 437732932DF88D5D00898FE2 /* MultiReactMediatorModuleProvider.mm */; };
+		43FF8D2D2E0213BF006ED445 /* SandboxReactNativeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43FF8D2C2E021329006ED445 /* SandboxReactNativeView.swift */; };
+		43FF8D2F2E029BD5006ED445 /* SandboxReactNativeViewManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43FF8D2E2E029BD0006ED445 /* SandboxReactNativeViewManager.swift */; };
 		575209B0052EDA94007D9B65 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
@@ -22,9 +25,14 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = MultiInstancePOC/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = MultiInstancePOC/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-MultiInstancePOC.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MultiInstancePOC.debug.xcconfig"; path = "Target Support Files/Pods-MultiInstancePOC/Pods-MultiInstancePOC.debug.xcconfig"; sourceTree = "<group>"; };
-		4377328A2DF85D2000898FE2 /* SplitViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SplitViewController.swift; path = MultiInstancePOC/SplitViewController.swift; sourceTree = "<group>"; };
+		436E7C802E08A0AB004DD6D0 /* SandboxReactNativeViewManager.m */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.objc; path = SandboxReactNativeViewManager.m; sourceTree = "<group>"; };
+		436E7C8C2E0C49E8004DD6D0 /* SandboxReactNativeDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SandboxReactNativeDelegate.h; sourceTree = "<group>"; };
+		436E7C8D2E0C49F1004DD6D0 /* SandboxReactNativeDelegate.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = SandboxReactNativeDelegate.mm; sourceTree = "<group>"; };
+		436E7C8E2E0C4E7D004DD6D0 /* MultiInstancePOC-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MultiInstancePOC-Bridging-Header.h"; sourceTree = "<group>"; };
 		437732922DF88D5D00898FE2 /* MultiReactMediatorModuleProvider.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = MultiReactMediatorModuleProvider.h; path = MultiInstancePOC/MultiReactMediatorModuleProvider.h; sourceTree = "<group>"; };
 		437732932DF88D5D00898FE2 /* MultiReactMediatorModuleProvider.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = MultiReactMediatorModuleProvider.mm; path = MultiInstancePOC/MultiReactMediatorModuleProvider.mm; sourceTree = "<group>"; };
+		43FF8D2C2E021329006ED445 /* SandboxReactNativeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxReactNativeView.swift; sourceTree = "<group>"; };
+		43FF8D2E2E029BD0006ED445 /* SandboxReactNativeViewManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxReactNativeViewManager.swift; sourceTree = SOURCE_ROOT; };
 		5709B34CF0A7D63546082F79 /* Pods-MultiInstancePOC.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MultiInstancePOC.release.xcconfig"; path = "Target Support Files/Pods-MultiInstancePOC/Pods-MultiInstancePOC.release.xcconfig"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-MultiInstancePOC.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MultiInstancePOC.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = MultiInstancePOC/AppDelegate.swift; sourceTree = "<group>"; };
@@ -33,7 +41,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		43FF8C622DFCBD37006ED445 /* Exceptions for "../cxx" folder in "MultiInstancePOC" target */ = {
+		43FF8C622DFCBD37006ED445 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				MultiReactMediatorModule.cpp,
@@ -43,18 +51,7 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		43FF8C602DFCBD37006ED445 /* ../cxx */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				43FF8C622DFCBD37006ED445 /* Exceptions for "../cxx" folder in "MultiInstancePOC" target */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = ../cxx;
-			sourceTree = "<group>";
-		};
+		43FF8C602DFCBD37006ED445 /* ../cxx */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (43FF8C622DFCBD37006ED445 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = ../cxx; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,7 +69,11 @@
 		13B07FAE1A68108700A75B9A /* MultiInstancePOC */ = {
 			isa = PBXGroup;
 			children = (
-				4377328A2DF85D2000898FE2 /* SplitViewController.swift */,
+				436E7C8C2E0C49E8004DD6D0 /* SandboxReactNativeDelegate.h */,
+				436E7C8D2E0C49F1004DD6D0 /* SandboxReactNativeDelegate.mm */,
+				436E7C802E08A0AB004DD6D0 /* SandboxReactNativeViewManager.m */,
+				43FF8D2E2E029BD0006ED445 /* SandboxReactNativeViewManager.swift */,
+				43FF8D2C2E021329006ED445 /* SandboxReactNativeView.swift */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
 				437732922DF88D5D00898FE2 /* MultiReactMediatorModuleProvider.h */,
@@ -80,6 +81,7 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
+				436E7C8E2E0C4E7D004DD6D0 /* MultiInstancePOC-Bridging-Header.h */,
 			);
 			name = MultiInstancePOC;
 			sourceTree = "<group>";
@@ -225,9 +227,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-MultiInstancePOC/Pods-MultiInstancePOC-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-MultiInstancePOC/Pods-MultiInstancePOC-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -264,9 +270,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-MultiInstancePOC/Pods-MultiInstancePOC-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-MultiInstancePOC/Pods-MultiInstancePOC-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -280,9 +290,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				436E7C812E08A144004DD6D0 /* SandboxReactNativeViewManager.m in Sources */,
 				437732942DF88D5D00898FE2 /* MultiReactMediatorModuleProvider.mm in Sources */,
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
-				4377328B2DF85D2000898FE2 /* SplitViewController.swift in Sources */,
+				43FF8D2D2E0213BF006ED445 /* SandboxReactNativeView.swift in Sources */,
+				436E7C8F2E0C50E2004DD6D0 /* SandboxReactNativeDelegate.mm in Sources */,
+				43FF8D2F2E029BD5006ED445 /* SandboxReactNativeViewManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -311,6 +324,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = MultiInstancePOC;
+				SWIFT_OBJC_BRIDGING_HEADER = "MultiInstancePOC-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -338,6 +352,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = MultiInstancePOC;
+				SWIFT_OBJC_BRIDGING_HEADER = "MultiInstancePOC-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
@@ -413,10 +428,7 @@
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -486,10 +498,7 @@
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = true;
