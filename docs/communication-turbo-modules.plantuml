@@ -1,0 +1,61 @@
+@startuml
+
+skinparam DefaultFontSize 21
+
+participant AppReactInstance
+participant MultiReactMediatorModule1
+
+participant "//ReactInstanceRegistry//" as ReactInstanceRegistry
+
+participant MultiReactMediatorModule2
+participant SandboxReactInstance
+
+note over ReactInstanceRegistry
+  It's not actuall class or struct
+  but rather a ""std::map"". To
+  thread-safe access to registered
+  ""jsi::Runtime"" by ""std::string""
+  symbolic name
+end note
+
+group Register App
+
+AppReactInstance -> MultiReactMediatorModule1 : registerRuntime("App", onSandboxMessage)
+MultiReactMediatorModule1 -> ReactInstanceRegistry : store pointer to jsi::Runtime
+
+end
+
+...
+
+group App start Sandbox
+
+SandboxReactInstance -> MultiReactMediatorModule2 : registerRuntime("Sandbox", onAppMessage)
+MultiReactMediatorModule2 -> ReactInstanceRegistry : store pointer to jsi::Runtime
+
+AppReactInstance -> MultiReactMediatorModule1 : postMessage(\n  "Sandbox",\n  {\n    action: "SETUP",\n    data: { language: 'PL', units: 'm' ...}\n  }\n)
+MultiReactMediatorModule1 -> ReactInstanceRegistry : get pointer to jsi::Runtime
+MultiReactMediatorModule1 -> SandboxReactInstance: onAppMessage (via ""jsi::Runtime"")
+
+end
+
+...
+
+group Sandbox -> App
+
+SandboxReactInstance -> MultiReactMediatorModule2 : postMessage(\n  "App",\n  {action: "ADD_MENU_ITEM"}\n)
+MultiReactMediatorModule2 -> ReactInstanceRegistry : get pointer to jsi::Runtime
+MultiReactMediatorModule2 -> AppReactInstance: onSandboxMessage (via ""jsi::Runtime"")
+
+end
+
+...
+
+group App -> Sandbox
+
+AppReactInstance -> MultiReactMediatorModule1 : postMessage(\n  "Sandbox",\n    {action: "UPDATE_PROFILE"}\n)
+MultiReactMediatorModule1 -> ReactInstanceRegistry : get pointer to jsi::Runtime
+MultiReactMediatorModule1 -> SandboxReactInstance: onAppMessage (via ""jsi::Runtime"")
+
+end
+
+@enduml
