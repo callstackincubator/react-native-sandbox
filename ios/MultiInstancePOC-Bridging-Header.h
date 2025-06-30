@@ -1,1 +1,1 @@
-#import "SandboxReactNativeDelegate.h"
+#import "SandboxReactNativeView.h"

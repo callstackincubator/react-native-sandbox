@@ -80,7 +80,7 @@ void MultiReactMediatorModule::postMessage(
   jsi::Runtime* targetRuntime = it->second.first;
   jsi::Function& callback = it->second.second;
 
-  logger::logDebug(LOGTAG, fmt::format("module={} runtime={} postMessage to {}", static_cast<void*>(this) , static_cast<void*>(&sourceRuntime), runtimeName));
+  //logger::logDebug(LOGTAG, fmt::format("module={} runtime={} postMessage to {}", static_cast<void*>(this) , static_cast<void*>(&sourceRuntime), runtimeName));
 
   if (targetRuntime == &sourceRuntime) {
     // TODO: no clone need print some warn
