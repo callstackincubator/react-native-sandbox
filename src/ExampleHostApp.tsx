@@ -1,5 +1,5 @@
-import React, { Component, useEffect, useRef, useState } from 'react';
-import { View, Dimensions, StyleSheet, SafeAreaView, Switch, NativeMethods, TouchableOpacity, Text } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Dimensions, StyleSheet, SafeAreaView, Switch, NativeMethods, TouchableOpacity, Text, ColorValue } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,11 +7,50 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import SandboxReactNativeView, {SandboxReactNativeViewRef} from './SandboxReactNativeView';
+import Toast, { BaseToast, BaseToastProps, ToastConfigParams } from 'react-native-toast-message';
+import { ViewProps } from '../ref-react-native/Libraries/Components/View/ViewPropTypes';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const BALL_SIZE = 50;
 
-export default function BouncingBallScreen() {
+function SandboxDemoView({initialProperties}: {initialProperties: any}) {
+  const [isSandboxEnabled, setSandboxEnabled] = useState(false);
+  const sandboxRef = useRef<SandboxReactNativeViewRef>(null);
+  
+  return (
+    <View style={{ flex: 1 }}>
+      <SafeAreaView style={{ margin: 10, flex: 1 }}>
+        <View style={styles.control}>
+          <Switch value={isSandboxEnabled} onValueChange={() => setSandboxEnabled(v => !v)} />
+          <TouchableOpacity style={styles.button} onPress={() => {
+            sandboxRef?.current?.postMessage({date: new Date(), origin: "host"})
+          }}>
+            <Text style={styles.text}>Post</Text>
+          </TouchableOpacity>
+        </View>
+        {isSandboxEnabled ? <SandboxReactNativeView
+                                ref={sandboxRef}
+                                jsBundleName={"sandbox"}
+                                moduleName={"SandboxApp"}
+                                style={{flex: 1, padding: 30}}
+                                initialProperties={initialProperties}
+                                onMessage={(msg) => {
+                                  console.log(`Got message from ${initialProperties.sourceName}`, msg);
+                                  Toast.show({
+                                    type: 'customColored',
+                                    text1: initialProperties.sourceName,
+                                    text2: JSON.stringify(msg),
+                                    props: {
+                                      leftColor: initialProperties.backgroundColor,
+                                    },
+                                  });
+                                }} /> : null}
+      </SafeAreaView>
+    </View>
+  );
+}
+
+function BouncingBall() {
   // Position and velocity shared values  
   const ballX = useSharedValue(50);
   const ballY = useSharedValue(50);
@@ -36,12 +75,6 @@ export default function BouncingBallScreen() {
     }
   });
 
-  const [isSandbox1Enabled, setSandbox1Enabled] = useState(false);
-  const [isSandbox2Enabled, setSandbox2Enabled] = useState(false);
-
-  const sandbox1Ref = useRef<SandboxReactNativeViewRef | null>(null);
-  const sandbox2Ref = useRef<SandboxReactNativeViewRef | null>(null);
-
   // Animated style for the ball  
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -53,48 +86,29 @@ export default function BouncingBallScreen() {
   });
 
   return (
+    <Animated.View style={[styles.ball, animatedStyle]} />
+  );
+}
+
+export default function App() {
+  const toastConfig = {
+    customColored: (props: ToastConfigParams<{leftColor: ColorValue}>) => (
+      <BaseToast
+        {...props}
+        style={{
+          borderLeftColor: props?.props.leftColor,
+        }}
+      />
+    ),
+  };
+
+  return (
     <View style={styles.container}>
-      <View style={{ backgroundColor: '#CCFFCC', flex: 1 }}>
-        <SafeAreaView style={{ margin: 10, flex: 1 }}>
-          <View style={styles.control}>
-            <Switch value={isSandbox1Enabled} onValueChange={() => setSandbox1Enabled(v => !v)} />
-            <TouchableOpacity style={styles.button} onPress={() => {
-              sandbox1Ref?.current?.postMessage({counter: 1, date: new Date(), origin: "host"})
-            }}>
-              <Text style={styles.text}>Post</Text>
-            </TouchableOpacity>
-          </View>
-          {isSandbox1Enabled ? <SandboxReactNativeView
-                                  ref={sandbox1Ref}
-                                  jsBundleName={"sandbox"}
-                                  moduleName={"SandboxApp"}
-                                  style={{flex: 1}}
-                                  initialProperties={{sourceName: "green", backgroundColor: '#CCFFCC'}}
-                                  onMessage={(msg) => {
-                                    console.log("Got message from sandbox1", msg)
-                                  }} /> : null}
-        </SafeAreaView>
-      </View>
-      <View style={{ backgroundColor: '#CCCCFF', flex: 1 }}>
-        <SafeAreaView style={{ margin: 10, flex: 1 }}>
-          <View style={styles.control}>
-            <Switch value={isSandbox2Enabled} onValueChange={() => setSandbox2Enabled(v => !v)} />
-            <TouchableOpacity style={styles.button} onPress={() => sandbox2Ref?.current?.postMessage({counter: 1, date: new Date(), origin: "host"})}>
-              <Text style={styles.text}>Post</Text>
-            </TouchableOpacity>
-          </View>
-          {isSandbox2Enabled ? <SandboxReactNativeView
-                                  ref={sandbox2Ref}
-                                  jsBundleName={"sandbox"}
-                                  moduleName={"SandboxApp"}
-                                  style={{flex: 1}}
-                                  initialProperties={{sourceName: "blue", backgroundColor: '#CCCCFF'}}
-                                  onMessage={(msg) => {
-                                    console.log("Got message from sandbox2", msg)
-                                  }} /> : null}
-        </SafeAreaView>
-      </View>
-      <Animated.View style={[styles.ball, animatedStyle]} />
+      <SandboxDemoView initialProperties={{sourceName: "green", backgroundColor: '#CCFFCC'}} />
+      <SandboxDemoView initialProperties={{sourceName: "blue", backgroundColor: '#CCCCFF'}} />
+      <BouncingBall />
+      <Toast config={toastConfig} />
+      
     </View>
   );
 }

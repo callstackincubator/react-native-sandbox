@@ -13,7 +13,8 @@ import {
 // TODO remove it
 // use injected postMessage and useOnMessage host functions
 // it's impossible to pass it with initial props
-import MultiReactMediatorModule from '../specs/NativeMultiReactMediator'
+// TODO how to forece create turbomodule without import 
+import MultiReactMediator from '../specs/NativeMultiReactMediator'
 
 type AppProps = {
   contextId: string, // remove once postMessage and useOnMessage installed to globals
@@ -22,7 +23,7 @@ type AppProps = {
   backgroundColor: ColorValue
 }
 
-function App({contextId, sourceName, backgroundColor}: AppProps): React.JSX.Element {
+function App({contextId, sourceName, backgroundColor}: AppProps) {
   const [counter, setCounter] = useState<number>(0);
   const [targetInput, setTargetInput] = useState<string>(`Some payload from ${sourceName}`);
 
@@ -42,15 +43,17 @@ function App({contextId, sourceName, backgroundColor}: AppProps): React.JSX.Elem
   // TODO do't expose `host_${contextId}` explicitly
   // ideally it should looks something like 
   useEffect(() => {
-    MultiReactMediatorModule.registerRuntime(`host_${contextId}`, onMessage);
+    MultiReactMediator.registerRuntime(`host_${contextId}`, onMessage);
   }, []);
 
   const sendInput = () => {
     setCounter((c) => c + 1);
-    (globalThis as any).postMessage(
-      { data: targetInput, origin: sourceName, counter }, `${contextId}_host`
-    );
+    MultiReactMediator.postMessage(`${contextId}_host`, { data: targetInput, origin: sourceName, counter });
   };
+
+  (globalThis as any).useOnMessage((payload: unknown) => {
+    console.log("onMessage", payload);
+  });
 
   return (
     <SafeAreaView style={[styles.safeRoot, {backgroundColor}]}>
