@@ -16,7 +16,7 @@
 
 @property (nonatomic, assign) BOOL didScheduleLoad;
 @property (nonatomic, strong) RCTReactNativeFactory *reactNativeFactory;
-@property (nonatomic, strong) RCTDefaultReactNativeFactoryDelegate *reactNativeDelegate;
+@property (nonatomic, strong) SandboxReactNativeDelegate *reactNativeDelegate;
 @property (nonatomic, strong) UIView *rootView;
 
 @end
@@ -30,6 +30,8 @@
     _jsBundleName = @"index";
     _initialProperties = @{};
     _launchOptions = @{};
+    _onError = nil;
+    _onMessage = nil;
   }
   return self;
 }
@@ -51,15 +53,33 @@
 - (void)setInitialProperties:(NSDictionary *)initialProperties {
   if (![_initialProperties isEqualToDictionary:initialProperties]) {
     _initialProperties = [initialProperties copy];
-    [self loadReactNativeView];
+    [self scheduleReactViewLoad];
   }
 }
 
 - (void)setLaunchOptions:(NSDictionary *)launchOptions {
   if (![_launchOptions isEqualToDictionary:launchOptions]) {
     _launchOptions = [launchOptions copy];
-    [self loadReactNativeView];
+    [self scheduleReactViewLoad];
   }
+}
+
+- (void)setOnMessage:(RCTDirectEventBlock)onMessage {
+  if (onMessage != _onMessage) {
+    _onMessage = [onMessage copy];
+    _reactNativeDelegate.onMessageHost = _onMessage;
+  }
+}
+
+- (void)setOnError:(RCTDirectEventBlock)onError {
+  if (onError != _onError) {
+    _onError = [onError copy];
+    _reactNativeDelegate.onErrorHost = _onError;
+  }
+}
+
+- (void)postMessage:(NSDictionary *)message {
+  [_reactNativeDelegate postMessage:message];
 }
 
 - (void)scheduleReactViewLoad {
@@ -77,12 +97,14 @@
     return;
   }
 
+  // TODO is it possible to get hostRtcInstance?
+
   SandboxReactNativeDelegate *delegate = [[SandboxReactNativeDelegate alloc] initWithJSBundleName:_jsBundleName];
+  delegate.onMessageHost = _onMessage;
+  delegate.onErrorHost = _onError;
 
   RCTReactNativeFactory *factory = [[RCTReactNativeFactory alloc] initWithDelegate:delegate];
   factory.delegate = delegate;
-  factory.rootViewFactory.reactHost = [factory.rootViewFactory createReactHost:_launchOptions];
-  factory.rootViewFactory.reactHost.runtimeDelegate = (id<RCTHostRuntimeDelegate>)delegate;
 
   NSMutableDictionary *mergedProps = [_initialProperties mutableCopy];
   mergedProps[@"contextId"] = _contextId;

@@ -17,4 +17,21 @@ class SandboxReactNativeViewManager: RCTViewManager {
   override func view() -> UIView! {
     return SandboxReactNativeView()
   }
+
+  @objc(postMessage:message:)
+  func postMessage(_ reactTag: NSNumber, message: NSDictionary) {
+    DispatchQueue.main.async { [weak self] in
+      guard let self else {
+        return
+      }
+
+      let view = self.bridge.uiManager.view(forReactTag: reactTag)
+
+      guard let sandboxView = view as? SandboxReactNativeView else {
+        return
+      }
+
+      sandboxView.postMessage(message as! [AnyHashable : Any])
+    }
+  }
 }

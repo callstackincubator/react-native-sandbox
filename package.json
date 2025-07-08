@@ -36,19 +36,6 @@
     "react-test-renderer": "19.0.0",
     "typescript": "5.0.4"
   },
-  "codegenConfig": {
-    "name": "AppSpec",
-    "type": "modules",
-    "jsSrcsDir": "specs",
-    "android": {
-      "javaPackageName": "com.multiinstancepoc"
-    },
-    "ios": {
-      "modulesProvider": {
-        "MultiReactMediatorModule": "MultiReactMediatorModuleProvider"
-      }
-    }
-  },
   "engines": {
     "node": ">=18"
   },

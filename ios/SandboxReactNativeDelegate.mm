@@ -7,21 +7,40 @@
 
 #import "SandboxReactNativeDelegate.h"
 
+#include <memory>
+#include <jsi/decorator.h>
+#include <react/utils/jsi-utils.h>
+
 #import <React/RCTBridge.h>
 #import <React/RCTBundleURLProvider.h>
 #import <ReactAppDependencyProvider/RCTAppDependencyProvider.h>
-#import <ReactCommon/RCTHost.h>
+#import <ReactCommon/RCTTurboModule.h>
 
 #import <objc/runtime.h>
 
-#include <jsi/decorator.h>
-
-#include "JSObjectMethodProxy.hpp"
-
 namespace jsi = facebook::jsi;
+namespace TurboModuleConvertUtils = facebook::react::TurboModuleConvertUtils;
 
-@interface SandboxReactNativeDelegate ()<RCTHostRuntimeDelegate> {
-  std::unique_ptr<JSObjectMethodProxy> _reportErrorProxy;
+static void stubJsiFunction(jsi::Runtime& runtime, jsi::Object& object, const char* name) {
+  object.setProperty(runtime, name,
+    jsi::Function::createFromHostFunction(runtime,
+      jsi::PropNameID::forUtf8(runtime, name), 1,
+      [](auto&, const auto&, const auto*, size_t) {
+        return jsi::Value::undefined();
+      }
+    )
+  );
+}
+
+static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, const char* key) {
+  return obj.hasProperty(rt, key)
+    ? obj.getProperty(rt, key)
+    : jsi::Value::undefined();
+}
+
+@interface SandboxReactNativeDelegate () {
+  RCTInstance *_rctInstance;
+  std::shared_ptr<jsi::Function> _onMessageSandbox;
 }
 
 @property (nonatomic, strong) NSString *jsBundleName;
@@ -33,6 +52,8 @@ namespace jsi = facebook::jsi;
 - (instancetype)initWithJSBundleName:(NSString *)jsBundleName {
   if (self = [super init]) {
     _jsBundleName = jsBundleName;
+    _onMessageHost = nil;
+    _onErrorHost = nil;
     self.dependencyProvider = [[RCTAppDependencyProvider alloc] init];
   }
   return self;
@@ -50,68 +71,122 @@ namespace jsi = facebook::jsi;
 #endif
 }
 
-// TODO: move to "- (void)hostDidStart:(RCTHost *)host;" which is part of RCTHostDelegate
-- (void)host:(RCTHost *)host didInitializeRuntime:(facebook::jsi::Runtime &)runtime {
+- (void)postMessage:(NSDictionary *)message {
+  [_rctInstance callFunctionOnBufferedRuntimeExecutor:[=](jsi::Runtime& runtime) {
+    jsi::Value arg = TurboModuleConvertUtils::convertObjCObjectToJSIValue(runtime, message);
+    _onMessageSandbox->call(runtime, { std::move(arg) });
+  }];
+}
+
+- (void)hostDidStart:(RCTHost *)host {
   Ivar ivar = class_getInstanceVariable([host class], "_instance");
-  RCTInstance *instance = object_getIvar(host, ivar);
-  facebook::react::ReactInstance *reactInstance = ((__bridge std::unique_ptr<facebook::react::ReactInstance> *)instance)->get();
-  // reactInstance->initializeRuntime(facebook::react::JSRuntimeFlags(), BindingsInstallFunc bindingsInstallFunc)
-  facebook::react::ReactInstance::JSRuntimeFlags options;
-  [instance callFunctionOnBufferedRuntimeExecutor:[=](jsi::Runtime &runtime) {
-    runtime.global().setProperty(
-      runtime,
+  _rctInstance = object_getIvar(host, ivar);
+
+  [_rctInstance callFunctionOnBufferedRuntimeExecutor:[=](jsi::Runtime &runtime) {
+    // TODO: migrate to defineReadOnlyGlobal
+    facebook::react::defineReadOnlyGlobal(runtime,
       "postMessage",
       jsi::Function::createFromHostFunction(
         runtime,
         jsi::PropNameID::forAscii(runtime, "postMessage"),
         1,
-        [](jsi::Runtime&, const jsi::Value&, const jsi::Value* args, size_t count) {
-          // clone
-          // call onMessage
+        [=](jsi::Runtime& rt, const jsi::Value&, const jsi::Value* args, size_t count) {
+          if (count != 1) {
+            throw jsi::JSError(rt, "Expected exactly one argument");
+          }
+
+          const jsi::Value& arg = args[0];
+          if (!arg.isObject()) {
+            throw jsi::JSError(rt, "Expected a object as the first argument");
+          }
+
+          NSDictionary *message = TurboModuleConvertUtils::convertJSIValueToObjCObject(rt, args[0], nullptr);
+          _onMessageHost(message);
           return jsi::Value::undefined();
         })
     );
-    runtime.global().setProperty(
+    facebook::react::defineReadOnlyGlobal(
       runtime,
       "useOnMessage",
       jsi::Function::createFromHostFunction(
         runtime,
         jsi::PropNameID::forAscii(runtime, "useOnMessage"),
         1,
-        [](jsi::Runtime&, const jsi::Value&, const jsi::Value* args, size_t count) {
-          // clone
-          // store onMessage function from jsi::Value* args
+        [=](jsi::Runtime& rt, const jsi::Value&, const jsi::Value* args, size_t count) {
+          if (count != 1) {
+            throw jsi::JSError(rt, "Expected exactly one argument");
+          }
+
+          const jsi::Value& arg = args[0];
+          if (!arg.isObject() || !arg.asObject(rt).isFunction(rt)) {
+            throw jsi::JSError(rt, "Expected a function as the first argument");
+          }
+
+          jsi::Function fn = arg.asObject(rt).asFunction(rt);
+          _onMessageSandbox = std::make_shared<jsi::Function>(std::move(fn));
+
           return jsi::Value::undefined();
         })
     );
 
-    auto errorUtils = runtime.global().getPropertyAsObject(runtime, "ErrorUtils");
+    // Get ErrorUtils
+    jsi::Object global = runtime.global();
+    jsi::Value errorUtilsVal = global.getProperty(runtime, "ErrorUtils");
+    if (!errorUtilsVal.isObject()) {
+      throw std::runtime_error("ErrorUtils is not available on global object");
+    }
 
-  //  if (errorUtils.isUndefined() || !errorUtils.isObject()) {
-  //    return;
-  //  }
-    _reportErrorProxy = std::make_unique<JSObjectMethodProxy>(
+    jsi::Object errorUtils = errorUtilsVal.asObject(runtime);
+
+    std::shared_ptr<jsi::Value> originalHandler =  std::make_shared<jsi::Value>(errorUtils.getProperty(runtime, "getGlobalHandler")
+                                      .asObject(runtime)
+                                      .asFunction(runtime)
+                                      .call(runtime));
+
+    auto handlerFunc = jsi::Function::createFromHostFunction(
       runtime,
-      errorUtils,
-      "reportError",
-      1,
-      [](const jsi::Runtime &rt, const jsi::Value *args, size_t count) {
-        // Decide if original should be called
-        return true;
+      jsi::PropNameID::forAscii(runtime, "customGlobalErrorHandler"),
+      2,
+      [=, originalHandler = std::move(originalHandler)](jsi::Runtime &rt,
+                                                     const jsi::Value &thisVal,
+                                                     const jsi::Value *args,
+                                                     size_t count) -> jsi::Value {
+        if (count < 2) {
+          return jsi::Value::undefined();
+        }
+
+        if (_onErrorHost) {
+          const jsi::Object &error = args[0].asObject(rt);
+          bool isFatal = args[1].getBool();
+          _onErrorHost(@{
+            @"name": TurboModuleConvertUtils::convertJSIValueToObjCObject(rt, safeGetProperty(rt, error, "name"), nullptr),
+            @"message": TurboModuleConvertUtils::convertJSIValueToObjCObject(rt, safeGetProperty(rt, error, "message"), nullptr),
+            @"stack": TurboModuleConvertUtils::convertJSIValueToObjCObject(rt, safeGetProperty(rt, error, "stack"), nullptr),
+            @"isFatal": @(isFatal)
+          });
+        } else { // Call the original handler
+          if (originalHandler->isObject() && originalHandler->asObject(rt).isFunction(rt)) {
+            jsi::Function original = originalHandler->asObject(rt).asFunction(rt);
+            original.call(rt, args, count);
+          }
+        }
+
+        return jsi::Value::undefined();
       }
     );
+
+    // Set the new global error handler
+    jsi::Function setHandler = errorUtils.getProperty(runtime, "setGlobalHandler").asObject(runtime).asFunction(runtime);
+    setHandler.call(runtime, { std::move(handlerFunc) });
+
+    // Disable further setGlobalHandler from sandbox
+    stubJsiFunction(runtime, errorUtils, "setGlobalHandler");
   }];
 }
 
 - (void)host:(RCTHost *)host didReceiveJSErrorStack:(NSArray<NSDictionary<NSString *,id> *> *)stack message:(NSString *)message originalMessage:(NSString *)originalMessage name:(NSString *)name componentStack:(NSString *)componentStack exceptionId:(NSUInteger)exceptionId isFatal:(BOOL)isFatal extraData:(NSDictionary<NSString *,id> *)extraData {
   NSLog(@"didReceiveJSErrorStack");
 }
-
-- (void)hostDidStart:(RCTHost *)host {
-  NSLog(@"hostDidStart");
-}
-
-
 
 // TODO: implement RCTTurboModuleManagerDelegate methods for security reasons i.e. not expose allow auto expose turbo-modules from host to sandbox +1
 

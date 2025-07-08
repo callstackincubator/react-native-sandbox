@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { View, Dimensions, StyleSheet, SafeAreaView, Switch, NativeMethods, TouchableOpacity, Text, ColorValue } from 'react-native';
+import { Button, View, Dimensions, StyleSheet, SafeAreaView, Switch, TouchableOpacity, Text, ColorValue, ViewStyle } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,44 +7,57 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import SandboxReactNativeView, {SandboxReactNativeViewRef} from './SandboxReactNativeView';
-import Toast, { BaseToast, BaseToastProps, ToastConfigParams } from 'react-native-toast-message';
-import { ViewProps } from '../ref-react-native/Libraries/Components/View/ViewPropTypes';
+import Toast, { BaseToast, ToastConfigParams } from 'react-native-toast-message';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const BALL_SIZE = 50;
 
 function SandboxDemoView({initialProperties}: {initialProperties: any}) {
-  const [isSandboxEnabled, setSandboxEnabled] = useState(false);
+  const [isVisible, setVisible] = useState(false);
   const sandboxRef = useRef<SandboxReactNativeViewRef>(null);
   
   return (
     <View style={{ flex: 1 }}>
       <SafeAreaView style={{ margin: 10, flex: 1 }}>
         <View style={styles.control}>
-          <Switch value={isSandboxEnabled} onValueChange={() => setSandboxEnabled(v => !v)} />
-          <TouchableOpacity style={styles.button} onPress={() => {
-            sandboxRef?.current?.postMessage({date: new Date(), origin: "host"})
-          }}>
-            <Text style={styles.text}>Post</Text>
-          </TouchableOpacity>
+          <Switch value={isVisible} onValueChange={() => setVisible(v => !v)} />
+          <Button color={styles.button.backgroundColor} title="Post message" onPress={() => {
+            sandboxRef?.current?.postMessage({date: new Date().toJSON(), origin: "host"})
+          }} />
         </View>
-        {isSandboxEnabled ? <SandboxReactNativeView
-                                ref={sandboxRef}
-                                jsBundleName={"sandbox"}
-                                moduleName={"SandboxApp"}
-                                style={{flex: 1, padding: 30}}
-                                initialProperties={initialProperties}
-                                onMessage={(msg) => {
-                                  console.log(`Got message from ${initialProperties.sourceName}`, msg);
-                                  Toast.show({
-                                    type: 'customColored',
-                                    text1: initialProperties.sourceName,
-                                    text2: JSON.stringify(msg),
-                                    props: {
-                                      leftColor: initialProperties.backgroundColor,
-                                    },
-                                  });
-                                }} /> : null}
+        {isVisible ?
+          <SandboxReactNativeView
+            ref={sandboxRef}
+            jsBundleName={"sandbox"}
+            moduleName={"SandboxApp"}
+            style={{flex: 1, padding: 30}}
+            initialProperties={initialProperties}
+            onMessage={(msg) => {
+              console.log(`Got message from ${initialProperties.sourceName}`, msg);
+              Toast.show({
+                type: 'customColored',
+                text1: initialProperties.sourceName,
+                text2: JSON.stringify(msg),
+                visibilityTime: 5000,
+                props: {
+                  leftColor: initialProperties.backgroundColor,
+                },
+              });
+            }}
+            onError={error => {
+              const isFatal = error.isFatal;
+              const message = `Got ${isFatal ? 'fatal' : 'non-fatal'} error from ${initialProperties.sourceName}`;
+              console.warn(message, error);
+              Toast.show({
+                type: 'error',
+                text1: message,
+                text2: `${error.name}: ${error.message}`,
+                visibilityTime: 5000
+              })
+              return false;
+            }}
+            /> : null
+          }
       </SafeAreaView>
     </View>
   );
@@ -95,6 +108,7 @@ export default function App() {
     customColored: (props: ToastConfigParams<{leftColor: ColorValue}>) => (
       <BaseToast
         {...props}
+        text2NumberOfLines={0}
         style={{
           borderLeftColor: props?.props.leftColor,
         }}
@@ -103,13 +117,12 @@ export default function App() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <SandboxDemoView initialProperties={{sourceName: "green", backgroundColor: '#CCFFCC'}} />
       <SandboxDemoView initialProperties={{sourceName: "blue", backgroundColor: '#CCCCFF'}} />
       <BouncingBall />
       <Toast config={toastConfig} />
-      
-    </View>
+    </SafeAreaView>
   );
 }
 

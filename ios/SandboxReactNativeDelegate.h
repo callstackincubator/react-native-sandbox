@@ -8,13 +8,17 @@
 #import <Foundation/Foundation.h>
 
 #import <React-RCTAppDelegate/RCTDefaultReactNativeFactoryDelegate.h>
-#import <ReactCommon/RCTHost.h>
+#import <React/RCTComponent.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface SandboxReactNativeDelegate : RCTDefaultReactNativeFactoryDelegate
 
+@property (nonatomic, copy, nullable) RCTDirectEventBlock onMessageHost;
+@property (nonatomic, copy, nullable) RCTDirectEventBlock onErrorHost;
+
 - (instancetype)initWithJSBundleName:(NSString *)jsBundleName;
+- (void)postMessage:(NSDictionary *)message;
 
 @end
 

@@ -1,15 +1,16 @@
-import { ElementRef, forwardRef, useCallback, useEffect, useId, useImperativeHandle, useMemo, useRef } from "react";
+import { ElementRef, forwardRef, useCallback, useId, useImperativeHandle, useMemo, useRef } from "react";
 import { findNodeHandle, HostComponent, NativeSyntheticEvent, requireNativeComponent, StyleProp, StyleSheet, UIManager, View, ViewProps, ViewStyle } from "react-native";
 import type {
   DirectEventHandler,
 } from 'react-native/Libraries/Types/CodegenTypes';
 
-import MultiReactMediatorModule from '../specs/NativeMultiReactMediator'
-
-
 type GenericProps = {
   [key: string]: any;
 };
+
+interface IsFatalError extends Error {
+  isFatal?: boolean;
+}
 
 export interface NativeSandboxReactNativeViewProps extends ViewProps {
   contextId: string;
@@ -18,6 +19,7 @@ export interface NativeSandboxReactNativeViewProps extends ViewProps {
   initialProperties?: GenericProps;
   launchOptions?: GenericProps;
   onError?: DirectEventHandler<{}>;
+  onMessage?: DirectEventHandler<{}>;
 }
 
 export interface SandboxReactNativeViewProps extends ViewProps {
@@ -26,7 +28,7 @@ export interface SandboxReactNativeViewProps extends ViewProps {
   initialProperties?: GenericProps;
   launchOptions?: GenericProps;
   onMessage?: (payload: unknown) => void;
-  onError?: DirectEventHandler<{}>;
+  onError?: (error: IsFatalError) => void;
 }
 
 export interface SandboxReactNativeViewRef {
@@ -51,15 +53,27 @@ const SandboxReactNativeView = forwardRef<SandboxReactNativeViewRef, SandboxReac
     const contextId = useId();
 
     const postMessage = useCallback((message: any) => {
-      MultiReactMediatorModule.postMessage(`host_${contextId}`, message);
+      const reactTag = findNodeHandle(nativeRef.current);
+      UIManager.dispatchViewManagerCommand(
+        reactTag,
+        UIManager.getViewManagerConfig('SandboxReactNativeView').Commands.postMessage,
+        [message]
+      );
     }, []);
 
-    const _onError = useCallback(
+    const _onError = onError ? useCallback(
       (e: NativeSyntheticEvent<{}>) => {
-        onError?.(e);
+        onError?.(e.nativeEvent as Error);
       },
       [onError],
-    );
+    ) : undefined;
+
+    const _onMessage = onMessage ? useCallback(
+      (e: NativeSyntheticEvent<{}>) => {
+        onMessage?.(e.nativeEvent);
+      },
+      [onMessage],
+    ) : undefined;
 
     useImperativeHandle(
       ref,
@@ -83,17 +97,12 @@ const SandboxReactNativeView = forwardRef<SandboxReactNativeViewRef, SandboxReac
       [],
     );
 
-    useEffect(() => {
-      if (onMessage) {
-        MultiReactMediatorModule.registerRuntime(`${contextId}_host`, onMessage);
-      }
-    }, []);
-
     return (
       <View style={style}>
         <NativeComponent
           ref={nativeRef}
           onError={_onError}
+          onMessage={_onMessage}
           style={_style}
           contextId={contextId}
           {...rest} />

@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useRef, useState} from 'react';
 import {
   FlatList,
   TextInput,
@@ -10,20 +10,18 @@ import {
   SafeAreaView
 } from 'react-native';
 
-// TODO remove it
-// use injected postMessage and useOnMessage host functions
-// it's impossible to pass it with initial props
-// TODO how to forece create turbomodule without import 
-import MultiReactMediator from '../specs/NativeMultiReactMediator'
+declare global {
+  var postMessage: (message: object) => void;
+  var useOnMessage: (handler: (payload: object) => void) => void;
+}
 
 type AppProps = {
-  contextId: string, // remove once postMessage and useOnMessage installed to globals
   sourceName: string,
   targetName: string,
   backgroundColor: ColorValue
 }
 
-function App({contextId, sourceName, backgroundColor}: AppProps) {
+function App({sourceName, backgroundColor}: AppProps) {
   const [counter, setCounter] = useState<number>(0);
   const [targetInput, setTargetInput] = useState<string>(`Some payload from ${sourceName}`);
 
@@ -38,22 +36,19 @@ function App({contextId, sourceName, backgroundColor}: AppProps) {
     }, 100);
   };
 
-  const onMessage = useCallback((payload: unknown) => addItem(JSON.stringify(payload)), []);
-
-  // TODO do't expose `host_${contextId}` explicitly
-  // ideally it should looks something like 
-  useEffect(() => {
-    MultiReactMediator.registerRuntime(`host_${contextId}`, onMessage);
+  const onMessage = useCallback((payload: unknown) => {
+    console.log("onMessage", payload);
+    addItem(JSON.stringify(payload))
   }, []);
 
   const sendInput = () => {
     setCounter((c) => c + 1);
-    MultiReactMediator.postMessage(`${contextId}_host`, { data: targetInput, origin: sourceName, counter });
+    globalThis.postMessage({ data: targetInput, date: new Date(), origin: sourceName, counter })
   };
 
-  (globalThis as any).useOnMessage((payload: unknown) => {
-    console.log("onMessage", payload);
-  });
+  const panic = () => (globalThis as any).panic();
+
+  globalThis.useOnMessage(onMessage);
 
   return (
     <SafeAreaView style={[styles.safeRoot, {backgroundColor}]}>
@@ -69,6 +64,11 @@ function App({contextId, sourceName, backgroundColor}: AppProps) {
           style={styles.button}
           onPress={sendInput}>
             <Text>Send Data</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.crash}
+          onPress={panic}>
+            <Text>Crash TypeError</Text>
         </TouchableOpacity>
 
         <View style={{ flex: 1 }}>
@@ -111,6 +111,16 @@ const styles = StyleSheet.create({
   button: {
     borderWidth: 1,
     borderColor: '#007AFF',
+    borderRadius: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+    backgroundColor: '#e6f0ff',
+  },
+  crash: {
+    borderWidth: 1,
+    borderColor: '#ff9b9b',
     borderRadius: 6,
     paddingVertical: 10,
     paddingHorizontal: 12,

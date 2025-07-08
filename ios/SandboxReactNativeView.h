@@ -17,6 +17,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) NSDictionary *initialProperties;
 @property (nonatomic, copy) NSDictionary *launchOptions;
 @property (nonatomic, copy, nullable) RCTDirectEventBlock onError;
+@property (nonatomic, copy, nullable) RCTDirectEventBlock onMessage;
+
+- (void)postMessage:(NSDictionary *)message;
 
 @end
 
