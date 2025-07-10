@@ -41,6 +41,7 @@ static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, cons
 @interface SandboxReactNativeDelegate () {
   RCTInstance *_rctInstance;
   std::shared_ptr<jsi::Function> _onMessageSandbox;
+  std::set<std::string> _allowedModules;
 }
 
 @property (nonatomic, strong) NSString *jsBundleName;
@@ -48,6 +49,13 @@ static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, cons
 @end
 
 @implementation SandboxReactNativeDelegate
+
+- (void)setAllowedTurmoboModules:(NSArray<NSString *> *)allowedTurmoboModules {
+  _allowedModules.clear();
+  for (NSString *s in allowedTurmoboModules) {
+    _allowedModules.insert([s UTF8String]);
+  }
+}
 
 - (instancetype)initWithJSBundleName:(NSString *)jsBundleName {
   if (self = [super init]) {
@@ -184,10 +192,18 @@ static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, cons
   }];
 }
 
-- (void)host:(RCTHost *)host didReceiveJSErrorStack:(NSArray<NSDictionary<NSString *,id> *> *)stack message:(NSString *)message originalMessage:(NSString *)originalMessage name:(NSString *)name componentStack:(NSString *)componentStack exceptionId:(NSUInteger)exceptionId isFatal:(BOOL)isFatal extraData:(NSDictionary<NSString *,id> *)extraData {
-  NSLog(@"didReceiveJSErrorStack");
+#pragma mark - RCTTurboModuleManagerDelegate
+
+- (id<RCTModuleProvider>)getModuleProvider:(const char *)name {
+  NSLog(@"SandboxReactNativeDelegate.getModuleProvider %s", name);
+  return _allowedModules.contains(name) ? [super getModuleProvider:name] : nullptr;
 }
 
-// TODO: implement RCTTurboModuleManagerDelegate methods for security reasons i.e. not expose allow auto expose turbo-modules from host to sandbox +1
+- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:(const std::string &)name
+                                                      jsInvoker:
+(std::shared_ptr<facebook::react::CallInvoker>)jsInvoker {
+  NSLog(@"SandboxReactNativeDelegate.getTurboModule:jsInvoker %s", name.c_str());
+  return _allowedModules.contains(name) ? [super getTurboModule:name jsInvoker:jsInvoker] : nullptr;
+}
 
 @end

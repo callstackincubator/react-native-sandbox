@@ -25,7 +25,6 @@
 
 - (instancetype)initWithFrame:(CGRect)frame {
   if (self = [super initWithFrame:frame]) {
-    _contextId = @"${contextId}";
     _moduleName = @"sandbox";
     _jsBundleName = @"index";
     _initialProperties = @{};
@@ -78,6 +77,13 @@
   }
 }
 
+- (void)setAllowedTurmoboModules:(NSArray<NSString *> *)allowedTurmoboModules {
+  if (![allowedTurmoboModules isEqual:_allowedTurmoboModules]) {
+    _allowedTurmoboModules = [allowedTurmoboModules copy];
+    [self scheduleReactViewLoad];
+  }
+}
+
 - (void)postMessage:(NSDictionary *)message {
   [_reactNativeDelegate postMessage:message];
 }
@@ -93,7 +99,7 @@
 }
 
 - (void)loadReactNativeView {
-  if (_moduleName.length == 0 || _jsBundleName.length == 0 || _contextId.length == 0) {
+  if (_moduleName.length == 0 || _jsBundleName.length == 0 || _allowedTurmoboModules == nil) {
     return;
   }
 
@@ -102,15 +108,13 @@
   SandboxReactNativeDelegate *delegate = [[SandboxReactNativeDelegate alloc] initWithJSBundleName:_jsBundleName];
   delegate.onMessageHost = _onMessage;
   delegate.onErrorHost = _onError;
+  delegate.allowedTurmoboModules = _allowedTurmoboModules;
 
   RCTReactNativeFactory *factory = [[RCTReactNativeFactory alloc] initWithDelegate:delegate];
   factory.delegate = delegate;
 
-  NSMutableDictionary *mergedProps = [_initialProperties mutableCopy];
-  mergedProps[@"contextId"] = _contextId;
-
   UIView *rnView = [factory.rootViewFactory viewWithModuleName:_moduleName
-                                            initialProperties:mergedProps
+                                            initialProperties:_initialProperties
                                                  launchOptions:_launchOptions];
 
   [_rootView removeFromSuperview];

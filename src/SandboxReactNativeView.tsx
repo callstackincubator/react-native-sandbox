@@ -4,6 +4,8 @@ import type {
   DirectEventHandler,
 } from 'react-native/Libraries/Types/CodegenTypes';
 
+const SANDBOX_TURBOMODULES_WHITELIST = ['NativeMicrotasksCxx'];
+
 type GenericProps = {
   [key: string]: any;
 };
@@ -13,11 +15,11 @@ interface IsFatalError extends Error {
 }
 
 export interface NativeSandboxReactNativeViewProps extends ViewProps {
-  contextId: string;
   moduleName: string;
   jsBundleName?: string;
   initialProperties?: GenericProps;
   launchOptions?: GenericProps;
+  allowedTurmoboModules?: string[];
   onError?: DirectEventHandler<{}>;
   onMessage?: DirectEventHandler<{}>;
 }
@@ -27,6 +29,7 @@ export interface SandboxReactNativeViewProps extends ViewProps {
   jsBundleName?: string;
   initialProperties?: GenericProps;
   launchOptions?: GenericProps;
+  allowedTurmoboModules?: string[];
   onMessage?: (payload: unknown) => void;
   onError?: (error: IsFatalError) => void;
 }
@@ -44,13 +47,13 @@ const SandboxReactNativeView = forwardRef<SandboxReactNativeViewRef, SandboxReac
     {
       onMessage,
       onError,
+      allowedTurmoboModules,
       style,
       ...rest
     },
     ref,
   ) => {
     const nativeRef = useRef<ElementRef<typeof NativeComponent>>(null);
-    const contextId = useId();
 
     const postMessage = useCallback((message: any) => {
       const reactTag = findNodeHandle(nativeRef.current);
@@ -97,14 +100,21 @@ const SandboxReactNativeView = forwardRef<SandboxReactNativeViewRef, SandboxReac
       [],
     );
 
+    const _allowedTurmoboModules = [
+      ...new Set([
+        ...(allowedTurmoboModules ?? []),
+        ...SANDBOX_TURBOMODULES_WHITELIST
+      ])
+    ];
+
     return (
       <View style={style}>
         <NativeComponent
           ref={nativeRef}
           onError={_onError}
           onMessage={_onMessage}
+          allowedTurmoboModules={_allowedTurmoboModules}
           style={_style}
-          contextId={contextId}
           {...rest} />
         {_renderOverlay()}
       </View>
