@@ -12,7 +12,7 @@ import {
 
 declare global {
   var postMessage: (message: object) => void;
-  var useOnMessage: (handler: (payload: object) => void) => void;
+  var setOnMessage: (handler: (payload: object) => void) => void;
 }
 
 type AppProps = {
@@ -48,7 +48,7 @@ function App({sourceName, backgroundColor}: AppProps) {
 
   const panic = () => (globalThis as any).panic();
 
-  globalThis.useOnMessage(onMessage);
+  globalThis.setOnMessage(onMessage);
 
   return (
     <SafeAreaView style={[styles.safeRoot, {backgroundColor}]}>

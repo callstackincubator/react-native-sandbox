@@ -115,10 +115,10 @@ static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, cons
     );
     facebook::react::defineReadOnlyGlobal(
       runtime,
-      "useOnMessage",
+      "setOnMessage",
       jsi::Function::createFromHostFunction(
         runtime,
-        jsi::PropNameID::forAscii(runtime, "useOnMessage"),
+        jsi::PropNameID::forAscii(runtime, "setOnMessage"),
         1,
         [=](jsi::Runtime& rt, const jsi::Value&, const jsi::Value* args, size_t count) {
           if (count != 1) {

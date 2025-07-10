@@ -214,7 +214,7 @@ function App() {
 
 -  useEffect(() => MultiReactMediatorModule
 -    .registerRuntime(`host_${contextId}`, onMessage), []);
-+  useEffect(() => useOnMessage(onMessage), []);
++  useEffect(() => setOnMessage(onMessage), []);
 
 -  const postMessage = () => MultiReactMediatorModule
 -    .postMessage({ data: 'Hello from Sandbox!' },
