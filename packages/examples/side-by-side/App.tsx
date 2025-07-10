@@ -6,7 +6,7 @@ import Animated, {
   useDerivedValue,
 } from 'react-native-reanimated';
 
-import SandboxReactNativeView, {SandboxReactNativeViewRef} from './SandboxReactNativeView';
+import SandboxReactNativeView, {SandboxReactNativeViewRef} from 'react-native-multinstance';
 import Toast, { BaseToast, ToastConfigParams } from 'react-native-toast-message';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
