@@ -1,97 +1,132 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# react-native-multinstance
 
-# Getting Started
+![Platform: iOS](https://img.shields.io/badge/platform-iOS-blue.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+`react-native-multinstance` is a library for running multiple, isolated React Native instances within a single application. This allows you to embed third-party or feature-specific "micro-apps" in a sandboxed environment, preventing uncontrolled interference with the main app by providing a clear API for communication (`postMessage`/`onMessage`).
 
-## Step 1: Start Metro
+## Project Overview
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+This project was born from the need to safely run third-party code within a host application. The core requirements are:
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- **Isolation:** Run external code in a secure, sandboxed environment.
+- **Safety:** Prevent direct access to the host application's code and data.
+- **Communication:** Provide a safe and explicit API for communication between the host and the sandboxed instances.
 
-```sh
-# Using npm
-npm start
+`react-native-multinstance` provides the API to create these sandboxed React Native instances with a simple component-based API, requiring no native code to be written by the consumer.
 
-# OR using Yarn
-yarn start
+## API Example
+
+Here is a brief overview of how to use the library from the host application and within a sandboxed app.
+
+#### Host Application (`HostApp`)
+
+```tsx
+import React, { useRef } from 'react';
+import { View, Button } from 'react-native';
+import SandboxReactNativeView, { SandboxReactNativeViewRef } from 'react-native-multinstance';
+
+function HostApp() {
+  const sandboxRef = useRef<SandboxReactNativeViewRef>(null);
+
+  const handleMessage = (message) => console.log("Message received from sandbox:", message);
+  const handleError = (error) => console.error("Error in sandbox:", error);
+  const sendMessageToSandbox = () => sandboxRef.current?.postMessage({ data: "Hello from the host!" });
+
+  return (
+    <View>
+      <Button onPress={sendMessageToSandbox} title="Send to Sandbox" />
+      <SandboxReactNativeView
+        ref={sandboxRef}
+        jsBundleName={"sandbox"} // The name of the JS bundle for the sandbox
+        moduleName={"SandboxApp"} // The registered module name in the sandbox
+        onMessage={handleMessage}
+        onError={handleError}
+      />
+    </View>
+  );
+}
 ```
 
-## Step 2: Build and run your app
+#### Sandboxed Application (`SandboxApp`)
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+```tsx
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Button, Text } from 'react-native';
 
-### Android
+// No import required API available through global
+declare global {
+  var postMessage: (message: object) => void;
+  var setOnMessage: (handler: (payload: object) => void) => void;
+}
 
-```sh
-# Using npm
-npm run android
+function SandboxApp() {
+  const [data, setData] = useState<string | undefined>();
 
-# OR using Yarn
-yarn android
+  // Listen for messages from the host
+  const onMessage = useCallback((payload: unknown) => {
+    setData(JSON.stringify(payload));
+  }, []);
+
+  useEffect(() => {
+    globalThis.setOnMessage(onMessage);
+  }, [onMessage]);
+
+  // Send a message back to the host
+  const postMessageToHost = () => {
+    // `postMessage` is also injected into the global scope
+    globalThis.postMessage({ data: 'Hello from the Sandbox!' });
+  };
+
+  return (
+    <View>
+      <Button onPress={postMessageToHost} title="Send Data to Host" />
+      <Text>Received: {data}</Text>
+    </View>
+  );
+}
+
+AppRegistry.registerComponent("SandboxApp", () => App);
 ```
 
-### iOS
+## ⚠️ Security Considerations
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+### TurboModules and Shared State
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+A primary security concern when running multiple React Native instances is the potential for state sharing through native modules, especially **TurboModules**.
 
-```sh
-bundle install
-```
+- **Static State:** If a TurboModule is implemented with static fields or as a singleton in native code, this single instance will be shared across all React Native instances (the host and all sandboxes).
+- **Data Leakage:** One sandbox could use a shared TurboModule to store data, which could then be read by another sandbox or the host. This breaks the isolation model.
+- **Unintended Side-Effects:** A sandbox could call a method on a shared module that changes its state, affecting the behavior of the host or other sandboxes in unpredictable ways.
+- **iOS `NSNotificationCenter`:** The underlying React Native framework uses the default `NSNotificationCenter` for internal communication. Because the same framework instance is shared between the host and sandboxes, it is theoretically possible for an event in one JS instance to trigger a notification that affects another. This could lead to unintended state changes or interference. While not observed during development, this remains a potential risk.
+- **Resource Exhaustion (Denial of Service):** A sandboxed instance could intentionally or unintentionally consume excessive CPU or memory, potentially leading to a denial-of-service attack that slows down or crashes the entire application. The host should be prepared to monitor and terminate misbehaving instances.
+- **Persistent Storage Conflicts:** Standard APIs like `AsyncStorage` may not be instance-aware, potentially allowing a sandbox to read or overwrite data stored by the host or other sandboxes. Any storage mechanism must be properly partitioned to ensure data isolation.
 
-Then, and every time you update your native dependencies, run:
+**Mitigation:**
 
-```sh
-bundle exec pod install
-```
+To address this, `react-native-multinstance` allows you to provide a **whitelist of allowed TurboModules** for each sandbox instance via the `allowedTurmoboModules` prop. Only the modules specified in this list will be accessible from within the sandbox, significantly reducing the attack surface. It is critical to only whitelist modules that are stateless or are explicitly designed to be shared safely.
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+## Getting Started
 
-```sh
-# Using npm
-npm run ios
+This project is structured as a monorepo.
 
-# OR using Yarn
-yarn ios
-```
+- **`packages/react-native-multinstance`**: dhe core library.
+- **`packages/examples/side-by-side`**: An example application with two sandbox instances.
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+To run the example:
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+1. Install dependencies:
 
-## Step 3: Modify your app
+    ```sh
+    yarn
+    cd packages/examples/<specific-example>
+    yarn
+    ```
 
-Now that you have successfully run the app, let's make changes!
+1. Run the example application:
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+    ```sh
+    yarn ios
+    # or
+    yarn android
+    ```
