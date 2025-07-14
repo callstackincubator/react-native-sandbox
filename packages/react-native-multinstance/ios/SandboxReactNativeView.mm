@@ -77,9 +77,9 @@
   }
 }
 
-- (void)setAllowedTurmoboModules:(NSArray<NSString *> *)allowedTurmoboModules {
-  if (![allowedTurmoboModules isEqual:_allowedTurmoboModules]) {
-    _allowedTurmoboModules = [allowedTurmoboModules copy];
+- (void)setallowedTurboModules:(NSArray<NSString *> *)allowedTurboModules {
+  if (![allowedTurboModules isEqual:_allowedTurboModules]) {
+    _allowedTurboModules = [allowedTurboModules copy];
     [self scheduleReactViewLoad];
   }
 }
@@ -99,7 +99,7 @@
 }
 
 - (void)loadReactNativeView {
-  if (_moduleName.length == 0 || _jsBundleName.length == 0 || _allowedTurmoboModules == nil) {
+  if (_moduleName.length == 0 || _jsBundleName.length == 0 || _allowedTurboModules == nil) {
     return;
   }
 
@@ -108,7 +108,7 @@
   SandboxReactNativeDelegate *delegate = [[SandboxReactNativeDelegate alloc] initWithJSBundleName:_jsBundleName];
   delegate.onMessageHost = _onMessage;
   delegate.onErrorHost = _onError;
-  delegate.allowedTurmoboModules = _allowedTurmoboModules;
+  delegate.allowedTurboModules = _allowedTurboModules;
 
   RCTReactNativeFactory *factory = [[RCTReactNativeFactory alloc] initWithDelegate:delegate];
   factory.delegate = delegate;

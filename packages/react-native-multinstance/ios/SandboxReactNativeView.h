@@ -15,7 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) NSString *jsBundleName;
 @property (nonatomic, copy) NSDictionary *initialProperties;
 @property (nonatomic, copy) NSDictionary *launchOptions;
-@property (nonatomic, copy) NSArray<NSString *> *allowedTurmoboModules;
+@property (nonatomic, copy) NSArray<NSString *> *allowedTurboModules;
 @property (nonatomic, copy, nullable) RCTDirectEventBlock onError;
 @property (nonatomic, copy, nullable) RCTDirectEventBlock onMessage;
 

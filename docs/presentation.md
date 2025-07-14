@@ -63,7 +63,7 @@ import SandboxReactNativeView, {SandboxReactNativeViewRef}
 function App() {
   const sandboxRef = useRef<SandboxReactNativeViewRef>(null);
 
-  const onMessage = (msg) => console.log("Recieved:", msg);
+  const onMessage = (msg) => console.log("Received:", msg);
   const onError = (err) => console.log("Error:", err);
   const postMessage = () => sandboxRef?.current.postMessage(
     { data: "Hello from the host!" });
@@ -92,23 +92,19 @@ AppRegistry.registerComponent("HostApp", () => App);
 
 ```tsx
 ...
-import MultiReactMediatorModule from
-  'react-native-multinstance';
 
-type AppProps = { contextId: string };
+type AppProps = { ... }; // initial props
 
-function App({contextId}: AppProps) {
+function App({...}: AppProps) {
   const [data, setData] = useState<string | undefined>();
 
   const onMessage = useCallback(
     (payload: unknown) => setData(JSON.stringify(payload)), []);
 
-  useEffect(() => MultiReactMediatorModule
-    .registerRuntime(`host_${contextId}`, onMessage), []);
+  useEffect(() => globalThis.setOnMessage(onMessage), []);
 
-  const postMessage = () => MultiReactMediatorModule
-    .postMessage({ data: 'Hello from Sandbox!' },
-    `${contextId}_host`);
+  const postMessage = () => globalThis.postMessage(
+    { data: 'Hello from Sandbox!' });
 
   return (
     <View>

@@ -19,7 +19,7 @@ export interface NativeSandboxReactNativeViewProps extends ViewProps {
   jsBundleName?: string;
   initialProperties?: GenericProps;
   launchOptions?: GenericProps;
-  allowedTurmoboModules?: string[];
+  allowedTurboModules?: string[];
   onError?: DirectEventHandler<{}>;
   onMessage?: DirectEventHandler<{}>;
 }
@@ -29,7 +29,7 @@ export interface SandboxReactNativeViewProps extends ViewProps {
   jsBundleName?: string;
   initialProperties?: GenericProps;
   launchOptions?: GenericProps;
-  allowedTurmoboModules?: string[];
+  allowedTurboModules?: string[];
   onMessage?: (payload: unknown) => void;
   onError?: (error: IsFatalError) => void;
 }
@@ -47,7 +47,7 @@ const SandboxReactNativeView = forwardRef<SandboxReactNativeViewRef, SandboxReac
     {
       onMessage,
       onError,
-      allowedTurmoboModules,
+      allowedTurboModules,
       style,
       ...rest
     },
@@ -100,9 +100,9 @@ const SandboxReactNativeView = forwardRef<SandboxReactNativeViewRef, SandboxReac
       [],
     );
 
-    const _allowedTurmoboModules = [
+    const _allowedTurboModules = [
       ...new Set([
-        ...(allowedTurmoboModules ?? []),
+        ...(allowedTurboModules ?? []),
         ...SANDBOX_TURBOMODULES_WHITELIST
       ])
     ];
@@ -113,7 +113,7 @@ const SandboxReactNativeView = forwardRef<SandboxReactNativeViewRef, SandboxReac
           ref={nativeRef}
           onError={_onError}
           onMessage={_onMessage}
-          allowedTurmoboModules={_allowedTurmoboModules}
+          allowedTurboModules={_allowedTurboModules}
           style={_style}
           {...rest} />
         {_renderOverlay()}
