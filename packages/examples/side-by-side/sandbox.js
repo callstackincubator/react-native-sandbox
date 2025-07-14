@@ -3,6 +3,6 @@
  */
 
 import {AppRegistry} from 'react-native';
-import App from './src/ExampleSandboxApp';
+import App from './SandboxApp';
 
 AppRegistry.registerComponent("SandboxApp", () => App);

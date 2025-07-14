@@ -50,9 +50,9 @@ static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, cons
 
 @implementation SandboxReactNativeDelegate
 
-- (void)setAllowedTurmoboModules:(NSArray<NSString *> *)allowedTurmoboModules {
+- (void)setAllowedTurboModules:(NSArray<NSString *> *)allowedTurboModules {
   _allowedModules.clear();
-  for (NSString *s in allowedTurmoboModules) {
+  for (NSString *s in allowedTurboModules) {
     _allowedModules.insert([s UTF8String]);
   }
 }
@@ -91,8 +91,8 @@ static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, cons
   _rctInstance = object_getIvar(host, ivar);
 
   [_rctInstance callFunctionOnBufferedRuntimeExecutor:[=](jsi::Runtime &runtime) {
-    // TODO: migrate to defineReadOnlyGlobal
-    facebook::react::defineReadOnlyGlobal(runtime,
+    facebook::react::defineReadOnlyGlobal(
+      runtime,
       "postMessage",
       jsi::Function::createFromHostFunction(
         runtime,
@@ -156,9 +156,9 @@ static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, cons
       jsi::PropNameID::forAscii(runtime, "customGlobalErrorHandler"),
       2,
       [=, originalHandler = std::move(originalHandler)](jsi::Runtime &rt,
-                                                     const jsi::Value &thisVal,
-                                                     const jsi::Value *args,
-                                                     size_t count) -> jsi::Value {
+                                                        const jsi::Value &thisVal,
+                                                        const jsi::Value *args,
+                                                        size_t count) -> jsi::Value {
         if (count < 2) {
           return jsi::Value::undefined();
         }

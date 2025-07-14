@@ -15,6 +15,7 @@ if linkage != nil
 end
 
 target 'MultiInstancePOC' do
+  # pod 'react-native-multinstance', :path => '../../../react-native-multinstance'
   config = use_native_modules!
 
   use_react_native!(
