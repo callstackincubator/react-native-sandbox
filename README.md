@@ -112,6 +112,7 @@ This project is structured as a monorepo.
 
 - **`packages/react-native-multinstance`**: dhe core library.
 - **`packages/examples/side-by-side`**: An example application with two sandbox instances.
+- **`packages/examples/recirsive`**: An example application with few nested sandbox instances.
 
 To run the example:
 
