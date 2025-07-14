@@ -19,7 +19,7 @@ This project was born from the need to safely run third-party code within a host
 
 Here is a brief overview of how to use the library from the host application and within a sandboxed app.
 
-#### Host Application (`HostApp`)
+### Host Application (`HostApp`)
 
 ```tsx
 import React, { useRef } from 'react';
@@ -48,7 +48,7 @@ function HostApp() {
 }
 ```
 
-#### Sandboxed Application (`SandboxApp`)
+### Sandboxed Application (`SandboxApp`)
 
 ```tsx
 import React, { useState, useEffect, useCallback } from 'react';
@@ -89,32 +89,15 @@ function SandboxApp() {
 AppRegistry.registerComponent("SandboxApp", () => App);
 ```
 
-## ⚠️ Security Considerations
-
-### TurboModules and Shared State
-
-A primary security concern when running multiple React Native instances is the potential for state sharing through native modules, especially **TurboModules**.
-
-- **Static State:** If a TurboModule is implemented with static fields or as a singleton in native code, this single instance will be shared across all React Native instances (the host and all sandboxes).
-- **Data Leakage:** One sandbox could use a shared TurboModule to store data, which could then be read by another sandbox or the host. This breaks the isolation model.
-- **Unintended Side-Effects:** A sandbox could call a method on a shared module that changes its state, affecting the behavior of the host or other sandboxes in unpredictable ways.
-- **iOS `NSNotificationCenter`:** The underlying React Native framework uses the default `NSNotificationCenter` for internal communication. Because the same framework instance is shared between the host and sandboxes, it is theoretically possible for an event in one JS instance to trigger a notification that affects another. This could lead to unintended state changes or interference. While not observed during development, this remains a potential risk.
-- **Resource Exhaustion (Denial of Service):** A sandboxed instance could intentionally or unintentionally consume excessive CPU or memory, potentially leading to a denial-of-service attack that slows down or crashes the entire application. The host should be prepared to monitor and terminate misbehaving instances.
-- **Persistent Storage Conflicts:** Standard APIs like `AsyncStorage` may not be instance-aware, potentially allowing a sandbox to read or overwrite data stored by the host or other sandboxes. Any storage mechanism must be properly partitioned to ensure data isolation.
-
-**Mitigation:**
-
-To address this, `react-native-multinstance` allows you to provide a **whitelist of allowed TurboModules** for each sandbox instance via the `allowedTurmoboModules` prop. Only the modules specified in this list will be accessible from within the sandbox, significantly reducing the attack surface. It is critical to only whitelist modules that are stateless or are explicitly designed to be shared safely.
-
-## Getting Started
+## Repository Structure
 
 This project is structured as a monorepo.
 
-- **`packages/react-native-multinstance`**: dhe core library.
-- **`packages/examples/side-by-side`**: An example application with two sandbox instances.
-- **`packages/examples/recirsive`**: An example application with few nested sandbox instances.
+- [`packages/react-native-multinstance`](./packages/react-native-multinstance): the core library.
+- [`packages/examples/side-by-side`](./packages/examples/side-by-side): An example application with two sandbox instances.
+- [`packages/examples/recursive`](./packages/examples/recursive): An example application with few nested sandbox instances.
 
-To run the example:
+To run the examples:
 
 1. Install dependencies:
 
@@ -131,3 +114,20 @@ To run the example:
     # or
     yarn android
     ```
+
+## ⚠️ Security Considerations
+
+### TurboModules and Shared State
+
+A primary security concern when running multiple React Native instances is the potential for state sharing through native modules, especially **TurboModules**.
+
+- **Static State:** If a TurboModule is implemented with static fields or as a singleton in native code, this single instance will be shared across all React Native instances (the host and all sandboxes).
+- **Data Leakage:** One sandbox could use a shared TurboModule to store data, which could then be read by another sandbox or the host. This breaks the isolation model.
+- **Unintended Side-Effects:** A sandbox could call a method on a shared module that changes its state, affecting the behavior of the host or other sandboxes in unpredictable ways.
+- **iOS `NSNotificationCenter`:** The underlying React Native framework uses the default `NSNotificationCenter` for internal communication. Because the same framework instance is shared between the host and sandboxes, it is theoretically possible for an event in one JS instance to trigger a notification that affects another. This could lead to unintended state changes or interference. While not observed during development, this remains a potential risk.
+- **Resource Exhaustion (Denial of Service):** A sandboxed instance could intentionally or unintentionally consume excessive CPU or memory, potentially leading to a denial-of-service attack that slows down or crashes the entire application. The host should be prepared to monitor and terminate misbehaving instances.
+- **Persistent Storage Conflicts:** Standard APIs like `AsyncStorage` may not be instance-aware, potentially allowing a sandbox to read or overwrite data stored by the host or other sandboxes. Any storage mechanism must be properly partitioned to ensure data isolation.
+
+**Mitigation:**
+
+To address this, `react-native-multinstance` allows you to provide a **whitelist of allowed TurboModules** for each sandbox instance via the `allowedTurmoboModules` prop. Only the modules specified in this list will be accessible from within the sandbox, significantly reducing the attack surface. It is critical to only whitelist modules that are stateless or are explicitly designed to be shared safely.
