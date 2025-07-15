@@ -25,12 +25,13 @@
 
 - (instancetype)initWithFrame:(CGRect)frame {
   if (self = [super initWithFrame:frame]) {
-    _moduleName = @"sandbox";
-    _jsBundleName = @"index";
+    _moduleName = @"App";
+    _jsBundleSource = @"sandbox";
+    _allowedTurboModules = @[@"NativeMicrotasksCxx"];
     _initialProperties = @{};
     _launchOptions = @{};
-    _onError = nil;
     _onMessage = nil;
+    _onError = nil;
   }
   return self;
 }
@@ -42,9 +43,9 @@
   }
 }
 
-- (void)setJsBundleName:(NSString *)jsBundleName {
-  if (![_jsBundleName isEqualToString:jsBundleName]) {
-    _jsBundleName = [jsBundleName copy];
+- (void)setJsBundleSource:(NSString *)jsBundleSource {
+  if (![_jsBundleSource isEqualToString:jsBundleSource]) {
+    _jsBundleSource = [jsBundleSource copy];
     [self scheduleReactViewLoad];
   }
 }
@@ -77,7 +78,7 @@
   }
 }
 
-- (void)setallowedTurboModules:(NSArray<NSString *> *)allowedTurboModules {
+- (void)setAllowedTurboModules:(NSArray<NSString *> *)allowedTurboModules {
   if (![allowedTurboModules isEqual:_allowedTurboModules]) {
     _allowedTurboModules = [allowedTurboModules copy];
     [self scheduleReactViewLoad];
@@ -99,19 +100,16 @@
 }
 
 - (void)loadReactNativeView {
-  if (_moduleName.length == 0 || _jsBundleName.length == 0 || _allowedTurboModules == nil) {
+  if (_moduleName.length == 0 || _jsBundleSource.length == 0 || _allowedTurboModules == nil) {
     return;
   }
 
-  // TODO is it possible to get hostRtcInstance?
-
-  SandboxReactNativeDelegate *delegate = [[SandboxReactNativeDelegate alloc] initWithJSBundleName:_jsBundleName];
+  SandboxReactNativeDelegate *delegate = [[SandboxReactNativeDelegate alloc] initWithJSBundleSource:_jsBundleSource];
   delegate.onMessageHost = _onMessage;
   delegate.onErrorHost = _onError;
   delegate.allowedTurboModules = _allowedTurboModules;
 
   RCTReactNativeFactory *factory = [[RCTReactNativeFactory alloc] initWithDelegate:delegate];
-  factory.delegate = delegate;
 
   UIView *rnView = [factory.rootViewFactory viewWithModuleName:_moduleName
                                             initialProperties:_initialProperties

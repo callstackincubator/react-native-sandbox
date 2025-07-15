@@ -44,7 +44,7 @@ static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, cons
   std::set<std::string> _allowedModules;
 }
 
-@property (nonatomic, strong) NSString *jsBundleName;
+@property (nonatomic, strong) NSString *jsBundleSource;
 
 @end
 
@@ -57,9 +57,9 @@ static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, cons
   }
 }
 
-- (instancetype)initWithJSBundleName:(NSString *)jsBundleName {
+- (instancetype)initWithJSBundleSource:(NSString *)jsBundleSource {
   if (self = [super init]) {
-    _jsBundleName = jsBundleName;
+    _jsBundleSource = jsBundleSource;
     _onMessageHost = nil;
     _onErrorHost = nil;
     self.dependencyProvider = [[RCTAppDependencyProvider alloc] init];
@@ -72,11 +72,18 @@ static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, cons
 }
 
 - (NSURL *)bundleURL {
-#if DEBUG
-  return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:self.jsBundleName];
-#else
-  return [[NSBundle mainBundle] URLForResource:self.jsBundleName withExtension:@"jsbundle"];
-#endif
+  NSURL *url = [NSURL URLWithString:self.jsBundleSource];
+  if (url && url.scheme) {
+    return url;
+  }
+
+  if ([self.jsBundleSource hasSuffix:@".jsbundle"]) {
+    return [[NSBundle mainBundle] URLForResource:self.jsBundleSource withExtension:nil];
+  }
+
+  NSString *bundleName = [self.jsBundleSource hasSuffix:@".bundle"] ?
+    [self.jsBundleSource stringByDeletingPathExtension] : self.jsBundleSource;
+  return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:bundleName];
 }
 
 - (void)postMessage:(NSDictionary *)message {
@@ -202,7 +209,6 @@ static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, cons
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:(const std::string &)name
                                                       jsInvoker:
 (std::shared_ptr<facebook::react::CallInvoker>)jsInvoker {
-  NSLog(@"SandboxReactNativeDelegate.getTurboModule:jsInvoker %s", name.c_str());
   return _allowedModules.contains(name) ? [super getTurboModule:name jsInvoker:jsInvoker] : nullptr;
 }
 

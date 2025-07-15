@@ -28,7 +28,7 @@ function SandboxDemoView({initialProperties}: {initialProperties: any}) {
         {isVisible ?
           <SandboxReactNativeView
             ref={sandboxRef}
-            jsBundleName={'sandbox'}
+            jsBundleSource={'sandbox'}
             moduleName={'SandboxApp'}
             style={styles.sandboxView}
             initialProperties={initialProperties}

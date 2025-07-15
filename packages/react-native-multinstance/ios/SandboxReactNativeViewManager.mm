@@ -12,8 +12,8 @@
 
 @interface RCT_EXTERN_MODULE(SandboxReactNativeViewManager, RCTViewManager)
 
-RCT_EXPORT_VIEW_PROPERTY(jsBundleName, NSString)
 RCT_EXPORT_VIEW_PROPERTY(moduleName, NSString)
+RCT_EXPORT_VIEW_PROPERTY(jsBundleSource, NSString)
 RCT_EXPORT_VIEW_PROPERTY(initialProperties, NSDictionary)
 RCT_EXPORT_VIEW_PROPERTY(launchOptions, NSDictionary)
 RCT_EXPORT_VIEW_PROPERTY(allowedTurboModules, NSArray<NSString *>)

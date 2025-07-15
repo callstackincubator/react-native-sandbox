@@ -73,7 +73,7 @@ function App() {
       <Button onPress={onPress} title="Send to sandbox" />
       ...
       <SandboxReactNativeView ref={sandbox1Ref}
-        jsBundleName={"sandbox"}
+        jsBundleSource={"sandbox"}
         moduleName={"SandboxApp"}
         onMessage={onMessage}
         onError={onError}
@@ -178,7 +178,7 @@ function App() {
       <Button onPress={onPress} title="Send to sandbox" />
       ...
       <SandboxReactNativeView ref={sandbox1Ref}
-        jsBundleName={"sandbox"}
+        jsBundleSource={"sandbox"}
         moduleName={"SandboxApp"}
         onMessage={onMessage}
         onError={onError}

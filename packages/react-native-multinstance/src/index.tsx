@@ -16,7 +16,7 @@ interface IsFatalError extends Error {
 
 export interface NativeSandboxReactNativeViewProps extends ViewProps {
   moduleName: string;
-  jsBundleName?: string;
+  jsBundleSource?: string;
   initialProperties?: GenericProps;
   launchOptions?: GenericProps;
   allowedTurboModules?: string[];
@@ -26,7 +26,7 @@ export interface NativeSandboxReactNativeViewProps extends ViewProps {
 
 export interface SandboxReactNativeViewProps extends ViewProps {
   moduleName: string;
-  jsBundleName?: string;
+  jsBundleSource?: string;
   initialProperties?: GenericProps;
   launchOptions?: GenericProps;
   allowedTurboModules?: string[];

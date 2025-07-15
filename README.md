@@ -77,10 +77,9 @@ function HostApp() {
   return (
     <View>
       <Button onPress={sendMessageToSandbox} title="Send to Sandbox" />
-      <SandboxReactNativeView
-        ref={sandboxRef}
-        jsBundleName={"sandbox"} // The name of the JS bundle for the sandbox
-        moduleName={"SandboxApp"} // The registered module name in the sandbox
+      <SandboxReactNativeView ref={sandboxRef}
+        moduleName={"ModuleName"} // The name of your JS module
+        jsBundleSource={"sandbox"} // The JS bundle: file name or URL
         onMessage={handleMessage}
         onError={handleError}
       />

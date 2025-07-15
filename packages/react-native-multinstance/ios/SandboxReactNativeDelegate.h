@@ -18,7 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, nullable) RCTDirectEventBlock onErrorHost;
 @property (nonatomic, copy) NSArray<NSString *> *allowedTurboModules;
 
-- (instancetype)initWithJSBundleName:(NSString *)jsBundleName;
+- (instancetype)initWithJSBundleSource:(NSString *)jsBundleSource;
 - (void)postMessage:(NSDictionary *)message;
 
 @end
