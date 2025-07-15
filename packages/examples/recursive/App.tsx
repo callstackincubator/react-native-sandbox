@@ -24,23 +24,30 @@ const MAX_DEPTH = 5;
 type SectionProps = {
   children: React.ReactNode;
   title: string;
+  depth: number;
 };
 
-function Section({ children, title }: SectionProps): React.JSX.Element {
+function Section({ children, title, depth }: SectionProps): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
   return (
     <View style={styles.sectionContainer}>
       <Text
         style={[
           styles.sectionTitle,
-          { color: isDarkMode ? Colors.white : Colors.black },
+          {
+            color: isDarkMode ? Colors.white : Colors.black,
+            fontSize: 26 - depth * 3
+          },
         ]}>
         {title}
       </Text>
       <Text
         style={[
           styles.sectionDescription,
-          { color: isDarkMode ? Colors.light : Colors.dark },
+          {
+            color: isDarkMode ? Colors.light : Colors.dark,
+            fontSize: 20 - depth * 3
+          },
         ]}>
         {children}
       </Text>
@@ -75,12 +82,12 @@ function App({ depth = 1 }: AppProps): React.JSX.Element {
         <View
           style={{
             backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            borderWidth: depth > 1 ? 2 : 0, // Add border for nested views
+            borderWidth: depth > 1 ? 2 : 0,
             borderColor: borderColor,
-            margin: depth > 1 ? 10 : 0, // Add margin for nested views
+            margin: depth > 1 ? 5 : 0,
             padding: depth > 1 ? 5 : 0,
           }}>
-          <Section title={`Recursive Sandbox (Depth: ${depth})`}>
+          <Section title={`Recursive Sandbox (Depth: ${depth})`} depth={depth}>
             This is a nested React Native instance.
           </Section>
           {depth < MAX_DEPTH ? (
@@ -93,17 +100,17 @@ function App({ depth = 1 }: AppProps): React.JSX.Element {
               />
             </View>
           ) : (
-            <Section title="Max Depth Reached!">
+            <Section title="Max Depth Reached!" depth={depth}>
               No more nested instances will be created.
             </Section>
           )}
-          <Section title="See Your Changes">
+          <Section title="See Your Changes" depth={depth}>
             <ReloadInstructions />
           </Section>
-          <Section title="Debug">
+          <Section title="Debug" depth={depth}>
             <DebugInstructions />
           </Section>
-          <Section title="Learn More">
+          <Section title="Learn More" depth={depth}>
             Read the docs to discover what to do next:
           </Section>
           <LearnMoreLinks />
@@ -119,12 +126,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   sectionTitle: {
-    fontSize: 24,
     fontWeight: '600',
   },
   sectionDescription: {
     marginTop: 8,
-    fontSize: 18,
     fontWeight: '400',
   },
   highlight: {
@@ -132,7 +137,7 @@ const styles = StyleSheet.create({
   },
   recursiveSandboxContainer: {
     marginTop: 20,
-    height: 300, // Adjust height as needed
+    height: 500,
     borderWidth: 1,
     borderColor: 'gray',
     marginHorizontal: 24,
