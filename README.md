@@ -17,7 +17,7 @@
 
 ## Project Overview
 
-This project was born from the need to safely run third-party code within a host application. The core requirements are:
+This project was born from the need to safely run third-party code within a react-native application. The core requirements are:
 
 - **Isolation:** Run external code in a secure, sandboxed environment.
 - **Safety:** Prevent direct access to the host application's code and data.
@@ -54,7 +54,7 @@ To run the examples:
 
 ## API Example
 
-Here is a brief overview of how to use the library from the host application and within a sandboxed app.
+Here is a brief overview of how to use the library.
 
 ### Host Application (`HostApp`)
 
@@ -136,7 +136,7 @@ A primary security concern when running multiple React Native instances is the p
 - **Data Leakage:** One sandbox could use a shared TurboModule to store data, which could then be read by another sandbox or the host. This breaks the isolation model.
 - **Unintended Side-Effects:** A sandbox could call a method on a shared module that changes its state, affecting the behavior of the host or other sandboxes in unpredictable ways.
 
-To address this, `react-native-multinstance` allows you to provide a **whitelist of allowed TurboModules** for each sandbox instance via the `allowedTurmoboModules` prop. Only the modules specified in this list will be accessible from within the sandbox, significantly reducing the attack surface. It is critical to only whitelist modules that are stateless or are explicitly designed to be shared safely.
+To address this, `react-native-multinstance` allows you to provide a **whitelist of allowed TurboModules** for each sandbox instance via the `allowedTurboModules` prop. Only the modules specified in this list will be accessible from within the sandbox, significantly reducing the attack surface. It is critical to only whitelist modules that are stateless or are explicitly designed to be shared safely.
 
 **Default Whitelist:** By default, only `NativeMicrotasksCxx` is whitelisted. Modules like `NativePerformanceCxx`, `PlatformConstants`, `DevSettings`, `LogBox`, and other third-party modules are *not* whitelisted.
 
