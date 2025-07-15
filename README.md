@@ -7,7 +7,6 @@
 - [API Example](#api-example)
   - [Host Application (`HostApp`)](#host-application-hostapp)
   - [Sandboxed Application (`SandboxApp`)](#sandboxed-application-sandboxapp)
-- [Repository Structure](#repository-structure)
 - [⚠️ Security Considerations](#%EF%B8%8F-security-considerations)
   - [TurboModules](#turbomodules)
   - [Performance](#performance)
@@ -27,6 +26,31 @@ This project was born from the need to safely run third-party code within a host
 > Note that `postMessage` only supports serializable data (similar to [`Window.postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#message) in web browsers), meaning no functions, native state, or non-serializable objects can be passed.
 
 `react-native-multinstance` provides the API to create these sandboxed React Native instances with a simple component-based API, requiring no native code to be written by the consumer.
+
+This project is structured as a monorepo.
+
+- [`packages/react-native-multinstance`](./packages/react-native-multinstance): the core library.
+- [`packages/examples/side-by-side`](./packages/examples/side-by-side): An example application with two sandbox instances.
+- [`packages/examples/recursive`](./packages/examples/recursive): An example application with few nested sandbox instances.
+
+To run the examples:
+
+1. Install dependencies:
+
+    ```sh
+    yarn
+    cd packages/examples/<specific-example>
+    yarn
+    ```
+
+1. Run the example application:
+
+    ```sh
+    yarn ios
+    # or
+    yarn android
+    ```
+
 
 ## API Example
 
@@ -101,32 +125,6 @@ function SandboxApp() {
 
 AppRegistry.registerComponent("SandboxApp", () => App);
 ```
-
-## Repository Structure
-
-This project is structured as a monorepo.
-
-- [`packages/react-native-multinstance`](./packages/react-native-multinstance): the core library.
-- [`packages/examples/side-by-side`](./packages/examples/side-by-side): An example application with two sandbox instances.
-- [`packages/examples/recursive`](./packages/examples/recursive): An example application with few nested sandbox instances.
-
-To run the examples:
-
-1. Install dependencies:
-
-    ```sh
-    yarn
-    cd packages/examples/<specific-example>
-    yarn
-    ```
-
-1. Run the example application:
-
-    ```sh
-    yarn ios
-    # or
-    yarn android
-    ```
 
 ## ⚠️ Security Considerations
 
