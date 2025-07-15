@@ -1,0 +1,64 @@
+name: check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup tools from .tool-versions
+        uses: ./.github/actions/setup-tools
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run ESLint
+        run: yarn lint
+
+  test-ios-compilation:
+    runs-on: macos-14
+    strategy:
+      matrix:
+        example: [side-by-side, recursive]
+    concurrency:
+      group: '${{ github.workflow }}-${{ matrix.example }}-${{ github.head_ref || github.ref_name }}'
+      cancel-in-progress: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup tools from .tool-versions
+        uses: ./.github/actions/setup-tools
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ github.job }}-${{ matrix.example }}
+          max-size: "2G"
+
+      - name: Setup ccache path
+        run: |
+          echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install example dependencies
+        working-directory: packages/examples/${{ matrix.example }}
+        run: yarn install --frozen-lockfile
+
+      - name: Build iOS (Release)
+        working-directory: packages/examples/${{ matrix.example }}
+        run: |
+          export PATH="/usr/local/opt/ccache/libexec:$PATH"
+          npx react-native build-ios --mode Release
+
+      - name: ccache stats
+        run: ccache -s

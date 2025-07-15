@@ -30,7 +30,7 @@ target 'MultiInstancePOC' do
       installer,
       config[:reactNativePath],
       :mac_catalyst_enabled => false,
-      # :ccache_enabled => true
+      :ccache_enabled => true
     )
   end
 end
