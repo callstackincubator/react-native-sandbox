@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./docs/logo.svg" width="30%" />
+</p>
+
 # react-native-multinstance
 
 ![Platform: iOS](https://img.shields.io/badge/platform-iOS-blue.svg)

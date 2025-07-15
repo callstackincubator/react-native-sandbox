@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Main React Native atom (centered, 75% of space) -->
+  <g transform="translate(100, 100)">
+    <!-- Nucleus -->
+    <circle cx="0" cy="0" r="6" fill="#61dafb"/>
+    
+    <!-- Orbital rings -->
+    <ellipse cx="0" cy="0" rx="65" ry="26" 
+             fill="none" stroke="#61dafb" stroke-width="2.5" 
+             transform="rotate(0)"/>
+    <ellipse cx="0" cy="0" rx="65" ry="26" 
+             fill="none" stroke="#61dafb" stroke-width="2.5" 
+             transform="rotate(60)"/>
+    <ellipse cx="0" cy="0" rx="65" ry="26" 
+             fill="none" stroke="#61dafb" stroke-width="2.5" 
+             transform="rotate(120)"/>
+    
+    <!-- Original electrons (React Native blue) -->
+    <circle cx="65" cy="0" r="3" fill="#61dafb"/>
+    <circle cx="-32.5" cy="56.29" r="3" fill="#61dafb"/>
+    <circle cx="-32.5" cy="-56.29" r="3" fill="#61dafb"/>
+    
+    <!-- Purple sandbox instance (largest, top-left) -->
+    <g transform="rotate(120) translate(65, 0) scale(1.3)">
+      <!-- Nucleus -->
+      <circle cx="0" cy="0" r="3" fill="#8b5cf6"/>
+      <!-- Mini orbital rings -->
+      <ellipse cx="0" cy="0" rx="12" ry="5" 
+               fill="none" stroke="#8b5cf6" stroke-width="1.5" 
+               transform="rotate(0)"/>
+      <ellipse cx="0" cy="0" rx="12" ry="5" 
+               fill="none" stroke="#8b5cf6" stroke-width="1.5" 
+               transform="rotate(60)"/>
+      <ellipse cx="0" cy="0" rx="12" ry="5" 
+               fill="none" stroke="#8b5cf6" stroke-width="1.5" 
+               transform="rotate(120)"/>
+      <!-- Mini electrons -->
+      <circle cx="12" cy="0" r="1.5" fill="#8b5cf6"/>
+      <circle cx="-6" cy="10.39" r="1.5" fill="#8b5cf6"/>
+      <circle cx="-6" cy="-10.39" r="1.5" fill="#8b5cf6"/>
+    </g>
+    
+    <!-- Green sandbox instance (medium, right) -->
+    <g transform="rotate(0) translate(65, 0) scale(1.0)">
+      <!-- Nucleus -->
+      <circle cx="0" cy="0" r="3" fill="#10b981"/>
+      <!-- Mini orbital rings -->
+      <ellipse cx="0" cy="0" rx="12" ry="5" 
+               fill="none" stroke="#10b981" stroke-width="1.5" 
+               transform="rotate(0)"/>
+      <ellipse cx="0" cy="0" rx="12" ry="5" 
+               fill="none" stroke="#10b981" stroke-width="1.5" 
+               transform="rotate(60)"/>
+      <ellipse cx="0" cy="0" rx="12" ry="5" 
+               fill="none" stroke="#10b981" stroke-width="1.5" 
+               transform="rotate(120)"/>
+      <!-- Mini electrons -->
+      <circle cx="12" cy="0" r="1.5" fill="#10b981"/>
+      <circle cx="-6" cy="10.39" r="1.5" fill="#10b981"/>
+      <circle cx="-6" cy="-10.39" r="1.5" fill="#10b981"/>
+    </g>
+    
+    <!-- Orange sandbox instance (smallest, bottom-left) -->
+    <g transform="rotate(240) translate(65, 0) scale(0.75)">
+      <!-- Nucleus -->
+      <circle cx="0" cy="0" r="3" fill="#f59e0b"/>
+      <!-- Mini orbital rings -->
+      <ellipse cx="0" cy="0" rx="12" ry="5" 
+               fill="none" stroke="#f59e0b" stroke-width="1.5" 
+               transform="rotate(0)"/>
+      <ellipse cx="0" cy="0" rx="12" ry="5" 
+               fill="none" stroke="#f59e0b" stroke-width="1.5" 
+               transform="rotate(60)"/>
+      <ellipse cx="0" cy="0" rx="12" ry="5" 
+               fill="none" stroke="#f59e0b" stroke-width="1.5" 
+               transform="rotate(120)"/>
+      <!-- Mini electrons -->
+      <circle cx="12" cy="0" r="1.5" fill="#f59e0b"/>
+      <circle cx="-6" cy="10.39" r="1.5" fill="#f59e0b"/>
+      <circle cx="-6" cy="-10.39" r="1.5" fill="#f59e0b"/>
+    </g>
+  </g>
+  
+  <!-- Subtle container indication (minimal) -->
+  <rect x="10" y="10" width="180" height="180" 
+        fill="none" 
+        stroke="#94a3b8" 
+        stroke-width="1" 
+        stroke-dasharray="4,4" 
+        rx="15" 
+        opacity="0.3"/>
+</svg> 
