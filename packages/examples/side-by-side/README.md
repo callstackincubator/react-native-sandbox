@@ -1,7 +1,6 @@
 # Side-by-Side Example
 
 ![Platform: iOS](https://img.shields.io/badge/platform-iOS-blue.svg)
-![Platform: Android](https://img.shields.io/badge/platform-Android-green.svg)
 
 This example showcases the ability of `react-native-multinstance` to run multiple, independent React Native instances  within a single application. It features two distinct sandbox instances displayed side-by-side, each operating in its own isolated environment. This setup effectively demonstrates the library's core capability of preventing interference between different embedded applications while allowing controlled communication.
 
