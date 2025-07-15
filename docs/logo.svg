@@ -19,10 +19,10 @@
     <!-- Original electrons (React Native blue) -->
     <circle cx="65" cy="0" r="3" fill="#61dafb"/>
     <circle cx="-32.5" cy="56.29" r="3" fill="#61dafb"/>
-    <circle cx="-32.5" cy="-56.29" r="3" fill="#61dafb"/>
+    <!-- <circle cx="-32.5" cy="-56.29" r="3" fill="#61dafb"/> -->
     
     <!-- Purple sandbox instance (largest, top-left) -->
-    <g transform="rotate(120) translate(65, 0) scale(1.3)">
+    <g transform="rotate(120) translate(65, 0) scale(1.5)">
       <!-- Nucleus -->
       <circle cx="0" cy="0" r="3" fill="#8b5cf6"/>
       <!-- Mini orbital rings -->
@@ -42,7 +42,7 @@
     </g>
     
     <!-- Green sandbox instance (medium, right) -->
-    <g transform="rotate(0) translate(65, 0) scale(1.0)">
+    <g transform="rotate(0) translate(65, 0) scale(1.1)">
       <!-- Nucleus -->
       <circle cx="0" cy="0" r="3" fill="#10b981"/>
       <!-- Mini orbital rings -->

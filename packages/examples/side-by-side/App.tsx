@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Button, View, Dimensions, StyleSheet, SafeAreaView, Switch, TouchableOpacity, Text, ColorValue, ViewStyle } from 'react-native';
+import { Button, View, Dimensions, StyleSheet, SafeAreaView, Switch, ColorValue } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -15,22 +15,22 @@ const BALL_SIZE = 50;
 function SandboxDemoView({initialProperties}: {initialProperties: any}) {
   const [isVisible, setVisible] = useState(false);
   const sandboxRef = useRef<SandboxReactNativeViewRef>(null);
-  
+
   return (
-    <View style={{ flex: 1 }}>
-      <SafeAreaView style={{ margin: 10, flex: 1 }}>
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
         <View style={styles.control}>
           <Switch value={isVisible} onValueChange={() => setVisible(v => !v)} />
           <Button color={styles.button.backgroundColor} title="Post message" onPress={() => {
-            sandboxRef?.current?.postMessage({date: new Date().toJSON(), origin: "host"})
+            sandboxRef?.current?.postMessage({date: new Date().toJSON(), origin: 'host'});
           }} />
         </View>
         {isVisible ?
           <SandboxReactNativeView
             ref={sandboxRef}
-            jsBundleName={"sandbox"}
-            moduleName={"SandboxApp"}
-            style={{flex: 1, padding: 30}}
+            jsBundleName={'sandbox'}
+            moduleName={'SandboxApp'}
+            style={styles.sandboxView}
             initialProperties={initialProperties}
             onMessage={(msg) => {
               console.log(`Got message from ${initialProperties.sourceName}`, msg);
@@ -52,8 +52,8 @@ function SandboxDemoView({initialProperties}: {initialProperties: any}) {
                 type: 'error',
                 text1: message,
                 text2: `${error.name}: ${error.message}`,
-                visibilityTime: 5000
-              })
+                visibilityTime: 5000,
+              });
               return false;
             }}
             /> : null
@@ -64,19 +64,19 @@ function SandboxDemoView({initialProperties}: {initialProperties: any}) {
 }
 
 function BouncingBall() {
-  // Position and velocity shared values  
+  // Position and velocity shared values
   const ballX = useSharedValue(50);
   const ballY = useSharedValue(50);
   const velocityX = useSharedValue(6);
   const velocityY = useSharedValue(6);
 
-  // Animation loop using derived value for continuous movement  
+  // Animation loop using derived value for continuous movement
   useDerivedValue(() => {
-    // Update position  
+    // Update position
     ballX.value += velocityX.value;
     ballY.value += velocityY.value;
 
-    // Bounce off walls  
+    // Bounce off walls
     if (ballX.value <= 0 || ballX.value >= screenWidth - BALL_SIZE) {
       velocityX.value *= -1;
       ballX.value = Math.max(0, Math.min(screenWidth - BALL_SIZE, ballX.value));
@@ -88,7 +88,7 @@ function BouncingBall() {
     }
   });
 
-  // Animated style for the ball  
+  // Animated style for the ball
   const animatedStyle = useAnimatedStyle(() => {
     return {
       transform: [
@@ -103,23 +103,25 @@ function BouncingBall() {
   );
 }
 
+// Move toast config outside component to avoid re-creation on every render
+const toastConfig = {
+  customColored: (props: ToastConfigParams<{leftColor: ColorValue}>) => (
+    <BaseToast
+      {...props}
+      text2NumberOfLines={0}
+      style={{
+        borderLeftColor: props?.props.leftColor,
+      }}
+    />
+  ),
+};
+
 export default function App() {
-  const toastConfig = {
-    customColored: (props: ToastConfigParams<{leftColor: ColorValue}>) => (
-      <BaseToast
-        {...props}
-        text2NumberOfLines={0}
-        style={{
-          borderLeftColor: props?.props.leftColor,
-        }}
-      />
-    ),
-  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <SandboxDemoView initialProperties={{sourceName: "green", backgroundColor: '#CCFFCC'}} />
-      <SandboxDemoView initialProperties={{sourceName: "blue", backgroundColor: '#CCCCFF'}} />
+    <SafeAreaView style={styles.appContainer}>
+      <SandboxDemoView initialProperties={{sourceName: 'green', backgroundColor: '#CCFFCC'}} />
+      <SandboxDemoView initialProperties={{sourceName: 'blue', backgroundColor: '#CCCCFF'}} />
       <BouncingBall />
       <Toast config={toastConfig} />
     </SafeAreaView>
@@ -128,6 +130,17 @@ export default function App() {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  safeArea: {
+    margin: 10,
+    flex: 1,
+  },
+  sandboxView: {
+    flex: 1,
+    padding: 30,
+  },
+  appContainer: {
     flex: 1,
     flexDirection: 'column',
   },

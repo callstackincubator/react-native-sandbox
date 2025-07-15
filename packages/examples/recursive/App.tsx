@@ -36,7 +36,7 @@ function Section({ children, title, depth }: SectionProps): React.JSX.Element {
           styles.sectionTitle,
           {
             color: isDarkMode ? Colors.white : Colors.black,
-            fontSize: 26 - depth * 3
+            fontSize: 26 - depth * 3,
           },
         ]}>
         {title}
@@ -46,7 +46,7 @@ function Section({ children, title, depth }: SectionProps): React.JSX.Element {
           styles.sectionDescription,
           {
             color: isDarkMode ? Colors.light : Colors.dark,
-            fontSize: 20 - depth * 3
+            fontSize: 20 - depth * 3,
           },
         ]}>
         {children}
@@ -80,13 +80,13 @@ function App({ depth = 1 }: AppProps): React.JSX.Element {
         style={backgroundStyle}>
         <Header />
         <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            borderWidth: depth > 1 ? 2 : 0,
-            borderColor: borderColor,
-            margin: depth > 1 ? 5 : 0,
-            padding: depth > 1 ? 5 : 0,
-          }}>
+          style={[
+            {
+              backgroundColor: isDarkMode ? Colors.black : Colors.white,
+              borderColor: borderColor,
+            },
+            depth > 1 && styles.nestedContainer,
+          ]}>
           <Section title={`Recursive Sandbox (Depth: ${depth})`} depth={depth}>
             This is a nested React Native instance.
           </Section>
@@ -134,6 +134,11 @@ const styles = StyleSheet.create({
   },
   highlight: {
     fontWeight: '700',
+  },
+  nestedContainer: {
+    borderWidth: 2,
+    margin: 5,
+    padding: 5,
   },
   recursiveSandboxContainer: {
     marginTop: 20,

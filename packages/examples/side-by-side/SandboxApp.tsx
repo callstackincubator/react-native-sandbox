@@ -7,7 +7,7 @@ import {
   View,
   StyleSheet,
   ColorValue,
-  SafeAreaView
+  SafeAreaView,
 } from 'react-native';
 
 declare global {
@@ -37,13 +37,13 @@ function App({sourceName, backgroundColor}: AppProps) {
   };
 
   const onMessage = useCallback((payload: unknown) => {
-    console.log("onMessage", payload);
-    addItem(JSON.stringify(payload))
+    console.log('onMessage', payload);
+    addItem(JSON.stringify(payload));
   }, []);
 
   const sendInput = () => {
     setCounter((c) => c + 1);
-    globalThis.postMessage({ data: targetInput, date: new Date(), origin: sourceName, counter })
+    globalThis.postMessage({ data: targetInput, date: new Date(), origin: sourceName, counter });
   };
 
   const panic = () => (globalThis as any).panic();
@@ -71,7 +71,7 @@ function App({sourceName, backgroundColor}: AppProps) {
             <Text>Crash TypeError</Text>
         </TouchableOpacity>
 
-        <View style={{ flex: 1 }}>
+        <View style={styles.listContainer}>
           <FlatList
             style={styles.list}
             ref={flatListRef}
@@ -92,11 +92,14 @@ function App({sourceName, backgroundColor}: AppProps) {
 const styles = StyleSheet.create({
   safeRoot: {
     flex: 1,
-    width: '100%'
+    width: '100%',
   },
   container: {
     flex: 1,
-    paddingHorizontal: 5
+    paddingHorizontal: 5,
+  },
+  listContainer: {
+    flex: 1,
   },
   input: {
     borderWidth: 1,

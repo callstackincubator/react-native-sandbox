@@ -1,5 +1,5 @@
-import { ElementRef, forwardRef, useCallback, useId, useImperativeHandle, useMemo, useRef } from "react";
-import { findNodeHandle, HostComponent, NativeSyntheticEvent, requireNativeComponent, StyleProp, StyleSheet, UIManager, View, ViewProps, ViewStyle } from "react-native";
+import { ElementRef, forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
+import { findNodeHandle, HostComponent, NativeSyntheticEvent, requireNativeComponent, StyleProp, StyleSheet, UIManager, View, ViewProps, ViewStyle } from 'react-native';
 import type {
   DirectEventHandler,
 } from 'react-native/Libraries/Types/CodegenTypes';
@@ -64,19 +64,19 @@ const SandboxReactNativeView = forwardRef<SandboxReactNativeViewRef, SandboxReac
       );
     }, []);
 
-    const _onError = onError ? useCallback(
+    const _onError = useCallback(
       (e: NativeSyntheticEvent<{}>) => {
         onError?.(e.nativeEvent as Error);
       },
       [onError],
-    ) : undefined;
+    );
 
-    const _onMessage = onMessage ? useCallback(
+    const _onMessage = useCallback(
       (e: NativeSyntheticEvent<{}>) => {
         onMessage?.(e.nativeEvent);
       },
       [onMessage],
-    ) : undefined;
+    );
 
     useImperativeHandle(
       ref,
@@ -103,16 +103,16 @@ const SandboxReactNativeView = forwardRef<SandboxReactNativeViewRef, SandboxReac
     const _allowedTurboModules = [
       ...new Set([
         ...(allowedTurboModules ?? []),
-        ...SANDBOX_TURBOMODULES_WHITELIST
-      ])
+        ...SANDBOX_TURBOMODULES_WHITELIST,
+      ]),
     ];
 
     return (
       <View style={style}>
         <NativeComponent
           ref={nativeRef}
-          onError={_onError}
-          onMessage={_onMessage}
+          onError={onError ? _onError : undefined}
+          onMessage={onMessage ? _onMessage : undefined}
           allowedTurboModules={_allowedTurboModules}
           style={_style}
           {...rest} />
