@@ -54,6 +54,10 @@ jobs:
         working-directory: packages/examples/${{ matrix.example }}
         run: yarn install --frozen-lockfile
 
+      - name: Install iOS dependencies (CocoaPods)
+        working-directory: packages/examples/${{ matrix.example }}/ios
+        run: bundle exec pod install
+
       - name: Build iOS (Release)
         working-directory: packages/examples/${{ matrix.example }}
         run: |
