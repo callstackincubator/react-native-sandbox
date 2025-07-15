@@ -29,9 +29,9 @@ This project was born from the need to safely run third-party code within a host
 
 This project is structured as a monorepo.
 
-- [`packages/react-native-multinstance`](./packages/react-native-multinstance): the core library.
-- [`packages/examples/side-by-side`](./packages/examples/side-by-side): An example application with two sandbox instances.
-- [`packages/examples/recursive`](./packages/examples/recursive): An example application with few nested sandbox instances.
+- [`packages/react-native-multinstance`](./packages/react-native-multinstance/): the core library.
+- [`packages/examples/side-by-side`](./packages/examples/side-by-side/README.md): An example application with two sandbox instances.
+- [`packages/examples/recursive`](./packages/examples/recursive/README.md): An example application with few nested sandbox instances.
 
 To run the examples:
 
