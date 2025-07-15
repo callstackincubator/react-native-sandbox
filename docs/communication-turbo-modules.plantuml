@@ -11,7 +11,7 @@ participant MultiReactMediatorModule2
 participant SandboxReactInstance
 
 note over ReactInstanceRegistry
-  It's not actuall class or struct
+  It's not actual class or struct
   but rather a ""std::map"". To
   thread-safe access to registered
   ""jsi::Runtime"" by ""std::string""
