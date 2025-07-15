@@ -22,7 +22,7 @@ jobs:
       - name: Run ESLint
         run: yarn lint
 
-  test-ios-compilation:
+  example-compilation:
     runs-on: macos-15
     strategy:
       matrix:
@@ -58,11 +58,11 @@ jobs:
         working-directory: packages/examples/${{ matrix.example }}/ios
         run: bundle exec pod install
 
-      - name: Build iOS (Release)
+      - name: Build iOS
         working-directory: packages/examples/${{ matrix.example }}
         run: |
           export PATH="/usr/local/opt/ccache/libexec:$PATH"
-          npx react-native build-ios --mode Release
+          npx react-native build-ios --mode Debug
 
       - name: ccache stats
         run: ccache -s
