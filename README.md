@@ -4,8 +4,9 @@
 
 # react-native-multinstance
 
-![Platform: iOS](https://img.shields.io/badge/platform-iOS-blue.svg)
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+[![check](https://github.com/callstackincubator/multi-instance-poc/actions/workflows/check.yml/badge.svg)](https://github.com/callstackincubator/multi-instance-poc/actions/workflows/check.yml)
+![platform: iOS](https://img.shields.io/badge/platform-iOS-blue.svg)
+![license: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 - [💡 Project Overview](#-project-overview)
 - [📝 API Example](#-api-example)
