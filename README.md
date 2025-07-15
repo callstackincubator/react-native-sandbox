@@ -7,19 +7,18 @@
 ![Platform: iOS](https://img.shields.io/badge/platform-iOS-blue.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-- [Project Overview](#project-overview)
-- [API Example](#api-example)
-  - [Host Application (`HostApp`)](#host-application-hostapp)
-  - [Sandboxed Application (`SandboxApp`)](#sandboxed-application-sandboxapp)
-- [⚠️ Security Considerations](#%EF%B8%8F-security-considerations)
+- [💡 Project Overview](#-project-overview)
+- [📝 API Example](#-api-example)
+- [🎨 Roadmap](#-roadmap)
+- [🔒 Security Considerations](#-security-considerations)
   - [TurboModules](#turbomodules)
   - [Performance](#performance)
   - [File System & Storage](#file-system--storage)
-  - [Platform-Specific Considerations](#platform-specific-considerations)
+  - [Platform-Specific](#platform-specific-considerations)
 
 `react-native-multinstance` is a library for running multiple, isolated React Native instances within a single application. This allows you to embed third-party or feature-specific "micro-apps" in a sandboxed environment, preventing uncontrolled interference with the main app by providing a clear API for communication (`postMessage`/`onMessage`).
 
-## Project Overview
+## 💡 Project Overview
 
 This project was born from the need to safely run third-party code within a react-native application. The core requirements are:
 
@@ -56,7 +55,7 @@ To run the examples:
     ```
 
 
-## API Example
+## 📝 API Example
 
 Here is a brief overview of how to use the library.
 
@@ -130,7 +129,29 @@ function SandboxApp() {
 AppRegistry.registerComponent("SandboxApp", () => App);
 ```
 
-## ⚠️ Security Considerations
+## 🎨 Roadmap
+
+We're actively working on expanding the capabilities of `react-native-multinstance`. Here's what's planned:
+
+- [ ] **Android Support** - Full cross-platform compatibility
+- [ ] **Inter-Sandbox Communication** - Secure communication between sandbox instances
+- [ ] **[RE.Pack](https://github.com/callstack/repack) Integration** - Advanced bundling and module federation
+  - Hot-reloading for sandbox instances in development
+  - Dynamic bundle fetching from remote sources
+  - Optimized bundle splitting for sandbox applications
+  - Module federation capabilities
+- [ ] **Enhanced Security Features** - Advanced security mechanisms
+  - Custom permission system for sandbox instances
+  - Resource usage limits and monitoring
+  - Sandbox capability restrictions
+- [ ] **Storage Isolation** - Secure data partitioning
+  - Per-sandbox AsyncStorage isolation
+  - Secure file system access controls
+- [ ] **Developer Tools** - Enhanced debugging and development experience
+
+Contributions and feedback on these roadmap items are welcome! Please check our [issues](https://github.com/your-org/react-native-multinstance/issues) for detailed discussions on each feature.
+
+## 🔒 Security Considerations
 
 ### TurboModules
 
