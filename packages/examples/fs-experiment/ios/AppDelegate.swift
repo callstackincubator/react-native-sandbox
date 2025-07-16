@@ -1,0 +1,48 @@
+import UIKit
+import React
+import React_RCTAppDelegate
+import ReactAppDependencyProvider
+
+@main
+class AppDelegate: UIResponder, UIApplicationDelegate {
+  var window: UIWindow?
+
+  var reactNativeDelegate: ReactNativeDelegate!
+  var reactNativeFactory: RCTReactNativeFactory!
+
+  func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
+    reactNativeDelegate = ReactNativeDelegate()
+    reactNativeFactory = RCTReactNativeFactory(delegate: reactNativeDelegate)
+    reactNativeDelegate.dependencyProvider = RCTAppDependencyProvider()
+
+    let viewController = UIViewController()
+    viewController.view = reactNativeFactory.rootViewFactory.view(
+      withModuleName: "App",
+      initialProperties: [:],
+      launchOptions: launchOptions
+    )
+
+    window = UIWindow(frame: UIScreen.main.bounds)
+    window?.rootViewController = viewController
+    window?.makeKeyAndVisible()
+
+    return true
+  }
+}
+
+class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
+  override func sourceURL(for bridge: RCTBridge) -> URL? {
+    self.bundleURL()
+  }
+
+  override func bundleURL() -> URL? {
+#if DEBUG
+    RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
+#else
+    Bundle.main.url(forResource: jsBundleName, withExtension: "jsbundle")
+#endif
+  }
+}
