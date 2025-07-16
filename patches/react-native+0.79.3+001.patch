@@ -1,0 +1,28 @@
+diff --git a/node_modules/react-native/Libraries/AppDelegate/RCTReactNativeFactory.mm b/node_modules/react-native/Libraries/AppDelegate/RCTReactNativeFactory.mm
+index 232a354..defb453 100644
+--- a/node_modules/react-native/Libraries/AppDelegate/RCTReactNativeFactory.mm
++++ b/node_modules/react-native/Libraries/AppDelegate/RCTReactNativeFactory.mm
+@@ -163,6 +163,9 @@ - (BOOL)bridgelessEnabled
+ 
+ - (Class)getModuleClassFromName:(const char *)name
+ {
++  if ([_delegate respondsToSelector:@selector(getModuleClassFromName:)]) {
++    return [_delegate getModuleClassFromName:name];
++  }
+ #if RN_DISABLE_OSS_PLUGIN_HEADER
+   return RCTTurboModulePluginClassProvider(name);
+ #else
+@@ -190,6 +193,13 @@ - (Class)getModuleClassFromName:(const char *)name
+ 
+ - (id<RCTTurboModule>)getModuleInstanceFromClass:(Class)moduleClass
+ {
++  if ([_delegate respondsToSelector:@selector(getModuleInstanceFromClass:)]) {
++    id<RCTTurboModule> delegateResult = [_delegate getModuleInstanceFromClass:moduleClass];
++    if (delegateResult != nil) {
++      return delegateResult;
++    }
++  }
++
+   return RCTAppSetupDefaultModuleFromClass(moduleClass, self.delegate.dependencyProvider);
+ }
+ 
