@@ -1,39 +1,58 @@
-import React, { useRef, useState } from 'react';
-import { Button, View, Dimensions, StyleSheet, SafeAreaView, Switch, ColorValue } from 'react-native';
+import React, {useRef, useState} from 'react'
+import {
+  Button,
+  ColorValue,
+  Dimensions,
+  SafeAreaView,
+  StyleSheet,
+  Switch,
+  View,
+} from 'react-native'
+import SandboxReactNativeView, {
+  SandboxReactNativeViewRef,
+} from 'react-native-multinstance'
 import Animated, {
-  useSharedValue,
   useAnimatedStyle,
   useDerivedValue,
-} from 'react-native-reanimated';
+  useSharedValue,
+} from 'react-native-reanimated'
+import Toast, {BaseToast, ToastConfigParams} from 'react-native-toast-message'
 
-import SandboxReactNativeView, {SandboxReactNativeViewRef} from 'react-native-multinstance';
-import Toast, { BaseToast, ToastConfigParams } from 'react-native-toast-message';
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const BALL_SIZE = 50;
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window')
+const BALL_SIZE = 50
 
 function SandboxDemoView({initialProperties}: {initialProperties: any}) {
-  const [isVisible, setVisible] = useState(false);
-  const sandboxRef = useRef<SandboxReactNativeViewRef>(null);
+  const [isVisible, setVisible] = useState(false)
+  const sandboxRef = useRef<SandboxReactNativeViewRef>(null)
 
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.control}>
           <Switch value={isVisible} onValueChange={() => setVisible(v => !v)} />
-          <Button color={styles.button.backgroundColor} title="Post message" onPress={() => {
-            sandboxRef?.current?.postMessage({date: new Date().toJSON(), origin: 'host'});
-          }} />
+          <Button
+            color={styles.button.backgroundColor}
+            title="Post message"
+            onPress={() => {
+              sandboxRef?.current?.postMessage({
+                date: new Date().toJSON(),
+                origin: 'host',
+              })
+            }}
+          />
         </View>
-        {isVisible ?
+        {isVisible ? (
           <SandboxReactNativeView
             ref={sandboxRef}
             jsBundleSource={'sandbox'}
             moduleName={'SandboxApp'}
             style={styles.sandboxView}
             initialProperties={initialProperties}
-            onMessage={(msg) => {
-              console.log(`Got message from ${initialProperties.sourceName}`, msg);
+            onMessage={msg => {
+              console.log(
+                `Got message from ${initialProperties.sourceName}`,
+                msg
+              )
               Toast.show({
                 type: 'customColored',
                 text1: initialProperties.sourceName,
@@ -42,65 +61,60 @@ function SandboxDemoView({initialProperties}: {initialProperties: any}) {
                 props: {
                   leftColor: initialProperties.backgroundColor,
                 },
-              });
+              })
             }}
             onError={error => {
-              const isFatal = error.isFatal;
-              const message = `Got ${isFatal ? 'fatal' : 'non-fatal'} error from ${initialProperties.sourceName}`;
-              console.warn(message, error);
+              const isFatal = error.isFatal
+              const message = `Got ${isFatal ? 'fatal' : 'non-fatal'} error from ${initialProperties.sourceName}`
+              console.warn(message, error)
               Toast.show({
                 type: 'error',
                 text1: message,
                 text2: `${error.name}: ${error.message}`,
                 visibilityTime: 5000,
-              });
-              return false;
+              })
+              return false
             }}
-            /> : null
-          }
+          />
+        ) : null}
       </SafeAreaView>
     </View>
-  );
+  )
 }
 
 function BouncingBall() {
   // Position and velocity shared values
-  const ballX = useSharedValue(50);
-  const ballY = useSharedValue(50);
-  const velocityX = useSharedValue(6);
-  const velocityY = useSharedValue(6);
+  const ballX = useSharedValue(50)
+  const ballY = useSharedValue(50)
+  const velocityX = useSharedValue(6)
+  const velocityY = useSharedValue(6)
 
   // Animation loop using derived value for continuous movement
   useDerivedValue(() => {
     // Update position
-    ballX.value += velocityX.value;
-    ballY.value += velocityY.value;
+    ballX.value += velocityX.value
+    ballY.value += velocityY.value
 
     // Bounce off walls
     if (ballX.value <= 0 || ballX.value >= screenWidth - BALL_SIZE) {
-      velocityX.value *= -1;
-      ballX.value = Math.max(0, Math.min(screenWidth - BALL_SIZE, ballX.value));
+      velocityX.value *= -1
+      ballX.value = Math.max(0, Math.min(screenWidth - BALL_SIZE, ballX.value))
     }
 
     if (ballY.value <= 0 || ballY.value >= screenHeight - BALL_SIZE) {
-      velocityY.value *= -1;
-      ballY.value = Math.max(0, Math.min(screenHeight - BALL_SIZE, ballY.value));
+      velocityY.value *= -1
+      ballY.value = Math.max(0, Math.min(screenHeight - BALL_SIZE, ballY.value))
     }
-  });
+  })
 
   // Animated style for the ball
   const animatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [
-        { translateX: ballX.value },
-        { translateY: ballY.value },
-      ],
-    };
-  });
+      transform: [{translateX: ballX.value}, {translateY: ballY.value}],
+    }
+  })
 
-  return (
-    <Animated.View style={[styles.ball, animatedStyle]} />
-  );
+  return <Animated.View style={[styles.ball, animatedStyle]} />
 }
 
 // Move toast config outside component to avoid re-creation on every render
@@ -114,18 +128,21 @@ const toastConfig = {
       }}
     />
   ),
-};
+}
 
 export default function App() {
-
   return (
     <SafeAreaView style={styles.appContainer}>
-      <SandboxDemoView initialProperties={{sourceName: 'green', backgroundColor: '#CCFFCC'}} />
-      <SandboxDemoView initialProperties={{sourceName: 'blue', backgroundColor: '#CCCCFF'}} />
+      <SandboxDemoView
+        initialProperties={{sourceName: 'green', backgroundColor: '#CCFFCC'}}
+      />
+      <SandboxDemoView
+        initialProperties={{sourceName: 'blue', backgroundColor: '#CCCCFF'}}
+      />
       <BouncingBall />
       <Toast config={toastConfig} />
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -168,4 +185,4 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
   },
-});
+})

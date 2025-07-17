@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react'
 import {
+  Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -7,22 +8,19 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
   useColorScheme,
-  Platform,
-} from 'react-native';
-
-import SandboxReactNativeView from 'react-native-multinstance';
-
+  View,
+} from 'react-native'
 // File system imports
-import RNFS from 'react-native-fs';
+import RNFS from 'react-native-fs'
+import SandboxReactNativeView from 'react-native-multinstance'
 
-const SHARED_FILE_PATH = `${RNFS.DocumentDirectoryPath}/shared_test_file.txt`;
+const SHARED_FILE_PATH = `${RNFS.DocumentDirectoryPath}/shared_test_file.txt`
 
 function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  const [textContent, setTextContent] = useState<string>('');
-  const [status, setStatus] = useState<string>('Ready');
+  const isDarkMode = useColorScheme() === 'dark'
+  const [textContent, setTextContent] = useState<string>('')
+  const [status, setStatus] = useState<string>('Ready')
 
   const theme = {
     background: isDarkMode ? '#000000' : '#ffffff',
@@ -34,78 +32,85 @@ function App(): React.JSX.Element {
     border: isDarkMode ? '#38383a' : '#c6c6c8',
     success: '#34c759',
     error: '#ff3b30',
-  };
+  }
 
   const writeFile = async () => {
     try {
-      setStatus('Writing file...');
-      await RNFS.writeFile(SHARED_FILE_PATH, textContent, 'utf8');
-      setStatus(`Successfully wrote: "${textContent}"`);
+      setStatus('Writing file...')
+      await RNFS.writeFile(SHARED_FILE_PATH, textContent, 'utf8')
+      setStatus(`Successfully wrote: "${textContent}"`)
     } catch (error) {
-      setStatus(`Write error: ${(error as Error).message}`);
+      setStatus(`Write error: ${(error as Error).message}`)
     }
-  };
+  }
 
   const readFile = async () => {
     try {
-      setStatus('Reading file...');
-      const content = await RNFS.readFile(SHARED_FILE_PATH, 'utf8');
-      setTextContent(content);
-      setStatus(`Successfully read: "${content}"`);
+      setStatus('Reading file...')
+      const content = await RNFS.readFile(SHARED_FILE_PATH, 'utf8')
+      setTextContent(content)
+      setStatus(`Successfully read: "${content}"`)
     } catch (error) {
-      setStatus(`Read error: ${(error as Error).message}`);
+      setStatus(`Read error: ${(error as Error).message}`)
     }
-  };
+  }
 
   const getStatusStyle = () => {
     if (status.includes('error')) {
-      return { color: theme.error };
+      return {color: theme.error}
     }
     if (status.includes('Successfully')) {
-      return { color: theme.success };
+      return {color: theme.success}
     }
-    return { color: theme.textSecondary };
-  };
+    return {color: theme.textSecondary}
+  }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView
+      style={[styles.container, {backgroundColor: theme.background}]}>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={theme.background}
       />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        style={{ backgroundColor: theme.background }}
+        style={{backgroundColor: theme.background}}
         showsVerticalScrollIndicator={false}>
-
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: theme.surface }]}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>
+        <View style={[styles.header, {backgroundColor: theme.surface}]}>
+          <Text style={[styles.headerTitle, {color: theme.text}]}>
             File System Sandbox Demo
           </Text>
-          <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
+          <Text style={[styles.headerSubtitle, {color: theme.textSecondary}]}>
             Multi-instance file system access testing
           </Text>
         </View>
 
         <View style={styles.content}>
           {/* Host Application Section */}
-          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View
+            style={[
+              styles.card,
+              {backgroundColor: theme.surface, borderColor: theme.border},
+            ]}>
             <View style={styles.cardHeader}>
-              <Text style={[styles.cardTitle, { color: theme.text }]}>
+              <Text style={[styles.cardTitle, {color: theme.text}]}>
                 Host Application
               </Text>
-              <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+              <View style={[styles.badge, {backgroundColor: theme.primary}]}>
                 <Text style={styles.badgeText}>Primary</Text>
               </View>
             </View>
 
             <TextInput
-              style={[styles.textInput, {
-                color: theme.text,
-                backgroundColor: theme.background,
-                borderColor: theme.border,
-              }]}
+              style={[
+                styles.textInput,
+                {
+                  color: theme.text,
+                  backgroundColor: theme.background,
+                  borderColor: theme.border,
+                },
+              ]}
               value={textContent}
               onChangeText={setTextContent}
               placeholder="Enter text to write to file..."
@@ -115,34 +120,52 @@ function App(): React.JSX.Element {
 
             <View style={styles.buttonGroup}>
               <TouchableOpacity
-                style={[styles.button, styles.primaryButton, { backgroundColor: theme.primary }]}
+                style={[
+                  styles.button,
+                  styles.primaryButton,
+                  {backgroundColor: theme.primary},
+                ]}
                 onPress={writeFile}>
                 <Text style={styles.buttonText}>Write File</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.button, styles.secondaryButton, { backgroundColor: theme.secondary }]}
+                style={[
+                  styles.button,
+                  styles.secondaryButton,
+                  {backgroundColor: theme.secondary},
+                ]}
                 onPress={readFile}>
                 <Text style={styles.buttonText}>Read File</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={[styles.statusContainer, { backgroundColor: theme.background }]}>
-              <Text style={[styles.statusLabel, { color: theme.textSecondary }]}>Status:</Text>
+            <View
+              style={[
+                styles.statusContainer,
+                {backgroundColor: theme.background},
+              ]}>
+              <Text style={[styles.statusLabel, {color: theme.textSecondary}]}>
+                Status:
+              </Text>
               <Text style={[styles.statusText, getStatusStyle()]}>
                 {status}
               </Text>
             </View>
 
-            <Text style={[styles.pathText, { color: theme.textSecondary }]}>
+            <Text style={[styles.pathText, {color: theme.textSecondary}]}>
               {SHARED_FILE_PATH}
             </Text>
           </View>
 
           {/* Sandbox Sections */}
-          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View
+            style={[
+              styles.card,
+              {backgroundColor: theme.surface, borderColor: theme.border},
+            ]}>
             <View style={styles.cardHeader}>
-              <Text style={[styles.cardTitle, { color: theme.text }]}>
+              <Text style={[styles.cardTitle, {color: theme.text}]}>
                 Sandbox: react-native-fs
               </Text>
               <View style={[styles.badge, styles.sandboxBadge]}>
@@ -150,22 +173,29 @@ function App(): React.JSX.Element {
               </View>
             </View>
             <SandboxReactNativeView
-              style={[styles.sandbox, { backgroundColor: theme.background, borderColor: theme.border }]}
+              style={[
+                styles.sandbox,
+                {backgroundColor: theme.background, borderColor: theme.border},
+              ]}
               moduleName={'AppFS'}
               jsBundleSource="sandbox-fs"
               allowedTurboModules={['RNFSManager', 'FileReaderModule']}
               onMessage={message => {
-                console.log('Host received message from sandbox:', message);
+                console.log('Host received message from sandbox:', message)
               }}
               onError={error => {
-                console.log('Host received error from sandbox:', error);
+                console.log('Host received error from sandbox:', error)
               }}
             />
           </View>
 
-          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+          <View
+            style={[
+              styles.card,
+              {backgroundColor: theme.surface, borderColor: theme.border},
+            ]}>
             <View style={styles.cardHeader}>
-              <Text style={[styles.cardTitle, { color: theme.text }]}>
+              <Text style={[styles.cardTitle, {color: theme.text}]}>
                 Sandbox: react-native-file-access
               </Text>
               <View style={[styles.badge, styles.sandboxBadge]}>
@@ -173,22 +203,25 @@ function App(): React.JSX.Element {
               </View>
             </View>
             <SandboxReactNativeView
-              style={[styles.sandbox, { backgroundColor: theme.background, borderColor: theme.border }]}
+              style={[
+                styles.sandbox,
+                {backgroundColor: theme.background, borderColor: theme.border},
+              ]}
               moduleName={'AppFileAccess'}
               allowedTurboModules={['FileAccess']}
               jsBundleSource="sandbox-file-access"
               onMessage={message => {
-                console.log('Host received message from sandbox:', message);
+                console.log('Host received message from sandbox:', message)
               }}
               onError={error => {
-                console.log('Host received error from sandbox:', error);
+                console.log('Host received error from sandbox:', error)
               }}
             />
           </View>
         </View>
       </ScrollView>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -201,7 +234,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
+        shadowOffset: {width: 0, height: 1},
         shadowOpacity: 0.1,
         shadowRadius: 4,
       },
@@ -231,7 +264,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.1,
         shadowRadius: 8,
       },
@@ -325,6 +358,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
   },
-});
+})
 
-export default App;
+export default App

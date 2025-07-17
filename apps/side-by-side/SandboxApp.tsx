@@ -1,54 +1,61 @@
-import React, {useCallback, useRef, useState} from 'react';
+import React, {useCallback, useRef, useState} from 'react'
 import {
+  ColorValue,
   FlatList,
-  TextInput,
+  SafeAreaView,
+  StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
-  StyleSheet,
-  ColorValue,
-  SafeAreaView,
-} from 'react-native';
+} from 'react-native'
 
 declare global {
-  var postMessage: (message: object) => void;
-  var setOnMessage: (handler: (payload: object) => void) => void;
+  var postMessage: (message: object) => void
+  var setOnMessage: (handler: (payload: object) => void) => void
 }
 
 type AppProps = {
-  sourceName: string,
-  targetName: string,
+  sourceName: string
+  targetName: string
   backgroundColor: ColorValue
 }
 
 function App({sourceName, backgroundColor}: AppProps) {
-  const [counter, setCounter] = useState<number>(0);
-  const [targetInput, setTargetInput] = useState<string>(`Some payload from ${sourceName}`);
+  const [counter, setCounter] = useState<number>(0)
+  const [targetInput, setTargetInput] = useState<string>(
+    `Some payload from ${sourceName}`
+  )
 
-  const [items, setItems] = useState<string[]>([]);
-  const flatListRef = useRef<FlatList>(null);
+  const [items, setItems] = useState<string[]>([])
+  const flatListRef = useRef<FlatList>(null)
 
   const addItem = (newItem: string) => {
-    setItems(prev => [...prev, newItem]);
+    setItems(prev => [...prev, newItem])
 
     setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  };
+      flatListRef.current?.scrollToEnd({animated: true})
+    }, 100)
+  }
 
   const onMessage = useCallback((payload: unknown) => {
-    console.log('onMessage', payload);
-    addItem(JSON.stringify(payload));
-  }, []);
+    console.log('onMessage', payload)
+    addItem(JSON.stringify(payload))
+  }, [])
 
   const sendInput = () => {
-    setCounter((c) => c + 1);
-    globalThis.postMessage({ data: targetInput, date: new Date(), origin: sourceName, counter });
-  };
+    setCounter(c => c + 1)
+    globalThis.postMessage({
+      data: targetInput,
+      date: new Date(),
+      origin: sourceName,
+      counter,
+    })
+  }
 
-  const panic = () => (globalThis as any).panic();
+  const panic = () => (globalThis as any).panic()
 
-  globalThis.setOnMessage(onMessage);
+  globalThis.setOnMessage(onMessage)
 
   return (
     <SafeAreaView style={[styles.safeRoot, {backgroundColor}]}>
@@ -60,15 +67,11 @@ function App({sourceName, backgroundColor}: AppProps) {
           value={targetInput}
           onChangeText={setTargetInput}
         />
-        <TouchableOpacity
-          style={styles.button}
-          onPress={sendInput}>
-            <Text>Send Data</Text>
+        <TouchableOpacity style={styles.button} onPress={sendInput}>
+          <Text>Send Data</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.crash}
-          onPress={panic}>
-            <Text>Crash TypeError</Text>
+        <TouchableOpacity style={styles.crash} onPress={panic}>
+          <Text>Crash TypeError</Text>
         </TouchableOpacity>
 
         <View style={styles.listContainer}>
@@ -77,7 +80,7 @@ function App({sourceName, backgroundColor}: AppProps) {
             ref={flatListRef}
             data={items}
             keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item }) => (
+            renderItem={({item}) => (
               <View style={styles.item}>
                 <Text>{item}</Text>
               </View>
@@ -86,7 +89,7 @@ function App({sourceName, backgroundColor}: AppProps) {
         </View>
       </View>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -144,6 +147,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
   },
-});
+})
 
-export default App;
+export default App

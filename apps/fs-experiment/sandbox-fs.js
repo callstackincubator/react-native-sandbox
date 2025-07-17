@@ -1,4 +1,5 @@
-import { AppRegistry } from 'react-native';
-import SandboxFS from './SandboxFS';
+import {AppRegistry} from 'react-native'
 
-AppRegistry.registerComponent('AppFS', () => SandboxFS); 
+import SandboxFS from './SandboxFS'
+
+AppRegistry.registerComponent('AppFS', () => SandboxFS)

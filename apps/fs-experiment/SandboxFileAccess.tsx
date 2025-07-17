@@ -1,25 +1,24 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react'
 import {
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
   useColorScheme,
-  Platform,
-} from 'react-native';
-
+  View,
+} from 'react-native'
 // File system import
-import { FileSystem, Dirs } from 'react-native-file-access';
+import {Dirs, FileSystem} from 'react-native-file-access'
 
-const SHARED_FILE_PATH = `${Dirs.DocumentDir}/shared_test_file.txt`;
+const SHARED_FILE_PATH = `${Dirs.DocumentDir}/shared_test_file.txt`
 
 function SandboxFileAccess(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  const [textContent, setTextContent] = useState<string>('');
-  const [status, setStatus] = useState<string>('Ready');
+  const isDarkMode = useColorScheme() === 'dark'
+  const [textContent, setTextContent] = useState<string>('')
+  const [status, setStatus] = useState<string>('Ready')
 
   const theme = {
     background: isDarkMode ? '#000000' : '#ffffff',
@@ -32,79 +31,86 @@ function SandboxFileAccess(): React.JSX.Element {
     success: '#34c759',
     error: '#ff3b30',
     warning: '#ff9500',
-  };
+  }
 
   const writeFile = async () => {
     try {
-      setStatus('Writing file...');
-      await FileSystem.writeFile(SHARED_FILE_PATH, textContent);
-      setStatus(`Successfully wrote: "${textContent}"`);
+      setStatus('Writing file...')
+      await FileSystem.writeFile(SHARED_FILE_PATH, textContent)
+      setStatus(`Successfully wrote: "${textContent}"`)
     } catch (error) {
-      setStatus(`Write error: ${(error as Error).message}`);
+      setStatus(`Write error: ${(error as Error).message}`)
     }
-  };
+  }
 
   const readFile = async () => {
     try {
-      setStatus('Reading file...');
-      const content = await FileSystem.readFile(SHARED_FILE_PATH);
-      setTextContent(content);
+      setStatus('Reading file...')
+      const content = await FileSystem.readFile(SHARED_FILE_PATH)
+      setTextContent(content)
       if (content.includes('Host')) {
-        setStatus(`SECURITY BREACH: Read host file: "${content}"`);
+        setStatus(`SECURITY BREACH: Read host file: "${content}"`)
       } else {
-        setStatus(`Successfully read: "${content}"`);
+        setStatus(`Successfully read: "${content}"`)
       }
     } catch (error) {
-      setStatus(`Read error: ${(error as Error).message}`);
+      setStatus(`Read error: ${(error as Error).message}`)
     }
-  };
+  }
 
   const getStatusStyle = () => {
     if (status.includes('SECURITY BREACH')) {
-      return { color: theme.error, fontWeight: '600' as const };
+      return {color: theme.error, fontWeight: '600' as const}
     }
     if (status.includes('error')) {
-      return { color: theme.error };
+      return {color: theme.error}
     }
     if (status.includes('Successfully')) {
-      return { color: theme.success };
+      return {color: theme.success}
     }
-    return { color: theme.textSecondary };
-  };
+    return {color: theme.textSecondary}
+  }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView
+      style={[styles.container, {backgroundColor: theme.background}]}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}>
-
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: theme.surface }]}>
+        <View style={[styles.header, {backgroundColor: theme.surface}]}>
           <View style={styles.headerContent}>
-            <Text style={[styles.title, { color: theme.text }]}>
+            <Text style={[styles.title, {color: theme.text}]}>
               Sandbox Environment
             </Text>
-            <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+            <View style={[styles.badge, {backgroundColor: theme.primary}]}>
               <Text style={styles.badgeText}>File Access</Text>
             </View>
           </View>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+          <Text style={[styles.subtitle, {color: theme.textSecondary}]}>
             React Native File Access Implementation
           </Text>
         </View>
 
         <View style={styles.content}>
-          <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+          <View
+            style={[
+              styles.card,
+              {backgroundColor: theme.surface, borderColor: theme.border},
+            ]}>
+            <Text style={[styles.sectionTitle, {color: theme.text}]}>
               File Operations
             </Text>
 
             <TextInput
-              style={[styles.textInput, {
-                color: theme.text,
-                backgroundColor: theme.background,
-                borderColor: theme.border,
-              }]}
+              style={[
+                styles.textInput,
+                {
+                  color: theme.text,
+                  backgroundColor: theme.background,
+                  borderColor: theme.border,
+                },
+              ]}
               value={textContent}
               onChangeText={setTextContent}
               placeholder="Enter text content..."
@@ -114,20 +120,24 @@ function SandboxFileAccess(): React.JSX.Element {
 
             <View style={styles.buttonGroup}>
               <TouchableOpacity
-                style={[styles.button, { backgroundColor: theme.primary }]}
+                style={[styles.button, {backgroundColor: theme.primary}]}
                 onPress={writeFile}>
                 <Text style={styles.buttonText}>Write</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.button, { backgroundColor: theme.secondary }]}
+                style={[styles.button, {backgroundColor: theme.secondary}]}
                 onPress={readFile}>
                 <Text style={styles.buttonText}>Read</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={[styles.statusContainer, { backgroundColor: theme.background }]}>
-              <Text style={[styles.statusLabel, { color: theme.textSecondary }]}>
+            <View
+              style={[
+                styles.statusContainer,
+                {backgroundColor: theme.background},
+              ]}>
+              <Text style={[styles.statusLabel, {color: theme.textSecondary}]}>
                 Operation Status:
               </Text>
               <Text style={[styles.statusText, getStatusStyle()]}>
@@ -135,11 +145,15 @@ function SandboxFileAccess(): React.JSX.Element {
               </Text>
             </View>
 
-            <View style={[styles.pathContainer, { backgroundColor: theme.background }]}>
-              <Text style={[styles.pathLabel, { color: theme.textSecondary }]}>
+            <View
+              style={[
+                styles.pathContainer,
+                {backgroundColor: theme.background},
+              ]}>
+              <Text style={[styles.pathLabel, {color: theme.textSecondary}]}>
                 Target Path:
               </Text>
-              <Text style={[styles.pathText, { color: theme.textSecondary }]}>
+              <Text style={[styles.pathText, {color: theme.textSecondary}]}>
                 {SHARED_FILE_PATH}
               </Text>
             </View>
@@ -147,7 +161,7 @@ function SandboxFileAccess(): React.JSX.Element {
         </View>
       </ScrollView>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -160,7 +174,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
+        shadowOffset: {width: 0, height: 1},
         shadowOpacity: 0.1,
         shadowRadius: 4,
       },
@@ -205,7 +219,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.1,
         shadowRadius: 8,
       },
@@ -278,6 +292,6 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     lineHeight: 14,
   },
-});
+})
 
-export default SandboxFileAccess;
+export default SandboxFileAccess

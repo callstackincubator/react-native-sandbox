@@ -1,4 +1,5 @@
-import { AppRegistry } from 'react-native';
-import SandboxFileAccess from './SandboxFileAccess';
+import {AppRegistry} from 'react-native'
 
-AppRegistry.registerComponent('AppFileAccess', () => SandboxFileAccess); 
+import SandboxFileAccess from './SandboxFileAccess'
+
+AppRegistry.registerComponent('AppFileAccess', () => SandboxFileAccess)

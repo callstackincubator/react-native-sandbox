@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'
 import {
   SafeAreaView,
   ScrollView,
@@ -7,28 +7,26 @@ import {
   Text,
   useColorScheme,
   View,
-} from 'react-native';
-
+} from 'react-native'
 import {
   Colors,
   DebugInstructions,
   Header,
   LearnMoreLinks,
   ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+} from 'react-native/Libraries/NewAppScreen'
+import SandboxReactNativeView from 'react-native-multinstance'
 
-import SandboxReactNativeView from 'react-native-multinstance';
-
-const MAX_DEPTH = 5;
+const MAX_DEPTH = 5
 
 type SectionProps = {
-  children: React.ReactNode;
-  title: string;
-  depth: number;
-};
+  children: React.ReactNode
+  title: string
+  depth: number
+}
 
-function Section({ children, title, depth }: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+function Section({children, title, depth}: SectionProps): React.JSX.Element {
+  const isDarkMode = useColorScheme() === 'dark'
   return (
     <View style={styles.sectionContainer}>
       <Text
@@ -52,22 +50,22 @@ function Section({ children, title, depth }: SectionProps): React.JSX.Element {
         {children}
       </Text>
     </View>
-  );
+  )
 }
 
 interface AppProps {
-  depth?: number;
+  depth?: number
 }
 
-function App({ depth = 1 }: AppProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+function App({depth = 1}: AppProps): React.JSX.Element {
+  const isDarkMode = useColorScheme() === 'dark'
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
+  }
 
-  const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#00FFFF'];
-  const borderColor = colors[depth - 1] || 'gray';
+  const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#00FFFF']
+  const borderColor = colors[depth - 1] || 'gray'
 
   return (
     <SafeAreaView style={backgroundStyle}>
@@ -92,11 +90,13 @@ function App({ depth = 1 }: AppProps): React.JSX.Element {
           </Section>
           {depth < MAX_DEPTH ? (
             <View style={styles.recursiveSandboxContainer}>
-              <Text style={styles.recursiveSandboxTitle}>Next Level (Depth: {depth + 1})</Text>
+              <Text style={styles.recursiveSandboxTitle}>
+                Next Level (Depth: {depth + 1})
+              </Text>
               <SandboxReactNativeView
                 style={styles.recursiveSandbox}
                 moduleName="App" // Recursively load App itself
-                initialProperties={{ depth: depth + 1 }}
+                initialProperties={{depth: depth + 1}}
               />
             </View>
           ) : (
@@ -117,7 +117,7 @@ function App({ depth = 1 }: AppProps): React.JSX.Element {
         </View>
       </ScrollView>
     </SafeAreaView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -158,6 +158,6 @@ const styles = StyleSheet.create({
   recursiveSandbox: {
     flex: 1,
   },
-});
+})
 
-export default App;
+export default App
