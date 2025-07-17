@@ -23,14 +23,12 @@ const SANDBOX_TURBOMODULES_WHITELIST = [
   'AccessibilityManager',
   'LinkingManager',
   'BlobModule',
-  'NativeEventEmitter',
   'LogBox',
   'Appearance',
   'ReactDevToolsRuntimeSettingsModule',
   'NativeReactNativeFeatureFlagsCxx',
-  //'NativeAnimatedTurboModule',
+  'NativeAnimatedTurboModule',
   'KeyboardObserver',
-  //'FrameRateLogger',
 ];
 
 type GenericProps = {
