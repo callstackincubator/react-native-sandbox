@@ -1,26 +1,26 @@
 {
-  "name": "@examples/side-by-side",
+  "name": "@apps/fs-experiment",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
-    "ios": "react-native run-ios",
-    "start": "react-native start"
+    "ios": "react-native run-ios", 
+    "start": "react-native start",
+    "bundle:sandbox": "yarn bundle:sandbox-fs && yarn bundle:sandbox-file-access",
+    "bundle:sandbox-fs": "npx react-native bundle --platform ios --dev false --entry-file sandbox-fs.js --bundle-output ios/sandbox-fs.jsbundle --assets-dest ios/",
+    "bundle:sandbox-file-access": "npx react-native bundle --platform ios --dev false --entry-file sandbox-file-access.js --bundle-output ios/sandbox-file-access.jsbundle --assets-dest ios/"
   },
   "dependencies": {
     "react": "19.0.0",
     "react-native": "0.79.3",
-    "react-native-reanimated": "^3.18.0",
-    "react-native-toast-message": "^2.3.2",
-    "react-native-multinstance": "link:../../react-native-multinstance"
+    "react-native-multinstance": "workspace:*",
+    "react-native-fs": "^2.20.0",
+    "react-native-file-access": "^3.1.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",
     "@babel/runtime": "^7.25.0",
-    "@react-native-community/cli": "18.0.0",
-    "@react-native-community/cli-platform-android": "18.0.0",
-    "@react-native-community/cli-platform-ios": "18.0.0",
     "@react-native/babel-preset": "0.79.3",
     "@react-native/eslint-config": "0.79.3",
     "@react-native/metro-config": "0.79.3",

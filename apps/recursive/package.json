@@ -1,21 +1,16 @@
 {
-  "name": "@examples/fs-experiment",
+  "name": "@apps/recursive",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
-    "ios": "react-native run-ios", 
-    "start": "react-native start",
-    "bundle:sandbox": "yarn bundle:sandbox-fs && yarn bundle:sandbox-file-access",
-    "bundle:sandbox-fs": "npx react-native bundle --platform ios --dev false --entry-file sandbox-fs.js --bundle-output ios/sandbox-fs.jsbundle --assets-dest ios/",
-    "bundle:sandbox-file-access": "npx react-native bundle --platform ios --dev false --entry-file sandbox-file-access.js --bundle-output ios/sandbox-file-access.jsbundle --assets-dest ios/"
+    "ios": "react-native run-ios",
+    "start": "react-native start"
   },
   "dependencies": {
     "react": "19.0.0",
     "react-native": "0.79.3",
-    "react-native-multinstance": "link:../../react-native-multinstance",
-    "react-native-fs": "^2.20.0",
-    "react-native-file-access": "^3.1.1"
+    "react-native-multinstance": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

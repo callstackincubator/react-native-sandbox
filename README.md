@@ -34,25 +34,25 @@ This project was born from the need to safely run third-party code within a reac
 This project is structured as a monorepo.
 
 - [`packages/react-native-multinstance`](./packages/react-native-multinstance/): the core library.
-- [`packages/examples/side-by-side`](./packages/examples/side-by-side/README.md): An example application with two sandbox instances.
-- [`packages/examples/recursive`](./packages/examples/recursive/README.md): An example application with few nested sandbox instances.
+- [`apps/side-by-side`](./apps/side-by-side/README.md): An example application with two sandbox instances.
+- [`apps/recursive`](./apps/recursive/README.md): An example application with few nested sandbox instances.
 
 To run the examples:
 
 1. Install dependencies:
 
     ```sh
-    yarn
-    cd packages/examples/<specific-example>
-    yarn
+    bun install
+    cd apps/<specific-example>
+    bun install
     ```
 
 1. Run the example application:
 
     ```sh
-    yarn ios
+    bun ios
     # or
-    yarn android
+    bun android
     ```
 
 

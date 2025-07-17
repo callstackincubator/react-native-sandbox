@@ -11,10 +11,9 @@ A composite GitHub Action that automatically sets up development tools based on 
 
 ## Supported Tools
 
-- **Node.js** (`nodejs`) - with yarn/npm caching
-- **Ruby** - with bundler caching
-- **Python** - with pip caching
-- **Java** - using Zulu distribution
+This action supports any tool that can be managed by [asdf](https://asdf-vm.com/). The available tools depend on the [asdf plugin ecosystem](https://github.com/asdf-vm/asdf-plugins).
+
+Common tools include Node.js, Ruby, Python, Java, Bun, and many more. Check the [asdf plugin directory](https://github.com/asdf-vm/asdf-plugins) for a complete list of available plugins.
 
 ## Usage
 
@@ -66,12 +65,16 @@ steps:
 | `ruby-version` | Ruby version from .tool-versions |
 | `python-version` | Python version from .tool-versions |
 | `java-version` | Java version from .tool-versions |
+| `bun-version` | Bun version from .tool-versions |
 
 ## Example .tool-versions
 
 ```
 ruby 3.4.2
 nodejs 23.9.0
+bun 1.2.18
 python 3.11.5
 java 17.0.2
 ```
+
+For more information about `.tool-versions` format and available tools, see the [asdf documentation](https://asdf-vm.com/manage/configuration.html#tool-versions).

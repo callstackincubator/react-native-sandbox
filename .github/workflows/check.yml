@@ -17,10 +17,10 @@ jobs:
         uses: ./.github/actions/setup-tools
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Run ESLint
-        run: yarn lint
+        run: bun run lint
 
   example-compilation:
     runs-on: macos-15
@@ -48,18 +48,18 @@ jobs:
           echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Install example dependencies
-        working-directory: packages/examples/${{ matrix.example }}
-        run: yarn install --frozen-lockfile
+        working-directory: apps/${{ matrix.example }}
+        run: bun install --frozen-lockfile
 
       - name: Install iOS dependencies (CocoaPods)
-        working-directory: packages/examples/${{ matrix.example }}/ios
+        working-directory: apps/${{ matrix.example }}/ios
         run: bundle exec pod install
 
       - name: Build iOS
-        working-directory: packages/examples/${{ matrix.example }}
+        working-directory: apps/${{ matrix.example }}
         run: |
           export PATH="/usr/local/opt/ccache/libexec:$PATH"
           npx react-native build-ios --mode Debug

@@ -59,8 +59,8 @@ This experiment reveals whether:
 
 1. Install dependencies:
    ```bash
-   cd packages/examples/fs-experiment
-   yarn install
+   cd apps/fs-experiment
+   bun install
    ```
 
 2. Install native dependencies:
@@ -71,10 +71,10 @@ This experiment reveals whether:
 3. Run the application:
    ```bash
    # iOS
-   yarn ios
+   bun ios
    
    # Android  
-   yarn android
+   bun android
    ```
 
 ## 📊 Understanding the Results

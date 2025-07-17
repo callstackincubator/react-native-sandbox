@@ -2,12 +2,12 @@
   "name": "multi-instance-monorepo",
   "private": true,
   "workspaces": [
-    "packages/react-native-multinstance",
-    "packages/examples/*"
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
-    "ios": "npm run ios --workspace=@examples/side-by-side",
-    "android": "npm run android --workspace=@examples/side-by-side",
+    "ios": "bun run ios --filter=@apps/side-by-side",
+    "android": "bun run android --filter=@apps/side-by-side",
     "lint": "eslint .",
     "test": "jest"
   },
@@ -27,5 +27,5 @@
   "engines": {
     "node": ">=18"
   },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "packageManager": "bun@1.1.0"
 }

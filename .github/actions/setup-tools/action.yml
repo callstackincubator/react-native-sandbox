@@ -24,6 +24,9 @@ outputs:
   java-version:
     description: 'Java version from .tool-versions'
     value: ${{ steps.read-versions.outputs.java-version }}
+  bun-version:
+    description: 'Bun version from .tool-versions'
+    value: ${{ steps.read-versions.outputs.bun-version }}
 
 runs:
   using: 'composite'
@@ -76,7 +79,6 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ steps.read-versions.outputs.nodejs-version }}
-        cache: ${{ inputs.cache == 'true' && 'yarn' || '' }}
 
     - name: Setup Ruby
       if: steps.read-versions.outputs.ruby-version
@@ -98,6 +100,16 @@ runs:
       with:
         distribution: 'zulu'
         java-version: ${{ steps.read-versions.outputs.java-version }}
+
+    - name: Setup Bun via asdf
+      if: steps.read-versions.outputs.bun-version
+      shell: bash
+      run: |
+        echo "🔧 Installing Bun via asdf"
+        asdf plugin add bun https://github.com/cometkim/asdf-bun.git || echo "Plugin already exists"
+        asdf install bun ${{ steps.read-versions.outputs.bun-version }}
+        asdf global bun ${{ steps.read-versions.outputs.bun-version }}
+        echo "✅ Bun ${{ steps.read-versions.outputs.bun-version }} installed"
 
 branding:
   icon: 'settings'

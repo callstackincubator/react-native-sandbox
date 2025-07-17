@@ -1,5 +1,5 @@
 {
-  "name": "@examples/recursive",
+  "name": "@apps/side-by-side",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -10,12 +10,17 @@
   "dependencies": {
     "react": "19.0.0",
     "react-native": "0.79.3",
-    "react-native-multinstance": "link:../../react-native-multinstance"
+    "react-native-reanimated": "^3.18.0",
+    "react-native-toast-message": "^2.3.2",
+    "react-native-multinstance": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",
     "@babel/runtime": "^7.25.0",
+    "@react-native-community/cli": "18.0.0",
+    "@react-native-community/cli-platform-android": "18.0.0",
+    "@react-native-community/cli-platform-ios": "18.0.0",
     "@react-native/babel-preset": "0.79.3",
     "@react-native/eslint-config": "0.79.3",
     "@react-native/metro-config": "0.79.3",
