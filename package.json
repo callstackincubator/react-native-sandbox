@@ -15,12 +15,17 @@
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",
     "@babel/runtime": "^7.25.0",
+    "@commitlint/config-conventional": "^17.0.2",
+    "@evilmartians/lefthook": "^1.5.0",
     "@react-native/babel-preset": "0.79.3",
     "@react-native/eslint-config": "0.79.3",
     "@react-native/metro-config": "0.79.3",
     "@react-native/typescript-config": "0.79.3",
+    "@release-it-plugins/workspaces": "^4.2.0",
+    "@release-it/conventional-changelog": "^5.0.0",
     "@typescript-eslint/eslint-plugin": "^7.3.1",
     "@typescript-eslint/parser": "^7.3.1",
+    "commitlint": "^17.0.2",
     "eslint": "^9.31.0",
     "eslint-config-expo": "^9.2.0",
     "eslint-config-prettier": "^10.1.5",
@@ -32,6 +37,31 @@
     "react-native-builder-bob": "^0.23.2",
     "release-it": "^15.0.0",
     "typescript": "5.0.4"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "release-it": {
+    "git": {
+      "commitMessage": "chore: release ${version}",
+      "tagName": "v${version}"
+    },
+    "npm": false,
+    "github": {
+      "release": true
+    },
+    "plugins": {
+      "@release-it/conventional-changelog": {
+        "preset": "angular"
+      },
+      "@release-it-plugins/workspaces": {
+        "workspaces": [
+          "packages/*"
+        ]
+      }
+    }
   },
   "engines": {
     "node": ">=18"

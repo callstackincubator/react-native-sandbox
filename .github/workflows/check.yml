@@ -37,7 +37,7 @@ jobs:
     runs-on: macos-15
     strategy:
       matrix:
-        example: [side-by-side, recursive]
+        example: [side-by-side, recursive, fs-experiment]
     concurrency:
       group: '${{ github.workflow }}-${{ matrix.example }}-${{ github.head_ref || github.ref_name }}'
       cancel-in-progress: true
@@ -85,7 +85,6 @@ jobs:
       - name: Build iOS
         working-directory: apps/${{ matrix.example }}
         run: |
-          export PATH="/usr/local/opt/ccache/libexec:$PATH"
           npx react-native build-ios --mode Debug
 
       - name: ccache stats
