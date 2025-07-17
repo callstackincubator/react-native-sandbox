@@ -74,7 +74,9 @@ jobs:
 
       - name: Install example dependencies
         working-directory: apps/${{ matrix.example }}
-        run: bun install --frozen-lockfile
+        run: |
+          bun install --frozen-lockfile
+          bundle install
 
       - name: Install iOS dependencies (CocoaPods)
         working-directory: apps/${{ matrix.example }}/ios
