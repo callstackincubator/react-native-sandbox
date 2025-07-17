@@ -6,13 +6,13 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios", 
     "start": "react-native start",
-    "bundle:sandbox": "yarn bundle:sandbox-fs && yarn bundle:sandbox-file-access",
+    "bundle:sandbox": "bun run bundle:sandbox-fs && bun run bundle:sandbox-file-access",
     "bundle:sandbox-fs": "npx react-native bundle --platform ios --dev false --entry-file sandbox-fs.js --bundle-output ios/sandbox-fs.jsbundle --assets-dest ios/",
     "bundle:sandbox-file-access": "npx react-native bundle --platform ios --dev false --entry-file sandbox-file-access.js --bundle-output ios/sandbox-file-access.jsbundle --assets-dest ios/"
   },
   "dependencies": {
-    "react": "19.0.0",
-    "react-native": "0.79.3",
+    "react": "19.1.0",
+    "react-native": "0.80.1",
     "react-native-multinstance": "workspace:*",
     "react-native-fs": "^2.20.0",
     "react-native-file-access": "^3.1.1"
@@ -21,17 +21,13 @@
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",
     "@babel/runtime": "^7.25.0",
-    "@react-native/babel-preset": "0.79.3",
-    "@react-native/eslint-config": "0.79.3",
-    "@react-native/metro-config": "0.79.3",
-    "@react-native/typescript-config": "0.79.3",
-    "@types/jest": "^29.5.13",
-    "@types/react": "^19.0.0",
-    "@types/react-test-renderer": "^19.0.0",
-    "eslint": "^8.19.0",
-    "jest": "^29.6.3",
-    "prettier": "2.8.8",
-    "react-test-renderer": "19.0.0",
-    "typescript": "5.0.4"
+    "@react-native/babel-preset": "0.80.1",
+    "@react-native/eslint-config": "0.80.1",
+    "@react-native/metro-config": "0.80.1",
+    "@react-native/typescript-config": "0.80.1",
+    "react-test-renderer": "19.1.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

@@ -22,6 +22,7 @@ import type {DirectEventHandler} from 'react-native/Libraries/Types/CodegenTypes
 
 const SANDBOX_TURBOMODULES_WHITELIST = [
   'NativeMicrotasksCxx',
+  'NativePerformanceCxx',
   'RedBox',
   'DevMenu',
   'DevLoadingView',

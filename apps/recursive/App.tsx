@@ -8,14 +8,18 @@ import {
   useColorScheme,
   View,
 } from 'react-native'
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen'
 import SandboxReactNativeView from 'react-native-multinstance'
+
+const Colors = {
+  light: '#ffffff',
+  lighter: '#f0f0f0',
+  dark: '#000000',
+  darker: '#1a1a1a',
+}
+
+const Header = ({children}: {children: React.ReactNode}) => (
+  <Text style={{fontSize: 24, fontWeight: 'bold', margin: 20}}>{children}</Text>
+)
 
 const MAX_DEPTH = 5
 
@@ -33,7 +37,7 @@ function Section({children, title, depth}: SectionProps): React.JSX.Element {
         style={[
           styles.sectionTitle,
           {
-            color: isDarkMode ? Colors.white : Colors.black,
+            color: isDarkMode ? Colors.light : Colors.dark,
             fontSize: 26 - depth * 3,
           },
         ]}>
@@ -76,11 +80,11 @@ function App({depth = 1}: AppProps): React.JSX.Element {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         style={backgroundStyle}>
-        <Header />
+        <Header>React Native Multi-Instance</Header>
         <View
           style={[
             {
-              backgroundColor: isDarkMode ? Colors.black : Colors.white,
+              backgroundColor: isDarkMode ? Colors.dark : Colors.light,
               borderColor: borderColor,
             },
             depth > 1 && styles.nestedContainer,
@@ -95,6 +99,7 @@ function App({depth = 1}: AppProps): React.JSX.Element {
               </Text>
               <SandboxReactNativeView
                 style={styles.recursiveSandbox}
+                jsBundleSource="index"
                 moduleName="App" // Recursively load App itself
                 initialProperties={{depth: depth + 1}}
               />
@@ -104,16 +109,6 @@ function App({depth = 1}: AppProps): React.JSX.Element {
               No more nested instances will be created.
             </Section>
           )}
-          <Section title="See Your Changes" depth={depth}>
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug" depth={depth}>
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More" depth={depth}>
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
         </View>
       </ScrollView>
     </SafeAreaView>
