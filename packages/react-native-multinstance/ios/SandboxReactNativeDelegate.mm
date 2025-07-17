@@ -6,6 +6,7 @@
 //
 
 #import "SandboxReactNativeDelegate.h"
+#import "StubTurboModuleCxx.h"
 
 #include <memory>
 #include <jsi/decorator.h>
@@ -207,9 +208,14 @@ static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, cons
 }
 
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:(const std::string &)name
-                                                      jsInvoker:
-(std::shared_ptr<facebook::react::CallInvoker>)jsInvoker {
-  return _allowedModules.contains(name) ? [super getTurboModule:name jsInvoker:jsInvoker] : nullptr;
+                                                      jsInvoker:(std::shared_ptr<facebook::react::CallInvoker>)jsInvoker {
+  if (_allowedModules.contains(name)) {
+    return [super getTurboModule:name jsInvoker:jsInvoker];
+  } else {
+    NSLog(@"SandboxReactNativeDelegate.getTurboModule: blocking access to C++ TurboModule '%s', returning C++ stub", name.c_str());
+    // Return C++ stub instead of nullptr
+    return std::make_shared<facebook::react::StubTurboModuleCxx>(name, jsInvoker);
+  }
 }
 
 @end

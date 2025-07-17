@@ -4,7 +4,34 @@ import type {
   DirectEventHandler,
 } from 'react-native/Libraries/Types/CodegenTypes';
 
-const SANDBOX_TURBOMODULES_WHITELIST = ['NativeMicrotasksCxx'];
+const SANDBOX_TURBOMODULES_WHITELIST = [
+  'NativeMicrotasksCxx',
+  'RedBox',
+  'DevMenu',
+  'DevLoadingView',
+  'EventDispatcher',
+  'ImageLoader',
+  'ExceptionsManager',
+  'PlatformConstants',
+  'DevSettings',
+  'SettingsManager',
+  'AppState',
+  'SourceCode',
+  'WebSocketModule',
+  'Networking',
+  'DeviceInfo',
+  'AccessibilityManager',
+  'LinkingManager',
+  'BlobModule',
+  'NativeEventEmitter',
+  'LogBox',
+  'Appearance',
+  'ReactDevToolsRuntimeSettingsModule',
+  'NativeReactNativeFeatureFlagsCxx',
+  //'NativeAnimatedTurboModule',
+  'KeyboardObserver',
+  //'FrameRateLogger',
+];
 
 type GenericProps = {
   [key: string]: any;
