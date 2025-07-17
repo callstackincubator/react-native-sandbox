@@ -13,8 +13,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup tools from .tool-versions
-        uses: ./.github/actions/setup-tools
+      - name: Install asdf
+        uses: asdf-vm/actions/setup@v4
+
+      - name: Tools cache
+        id: asdf-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.asdf/
+          key: ${{ runner.os }}-${{ hashFiles('**/.tool-versions') }}
+
+      - name: Install tools from .tool-versions
+        if: steps.asdf-cache.outputs.cache-hit != 'true'
+        uses: asdf-vm/actions/install@v4
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -34,8 +45,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup tools from .tool-versions
-        uses: ./.github/actions/setup-tools
+      - name: Install asdf
+        uses: asdf-vm/actions/setup@v4
+
+      - name: Tools cache
+        id: asdf-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.asdf/
+          key: ${{ runner.os }}-${{ hashFiles('**/.tool-versions') }}
+
+      - name: Install tools
+        if: steps.asdf-cache.outputs.cache-hit != 'true'
+        uses: asdf-vm/actions/install@v4
 
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@v1.2
