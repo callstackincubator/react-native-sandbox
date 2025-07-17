@@ -1335,6 +1335,7 @@ PODS:
   - React-MultInstance (0.0.1):
     - React-Core
     - React-RCTAppDelegate
+    - ReactAppDependencyProvider
     - ReactCommon
   - React-NativeModulesApple (0.79.3):
     - glog
@@ -1959,7 +1960,7 @@ SPEC CHECKSUMS:
   React-logger: 514fac028fee60c84591f951c7c04ba1c5023334
   React-Mapbuffer: fae8da2c01aeb7f26ad739731b6dba61fd02fd97
   React-microtasksnativemodule: 20454ffccff553f0ee73fd20873aa8555a5867fb
-  React-MultInstance: 8b2813d8cc739605d5317255b22b44cadc9a0113
+  React-MultInstance: 316d4720cde73e6462eced209c7916e2353135be
   React-NativeModulesApple: 65b2735133d6ce8a3cb5f23215ef85e427b0139c
   React-oscompat: f26aa2a4adc84c34212ab12c07988fe19e9cf16a
   React-perflogger: e15a0d43d1928e1c82f4f0b7fc05f7e9bccfede8

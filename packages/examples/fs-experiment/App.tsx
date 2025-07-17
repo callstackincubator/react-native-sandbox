@@ -153,6 +153,7 @@ function App(): React.JSX.Element {
               style={[styles.sandbox, { backgroundColor: theme.background, borderColor: theme.border }]}
               moduleName={'AppFS'}
               jsBundleSource="sandbox-fs"
+              allowedTurboModules={['RNFSManager', 'FileReaderModule']}
               onMessage={message => {
                 console.log('Host received message from sandbox:', message);
               }}
@@ -174,6 +175,7 @@ function App(): React.JSX.Element {
             <SandboxReactNativeView
               style={[styles.sandbox, { backgroundColor: theme.background, borderColor: theme.border }]}
               moduleName={'AppFileAccess'}
+              allowedTurboModules={['FileAccess']}
               jsBundleSource="sandbox-file-access"
               onMessage={message => {
                 console.log('Host received message from sandbox:', message);
