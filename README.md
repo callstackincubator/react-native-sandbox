@@ -4,7 +4,7 @@
 
 # react-native-multinstance
 
-[![check](https://github.com/callstackincubator/multi-instance-poc/actions/workflows/check.yml/badge.svg)](https://github.com/callstackincubator/multi-instance-poc/actions/workflows/check.yml)
+[![check](https://github.com/callstackincubator/react-native-multinstance/actions/workflows/check.yml/badge.svg)](https://github.com/callstackincubator/react-native-multinstance/actions/workflows/check.yml)
 ![platform: iOS](https://img.shields.io/badge/platform-iOS-blue.svg)
 ![license: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 

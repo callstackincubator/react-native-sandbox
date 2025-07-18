@@ -6,11 +6,11 @@ Pod::Spec.new do |s|
   s.name         = "React-MultInstance"
   s.version      = package["version"]
   s.summary      = package["description"]
-  s.homepage     = "https://github.com/callstackincubator/multi-instance-poc" # Please update this
+  s.homepage     = "https://github.com/callstackincubator/react-native-multinstance"
   s.license      = "MIT"
-  s.authors      = { "Alex Babrykovich" => "aliaksandr.babrykovich@callstack.com" } # Please update this
+  s.authors      = { "Alex Babrykovich" => "aliaksandr.babrykovich@callstack.com" }
   s.platforms    = { :ios => "12.4" }
-  s.source       = { :git => "https://github.com/callstackincubator/multi-instance-poc.git", :tag => "#{s.version}" } # Please update this
+  s.source       = { :git => "https://github.com/callstackincubator/react-native-multinstance.git", :tag => "#{s.version}" }
   s.source_files = "ios/**/*.{h,m,mm,cpp,swift}"
   s.dependency "React-Core"
   s.dependency "React-RCTAppDelegate"

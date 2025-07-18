@@ -1,6 +1,6 @@
 //
 //  SandboxReactNativeViewManager.swift
-//  MultiInstancePOC
+//  react-native-multinstance
 //
 //  Created by Aliaksandr Babrykovich on 18/06/2025.
 //
