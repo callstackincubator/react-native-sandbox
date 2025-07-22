@@ -92,10 +92,42 @@ static std::string safeGetStringProperty(jsi::Runtime& rt, const jsi::Object& ob
   return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:bundleName];
 }
 
-- (void)postMessage:(NSDictionary *)message {
+- (void)postMessage:(NSString *)message {
+  if (!_onMessageSandbox) {
+    return;
+  }
+  
   [_rctInstance callFunctionOnBufferedRuntimeExecutor:[=](jsi::Runtime& runtime) {
-    jsi::Value arg = TurboModuleConvertUtils::convertObjCObjectToJSIValue(runtime, message);
-    _onMessageSandbox->call(runtime, { std::move(arg) });
+    try {
+      std::string jsonString = [message UTF8String];
+
+      jsi::Value parsedValue = runtime.global()
+        .getPropertyAsObject(runtime, "JSON")
+        .getPropertyAsFunction(runtime, "parse")
+        .call(runtime, jsi::String::createFromUtf8(runtime, jsonString));
+
+      _onMessageSandbox->call(runtime, { std::move(parsedValue) });
+    } catch (const jsi::JSError& e) {
+      if (self.eventEmitter && self.hasOnErrorHandler) {
+        SandboxReactNativeViewEventEmitter::OnError errorEvent = {
+          .isFatal = false,
+          .name = "JSError",
+          .message = e.getMessage(),
+          .stack = e.getStack()
+        };
+        self.eventEmitter->onError(errorEvent);
+      }
+    } catch (const std::exception& e) {
+      if (self.eventEmitter && self.hasOnErrorHandler) {
+        SandboxReactNativeViewEventEmitter::OnError errorEvent = {
+          .isFatal = false,
+          .name = "JSONParseError",
+          .message = e.what(),
+          .stack = ""
+        };
+        self.eventEmitter->onError(errorEvent);
+      }
+    }
   }];
 }
 

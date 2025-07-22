@@ -39,9 +39,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Posts a message to the JavaScript runtime.
- * @param message Dictionary containing the message data
+ * @param message String containing the JSON.stringified message
  */
-- (void)postMessage:(NSDictionary *)message;
+- (void)postMessage:(NSString *)message;
 
 @end
 

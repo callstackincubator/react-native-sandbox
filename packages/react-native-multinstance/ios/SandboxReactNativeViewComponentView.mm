@@ -74,17 +74,7 @@ using namespace facebook::react;
 
 - (void)postMessage:(NSString *)message
 {
-  // Deserialize JSON string back to NSDictionary
-  NSError *error;
-  NSData *data = [message dataUsingEncoding:NSUTF8StringEncoding];
-  NSDictionary *messageDict = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
-
-  if (error) {
-    NSLog(@"Error deserializing postMessage: %@", error.localizedDescription);
-    return;
-  }
-
-  [self.reactNativeDelegate postMessage:messageDict];
+  [self.reactNativeDelegate postMessage:message];
 }
 
 - (void)scheduleReactViewLoad
