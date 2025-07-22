@@ -5,11 +5,11 @@
 #import <react/renderer/components/RNMultInstanceSpec/Props.h>
 #import <react/renderer/components/RNMultInstanceSpec/RCTComponentViewHelpers.h>
 
+#import <React-RCTAppDelegate/RCTReactNativeFactory.h>
 #import <React/RCTConversions.h>
 #import <React/RCTFabricComponentsPlugins.h>
-#import <React-RCTAppDelegate/RCTReactNativeFactory.h>
-#import <ReactCommon/RCTHost.h>
 #import <React/RCTFollyConvert.h>
+#import <ReactCommon/RCTHost.h>
 
 #import "SandboxReactNativeDelegate.h"
 
@@ -40,10 +40,10 @@ using namespace facebook::react;
   return self;
 }
 
-- (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps
+- (void)updateProps:(const Props::Shared &)props oldProps:(const Props::Shared &)oldProps
 {
-  const auto &oldViewProps = *std::static_pointer_cast<SandboxReactNativeViewProps const>(_props);
-  const auto &newViewProps = *std::static_pointer_cast<SandboxReactNativeViewProps const>(props);
+  const auto &oldViewProps = *std::static_pointer_cast<const SandboxReactNativeViewProps>(_props);
+  const auto &newViewProps = *std::static_pointer_cast<const SandboxReactNativeViewProps>(props);
 
   bool shouldReload = false;
 
@@ -79,7 +79,8 @@ using namespace facebook::react;
 
 - (void)scheduleReactViewLoad
 {
-  if (self.didScheduleLoad) return;
+  if (self.didScheduleLoad)
+    return;
   self.didScheduleLoad = YES;
 
   dispatch_async(dispatch_get_main_queue(), ^{
@@ -90,7 +91,7 @@ using namespace facebook::react;
 
 - (void)loadReactNativeView
 {
-  const auto &props = *std::static_pointer_cast<SandboxReactNativeViewProps const>(_props);
+  const auto &props = *std::static_pointer_cast<const SandboxReactNativeViewProps>(_props);
 
   NSString *moduleName = RCTNSStringFromString(props.moduleName);
   NSString *jsBundleSource = RCTNSStringFromString(props.jsBundleSource);
@@ -104,12 +105,12 @@ using namespace facebook::react;
   if (!props.initialProperties.isNull()) {
     initialProperties = (NSDictionary *)convertFollyDynamicToId(props.initialProperties);
   }
-  
+
   NSDictionary *launchOptions = @{};
   if (!props.launchOptions.isNull()) {
     launchOptions = (NSDictionary *)convertFollyDynamicToId(props.launchOptions);
   }
-  
+
   NSArray<NSString *> *allowedTurboModules = @[];
   if (!props.allowedTurboModules.empty()) {
     NSMutableArray *modules = [NSMutableArray new];
@@ -121,8 +122,8 @@ using namespace facebook::react;
 
   SandboxReactNativeDelegate *delegate = [[SandboxReactNativeDelegate alloc] initWithJSBundleSource:jsBundleSource];
   delegate.allowedTurboModules = allowedTurboModules;
-  
-  if (auto eventEmitter = std::static_pointer_cast<SandboxReactNativeViewEventEmitter const>(_eventEmitter)) {
+
+  if (auto eventEmitter = std::static_pointer_cast<const SandboxReactNativeViewEventEmitter>(_eventEmitter)) {
     delegate.eventEmitter = eventEmitter;
   }
 
@@ -131,7 +132,7 @@ using namespace facebook::react;
 
   RCTReactNativeFactory *factory = [[RCTReactNativeFactory alloc] initWithDelegate:delegate];
   UIView *rnView = [factory.rootViewFactory viewWithModuleName:moduleName
-                                            initialProperties:initialProperties
+                                             initialProperties:initialProperties
                                                  launchOptions:launchOptions];
 
   [self.reactNativeRootView removeFromSuperview];
@@ -158,4 +159,4 @@ Class<RCTComponentViewProtocol> SandboxReactNativeViewCls(void)
   return SandboxReactNativeViewComponentView.class;
 }
 
-@end 
+@end

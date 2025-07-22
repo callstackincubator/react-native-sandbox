@@ -1,8 +1,8 @@
 #pragma once
 
-#include "RNMultInstanceSpec.h"
 #include <React/RCTComponentViewDescriptor.h>
 #include <react/renderer/core/ConcreteComponentDescriptor.h>
+#include "RNMultInstanceSpec.h"
 
 namespace facebook {
 namespace react {
@@ -12,10 +12,11 @@ namespace react {
  */
 class SandboxReactNativeViewComponentDescriptor final
     : public ConcreteComponentDescriptor<SandboxReactNativeViewShadowNode> {
-public:
-  SandboxReactNativeViewComponentDescriptor(ComponentDescriptorParameters const &parameters)
+ public:
+  SandboxReactNativeViewComponentDescriptor(
+      const ComponentDescriptorParameters& parameters)
       : ConcreteComponentDescriptor(parameters) {}
 };
 
 } // namespace react
-} // namespace facebook 
+} // namespace facebook

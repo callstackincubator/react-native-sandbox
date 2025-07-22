@@ -4,6 +4,10 @@
   "description": "A component to run multiple React Native instances side-by-side.",
   "main": "src/index.tsx",
   "files": ["src", "ios", "android", "specs", "react-native-multinstance.podspec"],
+  "scripts": {
+    "lint": "clang-format --dry-run --Werror ios/*.{h,mm}",
+    "format": "clang-format -i ios/*.{h,mm}"
+  },
   "peerDependencies": {
     "react": "*",
     "react-native": "*"
