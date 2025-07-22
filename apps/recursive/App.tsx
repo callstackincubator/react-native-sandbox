@@ -102,6 +102,8 @@ function App({depth = 1}: AppProps): React.JSX.Element {
                 jsBundleSource="index"
                 moduleName="App" // Recursively load App itself
                 initialProperties={{depth: depth + 1}}
+                onMessage={msg => console.log('message', msg)}
+                onError={e => console.error('error', e)}
               />
             </View>
           ) : (

@@ -2,6 +2,13 @@ require "json"
 
 package = JSON.parse(File.read(File.join(__dir__, "package.json")))
 
+header_search_paths = [
+  "\"$(PODS_TARGET_SRCROOT)/ReactCommon\"",
+  "\"$(PODS_ROOT)/Headers/Private/React-Core\"",
+  "\"$(PODS_ROOT)/Headers/Private/Yoga\"",
+  "\"$(PODS_ROOT)/Headers/Public/ReactCodegen\"",
+]
+
 Pod::Spec.new do |s|
   s.name         = "React-MultInstance"
   s.version      = package["version"]
@@ -12,14 +19,10 @@ Pod::Spec.new do |s|
   s.platforms    = { :ios => "12.4" }
   s.source       = { :git => "https://github.com/callstackincubator/react-native-multinstance.git", :tag => "#{s.version}" }
   s.source_files = "ios/**/*.{h,m,mm,cpp,swift}"
-  s.dependency "React-Core"
-  s.dependency "React-RCTAppDelegate"
-  s.dependency "ReactAppDependencyProvider"
-  s.dependency "ReactCommon"
-  s.pod_target_xcconfig = {
-    "DEFINES_MODULE" => "YES",
-    "GCC_PREPROCESSOR_DEFINITIONS" => "$(inherited) FOLLY_NO_CONFIG FOLLY_CFG_NO_COROUTINES",
-    "OTHER_CPLUSPLUSFLAGS" => "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1",
-    "CLANG_CXX_LANGUAGE_STANDARD" => "c++17",
+  install_modules_dependencies(s)
+  s.pod_target_xcconfig    = {
+    "HEADER_SEARCH_PATHS" => header_search_paths,
+    # "OTHER_CPLUSPLUSFLAGS" => "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1",
+    "CLANG_CXX_LANGUAGE_STANDARD" => "c++17"
   }
 end

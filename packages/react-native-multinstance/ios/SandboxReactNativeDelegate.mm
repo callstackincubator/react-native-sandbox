@@ -10,17 +10,20 @@
 
 #include <memory>
 #include <jsi/decorator.h>
+#include <jsi/JSIDynamic.h>
 #include <react/utils/jsi-utils.h>
 
 #import <React/RCTBridge.h>
 #import <React/RCTBundleURLProvider.h>
 #import <ReactAppDependencyProvider/RCTAppDependencyProvider.h>
 #import <ReactCommon/RCTTurboModule.h>
+#import <React/RCTFollyConvert.h>
 
 #import <objc/runtime.h>
 
 namespace jsi = facebook::jsi;
 namespace TurboModuleConvertUtils = facebook::react::TurboModuleConvertUtils;
+using namespace facebook::react;
 
 static void stubJsiFunction(jsi::Runtime& runtime, jsi::Object& object, const char* name) {
   object.setProperty(runtime, name,
@@ -33,10 +36,12 @@ static void stubJsiFunction(jsi::Runtime& runtime, jsi::Object& object, const ch
   );
 }
 
-static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, const char* key) {
-  return obj.hasProperty(rt, key)
-    ? obj.getProperty(rt, key)
-    : jsi::Value::undefined();
+static std::string safeGetStringProperty(jsi::Runtime& rt, const jsi::Object& obj, const char* key) {
+  if (!obj.hasProperty(rt, key)) {
+    return "";
+  }
+  jsi::Value value = obj.getProperty(rt, key);
+  return value.isString() ? value.getString(rt).utf8(rt) : "";
 }
 
 @interface SandboxReactNativeDelegate () {
@@ -61,8 +66,8 @@ static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, cons
 - (instancetype)initWithJSBundleSource:(NSString *)jsBundleSource {
   if (self = [super init]) {
     _jsBundleSource = jsBundleSource;
-    _onMessageHost = nil;
-    _onErrorHost = nil;
+    _hasOnMessageHandler = NO;
+    _hasOnErrorHandler = NO;
     self.dependencyProvider = [[RCTAppDependencyProvider alloc] init];
   }
   return self;
@@ -116,8 +121,13 @@ static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, cons
             throw jsi::JSError(rt, "Expected a object as the first argument");
           }
 
-          NSDictionary *message = TurboModuleConvertUtils::convertJSIValueToObjCObject(rt, args[0], nullptr);
-          _onMessageHost(message);
+          if (self.eventEmitter && self.hasOnMessageHandler) {
+            SandboxReactNativeViewEventEmitter::OnMessage messageEvent = {
+              .data = jsi::dynamicFromValue(rt, args[0])
+            };
+            self.eventEmitter->onMessage(messageEvent);
+          }
+
           return jsi::Value::undefined();
         })
     );
@@ -171,15 +181,17 @@ static jsi::Value safeGetProperty(jsi::Runtime& rt, const jsi::Object& obj, cons
           return jsi::Value::undefined();
         }
 
-        if (_onErrorHost) {
+        if (self.eventEmitter && self.hasOnErrorHandler) {
           const jsi::Object &error = args[0].asObject(rt);
           bool isFatal = args[1].getBool();
-          _onErrorHost(@{
-            @"name": TurboModuleConvertUtils::convertJSIValueToObjCObject(rt, safeGetProperty(rt, error, "name"), nullptr),
-            @"message": TurboModuleConvertUtils::convertJSIValueToObjCObject(rt, safeGetProperty(rt, error, "message"), nullptr),
-            @"stack": TurboModuleConvertUtils::convertJSIValueToObjCObject(rt, safeGetProperty(rt, error, "stack"), nullptr),
-            @"isFatal": @(isFatal)
-          });
+
+          SandboxReactNativeViewEventEmitter::OnError errorEvent = {
+            .isFatal = isFatal,
+            .name = safeGetStringProperty(rt, error, "name"),
+            .message = safeGetStringProperty(rt, error, "message"),
+            .stack = safeGetStringProperty(rt, error, "stack")
+          };
+          self.eventEmitter->onError(errorEvent);
         } else { // Call the original handler
           if (originalHandler->isObject() && originalHandler->asObject(rt).isFunction(rt)) {
             jsi::Function original = originalHandler->asObject(rt).asFunction(rt);
