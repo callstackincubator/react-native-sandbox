@@ -8,7 +8,8 @@
   "scripts": {
     "ios": "bun run ios --filter=@apps/side-by-side",
     "android": "bun run android --filter=@apps/side-by-side",
-    "lint": "eslint .",
+    "lint": "eslint . && bun --filter=react-native-multinstance lint",
+    "format": "eslint . --fix && bun --filter=react-native-multinstance format",
     "test": "jest"
   },
   "devDependencies": {

@@ -3,9 +3,26 @@
   "version": "0.0.1",
   "description": "A component to run multiple React Native instances side-by-side.",
   "main": "src/index.tsx",
-  "files": ["src", "ios", "android", "react-native-multinstance.podspec"],
+  "files": ["src", "ios", "android", "specs", "react-native-multinstance.podspec"],
+  "scripts": {
+    "lint": "clang-format --dry-run --Werror ios/*.{h,mm}",
+    "format": "clang-format -i ios/*.{h,mm}"
+  },
   "peerDependencies": {
     "react": "*",
     "react-native": "*"
+  },
+  "codegenConfig": {
+    "name": "RNMultInstanceSpec",
+    "type": "components",
+    "jsSrcsDir": "specs",
+    "android": {
+      "javaPackageName": "ios.callstack.reactnativemultinstance"
+    },
+    "ios": {
+      "componentProvider": {
+        "SandboxReactNativeView": "SandboxReactNativeViewComponentView"
+      }
+    }
   }
 }

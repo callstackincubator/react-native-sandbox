@@ -1,5 +1,4 @@
 import {
-  ElementRef,
   forwardRef,
   useCallback,
   useImperativeHandle,
@@ -7,18 +6,18 @@ import {
   useRef,
 } from 'react'
 import {
-  findNodeHandle,
-  HostComponent,
   NativeSyntheticEvent,
-  requireNativeComponent,
   StyleProp,
   StyleSheet,
-  UIManager,
   View,
   ViewProps,
   ViewStyle,
 } from 'react-native'
-import type {DirectEventHandler} from 'react-native/Libraries/Types/CodegenTypes'
+
+import NativeSandboxReactNativeView, {
+  Commands,
+  ErrorEvent,
+} from '../specs/NativeSandboxReactNativeView'
 
 const SANDBOX_TURBOMODULES_WHITELIST = [
   'NativeMicrotasksCxx',
@@ -46,24 +45,11 @@ const SANDBOX_TURBOMODULES_WHITELIST = [
   'NativeReactNativeFeatureFlagsCxx',
   'NativeAnimatedTurboModule',
   'KeyboardObserver',
+  'I18nManager',
 ]
 
 type GenericProps = {
   [key: string]: any
-}
-
-interface IsFatalError extends Error {
-  isFatal?: boolean
-}
-
-export interface NativeSandboxReactNativeViewProps extends ViewProps {
-  moduleName: string
-  jsBundleSource?: string
-  initialProperties?: GenericProps
-  launchOptions?: GenericProps
-  allowedTurboModules?: string[]
-  onError?: DirectEventHandler<IsFatalError>
-  onMessage?: DirectEventHandler<unknown>
 }
 
 export interface SandboxReactNativeViewProps extends ViewProps {
@@ -72,47 +58,37 @@ export interface SandboxReactNativeViewProps extends ViewProps {
   initialProperties?: GenericProps
   launchOptions?: GenericProps
   allowedTurboModules?: string[]
-  onMessage?: (payload: unknown) => void
-  onError?: (error: IsFatalError) => void
+  onMessage?: (data: unknown) => void
+  onError?: (error: ErrorEvent) => void
 }
 
 export interface SandboxReactNativeViewRef {
-  postMessage: (message: object) => void
+  postMessage: (message: unknown) => void
 }
-
-type NativeComponentType = HostComponent<NativeSandboxReactNativeViewProps>
-
-const NativeComponent =
-  requireNativeComponent<NativeSandboxReactNativeViewProps>(
-    'SandboxReactNativeView'
-  ) as NativeComponentType
 
 const SandboxReactNativeView = forwardRef<
   SandboxReactNativeViewRef,
   SandboxReactNativeViewProps
 >(({onMessage, onError, allowedTurboModules, style, ...rest}, ref) => {
-  const nativeRef = useRef<ElementRef<typeof NativeComponent>>(null)
+  const nativeRef =
+    useRef<React.ComponentRef<typeof NativeSandboxReactNativeView>>(null)
 
   const postMessage = useCallback((message: any) => {
-    const reactTag = findNodeHandle(nativeRef.current)
-    UIManager.dispatchViewManagerCommand(
-      reactTag,
-      UIManager.getViewManagerConfig('SandboxReactNativeView').Commands
-        .postMessage,
-      [message]
-    )
+    if (nativeRef.current) {
+      Commands.postMessage(nativeRef.current, JSON.stringify(message))
+    }
   }, [])
 
   const _onError = useCallback(
-    (e: NativeSyntheticEvent<IsFatalError>) => {
-      onError?.(e.nativeEvent as Error)
+    (e: NativeSyntheticEvent<ErrorEvent>) => {
+      onError?.(e.nativeEvent)
     },
     [onError]
   )
 
   const _onMessage = useCallback(
-    (e: NativeSyntheticEvent<unknown>) => {
-      onMessage?.(e.nativeEvent)
+    (e: NativeSyntheticEvent<{data: any}>) => {
+      onMessage?.(e.nativeEvent.data)
     },
     [onMessage]
   )
@@ -146,8 +122,10 @@ const SandboxReactNativeView = forwardRef<
 
   return (
     <View style={style}>
-      <NativeComponent
+      <NativeSandboxReactNativeView
         ref={nativeRef}
+        hasOnMessageHandler={!!onMessage}
+        hasOnErrorHandler={!!onError}
         onError={onError ? _onError : undefined}
         onMessage={onMessage ? _onMessage : undefined}
         allowedTurboModules={_allowedTurboModules}

@@ -9,6 +9,7 @@
 
 #import <React-RCTAppDelegate/RCTDefaultReactNativeFactoryDelegate.h>
 #import <React/RCTComponent.h>
+#import <react/renderer/components/RNMultInstanceSpec/EventEmitters.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -19,8 +20,9 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface SandboxReactNativeDelegate : RCTDefaultReactNativeFactoryDelegate
 
-@property (nonatomic, copy, nullable) RCTDirectEventBlock onMessageHost;
-@property (nonatomic, copy, nullable) RCTDirectEventBlock onErrorHost;
+@property (nonatomic) std::shared_ptr<const facebook::react::SandboxReactNativeViewEventEmitter> eventEmitter;
+@property (nonatomic, assign) BOOL hasOnMessageHandler;
+@property (nonatomic, assign) BOOL hasOnErrorHandler;
 
 /**
  * Sets the list of allowed TurboModules for this sandbox instance.
@@ -37,9 +39,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Posts a message to the JavaScript runtime.
- * @param message Dictionary containing the message data
+ * @param message String containing the JSON.stringified message
  */
-- (void)postMessage:(NSDictionary *)message;
+- (void)postMessage:(NSString *)message;
 
 @end
 
