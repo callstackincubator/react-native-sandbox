@@ -2,9 +2,9 @@
   <img src="./docs/logo.svg" width="30%" />
 </p>
 
-# react-native-multinstance
+# react-native-sandbox
 
-[![check](https://github.com/callstackincubator/react-native-multinstance/actions/workflows/check.yml/badge.svg)](https://github.com/callstackincubator/react-native-multinstance/actions/workflows/check.yml)
+[![check](https://github.com/callstackincubator/react-native-sandbox/actions/workflows/check.yml/badge.svg)](https://github.com/callstackincubator/react-native-sandbox/actions/workflows/check.yml)
 ![platform: iOS](https://img.shields.io/badge/platform-iOS-blue.svg)
 ![license: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
@@ -17,7 +17,7 @@
   - [File System & Storage](#file-system--storage)
   - [Platform-Specific](#platform-specific-considerations)
 
-`react-native-multinstance` is a library for running multiple, isolated React Native instances within a single application. This allows you to embed third-party or feature-specific "micro-apps" in a sandboxed environment, preventing uncontrolled interference with the main app by providing a clear API for communication (`postMessage`/`onMessage`).
+`react-native-sandbox` is a library for running multiple, isolated React Native instances within a single application. This allows you to embed third-party or feature-specific "micro-apps" in a sandboxed environment, preventing uncontrolled interference with the main app by providing a clear API for communication (`postMessage`/`onMessage`).
 
 ## 💡 Project Overview
 
@@ -29,11 +29,11 @@ This project was born from the need to safely run third-party code within a reac
 
 > Note that `postMessage` only supports serializable data (similar to [`Window.postMessage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#message) in web browsers), meaning no functions, native state, or non-serializable objects can be passed.
 
-`react-native-multinstance` provides the API to create these sandboxed React Native instances with a simple component-based API, requiring no native code to be written by the consumer.
+`react-native-sandbox` provides the API to create these sandboxed React Native instances with a simple component-based API, requiring no native code to be written by the consumer.
 
 This project is structured as a monorepo.
 
-- [`packages/react-native-multinstance`](./packages/react-native-multinstance/): the core library.
+- [`packages/react-native-sandbox`](./packages/react-native-sandbox/): the core library.
 - [`apps/side-by-side`](./apps/side-by-side/README.md): An example application with two sandbox instances.
 - [`apps/recursive`](./apps/recursive/README.md): An example application with few nested sandbox instances.
 
@@ -65,7 +65,7 @@ Here is a brief overview of how to use the library.
 ```tsx
 import React, { useRef } from 'react';
 import { View, Button } from 'react-native';
-import SandboxReactNativeView, { SandboxReactNativeViewRef } from 'react-native-multinstance';
+import SandboxReactNativeView, { SandboxReactNativeViewRef } from 'react-native-sandbox';
 
 function HostApp() {
   const sandboxRef = useRef<SandboxReactNativeViewRef>(null);
@@ -131,7 +131,7 @@ AppRegistry.registerComponent("SandboxApp", () => App);
 
 ## 🎨 Roadmap
 
-We're actively working on expanding the capabilities of `react-native-multinstance`. Here's what's planned:
+We're actively working on expanding the capabilities of `react-native-sandbox`. Here's what's planned:
 
 - [ ] **Android Support** - Full cross-platform compatibility
 - [ ] **Inter-Sandbox Communication** - Secure communication between sandbox instances
@@ -149,7 +149,7 @@ We're actively working on expanding the capabilities of `react-native-multinstan
   - Secure file system access controls
 - [ ] **Developer Tools** - Enhanced debugging and development experience
 
-Contributions and feedback on these roadmap items are welcome! Please check our [issues](https://github.com/your-org/react-native-multinstance/issues) for detailed discussions on each feature.
+Contributions and feedback on these roadmap items are welcome! Please check our [issues](https://github.com/callstackincubator/react-native-sandbox/issues) for detailed discussions on each feature.
 
 ## 🔒 Security Considerations
 
@@ -161,7 +161,7 @@ A primary security concern when running multiple React Native instances is the p
 - **Data Leakage:** One sandbox could use a shared TurboModule to store data, which could then be read by another sandbox or the host. This breaks the isolation model.
 - **Unintended Side-Effects:** A sandbox could call a method on a shared module that changes its state, affecting the behavior of the host or other sandboxes in unpredictable ways.
 
-To address this, `react-native-multinstance` allows you to provide a **whitelist of allowed TurboModules** for each sandbox instance via the `allowedTurboModules` prop. Only the modules specified in this list will be accessible from within the sandbox, significantly reducing the attack surface. It is critical to only whitelist modules that are stateless or are explicitly designed to be shared safely.
+To address this, `react-native-sandbox` allows you to provide a **whitelist of allowed TurboModules** for each sandbox instance via the `allowedTurboModules` prop. Only the modules specified in this list will be accessible from within the sandbox, significantly reducing the attack surface. It is critical to only whitelist modules that are stateless or are explicitly designed to be shared safely.
 
 **Default Whitelist:** By default, only `NativeMicrotasksCxx` is whitelisted. Modules like `NativePerformanceCxx`, `PlatformConstants`, `DevSettings`, `LogBox`, and other third-party modules are *not* whitelisted.
 

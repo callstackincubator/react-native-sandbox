@@ -10,14 +10,14 @@ header_search_paths = [
 ]
 
 Pod::Spec.new do |s|
-  s.name         = "React-MultInstance"
+  s.name         = "React-Sandbox"
   s.version      = package["version"]
   s.summary      = package["description"]
-  s.homepage     = "https://github.com/callstackincubator/react-native-multinstance"
+  s.homepage     = "https://github.com/callstackincubator/react-native-sandbox"
   s.license      = "MIT"
   s.authors      = { "Alex Babrykovich" => "aliaksandr.babrykovich@callstack.com" }
   s.platforms    = { :ios => "12.4" }
-  s.source       = { :git => "https://github.com/callstackincubator/react-native-multinstance.git", :tag => "#{s.version}" }
+  s.source       = { :git => "https://github.com/callstackincubator/react-native-sandbox.git", :tag => "#{s.version}" }
   s.source_files = "ios/**/*.{h,m,mm,cpp,swift}"
   install_modules_dependencies(s)
   s.pod_target_xcconfig    = {

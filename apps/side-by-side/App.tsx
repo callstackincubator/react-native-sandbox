@@ -8,14 +8,14 @@ import {
   Switch,
   View,
 } from 'react-native'
-import SandboxReactNativeView, {
-  SandboxReactNativeViewRef,
-} from 'react-native-multinstance'
 import Animated, {
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
 } from 'react-native-reanimated'
+import SandboxReactNativeView, {
+  SandboxReactNativeViewRef,
+} from 'react-native-sandbox'
 import Toast, {BaseToast, ToastConfigParams} from 'react-native-toast-message'
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window')

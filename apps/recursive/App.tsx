@@ -8,7 +8,7 @@ import {
   useColorScheme,
   View,
 } from 'react-native'
-import SandboxReactNativeView from 'react-native-multinstance'
+import SandboxReactNativeView from 'react-native-sandbox'
 
 const Colors = {
   light: '#ffffff',

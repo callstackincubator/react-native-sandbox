@@ -1648,11 +1648,6 @@ PODS:
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
     - SocketRocket
-  - React-MultInstance (0.0.1):
-    - React-Core
-    - React-RCTAppDelegate
-    - ReactAppDependencyProvider
-    - ReactCommon
   - React-NativeModulesApple (0.80.1):
     - boost
     - DoubleConversion
@@ -2024,6 +2019,35 @@ PODS:
     - React-timing
     - React-utils
     - SocketRocket
+  - React-Sandbox (0.0.1):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Yoga
   - React-timing (0.80.1)
   - React-utils (0.80.1):
     - boost
@@ -2205,7 +2229,6 @@ DEPENDENCIES:
   - React-logger (from `../../../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../../../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../../../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
-  - React-MultInstance (from `../../../node_modules/react-native-multinstance`)
   - React-NativeModulesApple (from `../../../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-oscompat (from `../../../node_modules/react-native/ReactCommon/oscompat`)
   - React-perflogger (from `../../../node_modules/react-native/ReactCommon/reactperflogger`)
@@ -2232,6 +2255,7 @@ DEPENDENCIES:
   - React-runtimeexecutor (from `../../../node_modules/react-native/ReactCommon/runtimeexecutor`)
   - React-RuntimeHermes (from `../../../node_modules/react-native/ReactCommon/react/runtime`)
   - React-runtimescheduler (from `../../../node_modules/react-native/ReactCommon/react/renderer/runtimescheduler`)
+  - React-Sandbox (from `../../../node_modules/react-native-sandbox`)
   - React-timing (from `../../../node_modules/react-native/ReactCommon/react/timing`)
   - React-utils (from `../../../node_modules/react-native/ReactCommon/react/utils`)
   - ReactAppDependencyProvider (from `build/generated/ios`)
@@ -2329,8 +2353,6 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/react-native/ReactCommon"
   React-microtasksnativemodule:
     :path: "../../../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
-  React-MultInstance:
-    :path: "../../../node_modules/react-native-multinstance"
   React-NativeModulesApple:
     :path: "../../../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios"
   React-oscompat:
@@ -2383,6 +2405,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/react-native/ReactCommon/react/runtime"
   React-runtimescheduler:
     :path: "../../../node_modules/react-native/ReactCommon/react/renderer/runtimescheduler"
+  React-Sandbox:
+    :path: "../../../node_modules/react-native-sandbox"
   React-timing:
     :path: "../../../node_modules/react-native/ReactCommon/react/timing"
   React-utils:
@@ -2441,7 +2465,6 @@ SPEC CHECKSUMS:
   React-logger: 984ebd897afad067555d081deaf03f57c4315723
   React-Mapbuffer: 0c045c844ce6d85cde53e85ab163294c6adad349
   React-microtasksnativemodule: d9499269ad1f484ae71319bac1d9231447f2094e
-  React-MultInstance: 316d4720cde73e6462eced209c7916e2353135be
   React-NativeModulesApple: 983f3483ef0a3446b56d490f09d579fba2442e17
   React-oscompat: 114036cd8f064558c9c1a0c04fc9ae5e1453706a
   React-perflogger: e7287fee27c16e3c8bd4d470f2361572b63be16b
@@ -2468,6 +2491,7 @@ SPEC CHECKSUMS:
   React-runtimeexecutor: 17c70842d5e611130cb66f91e247bc4a609c3508
   React-RuntimeHermes: 3c88e6e1ea7ea0899dcffc77c10d61ea46688cfd
   React-runtimescheduler: 024500621c7c93d65371498abb4ee26d34f5d47d
+  React-Sandbox: 54c22e07b36020687c46ee4b726f7bf0cc919494
   React-timing: c3c923df2b86194e1682e01167717481232f1dc7
   React-utils: 9154a037543147e1c24098f1a48fc8472602c092
   ReactAppDependencyProvider: afd905e84ee36e1678016ae04d7370c75ed539be
