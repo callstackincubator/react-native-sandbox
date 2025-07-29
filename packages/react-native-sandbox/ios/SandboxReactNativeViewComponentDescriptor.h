@@ -2,7 +2,7 @@
 
 #include <React/RCTComponentViewDescriptor.h>
 #include <react/renderer/core/ConcreteComponentDescriptor.h>
-#include "RNMultInstanceSpec.h"
+#include "RNSandboxSpec.h"
 
 namespace facebook {
 namespace react {

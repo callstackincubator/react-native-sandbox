@@ -11,7 +11,9 @@
 #include <jsi/JSIDynamic.h>
 #include <jsi/decorator.h>
 #include <react/utils/jsi-utils.h>
+#include <map>
 #include <memory>
+#include <mutex>
 
 #import <React/RCTBridge.h>
 #import <React/RCTBundleURLProvider.h>
@@ -51,11 +53,104 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
   std::set<std::string> _allowedModules;
 }
 
-@property (nonatomic, strong) NSString *jsBundleSource;
-
 @end
 
 @implementation SandboxReactNativeDelegate
+
+#pragma mark - Static Registry Implementation
+
+// Global static registry for sandbox communication
+static std::map<std::string, SandboxReactNativeDelegate *> _sandboxRegistry;
+static std::mutex _registryMutex;
+
++ (void)registerSandbox:(NSString *)sandboxId delegate:(SandboxReactNativeDelegate *)delegate
+{
+  if (!sandboxId || !delegate) {
+    NSLog(@"[SandboxRegistry] Cannot register sandbox: sandboxId=%@ delegate=%@", sandboxId, delegate);
+    return;
+  }
+
+  std::lock_guard<std::mutex> lock(_registryMutex);
+  std::string cppSandboxId = [sandboxId UTF8String];
+
+  if (_sandboxRegistry.find(cppSandboxId) != _sandboxRegistry.end()) {
+    NSLog(@"[SandboxRegistry] Warning: Overwriting existing sandbox with ID: %@", sandboxId);
+  }
+
+  _sandboxRegistry[cppSandboxId] = delegate;
+  // delegate.sandboxId = sandboxId;
+
+  NSLog(@"[SandboxRegistry] Registered sandbox: %@ (total: %zu)", sandboxId, _sandboxRegistry.size());
+}
+
++ (void)unregisterSandbox:(NSString *)sandboxId
+{
+  if (!sandboxId) {
+    return;
+  }
+
+  std::lock_guard<std::mutex> lock(_registryMutex);
+  std::string cppSandboxId = [sandboxId UTF8String];
+
+  auto it = _sandboxRegistry.find(cppSandboxId);
+  if (it != _sandboxRegistry.end()) {
+    it->second.sandboxId = nil;
+    _sandboxRegistry.erase(it);
+    NSLog(@"[SandboxRegistry] Unregistered sandbox: %@ (total: %zu)", sandboxId, _sandboxRegistry.size());
+  }
+}
+
++ (nullable SandboxReactNativeDelegate *)getSandbox:(NSString *)sandboxId
+{
+  if (!sandboxId) {
+    return nil;
+  }
+
+  std::lock_guard<std::mutex> lock(_registryMutex);
+  std::string cppSandboxId = [sandboxId UTF8String];
+
+  auto it = _sandboxRegistry.find(cppSandboxId);
+  if (it != _sandboxRegistry.end()) {
+    return it->second;
+  }
+
+  return nil;
+}
+
++ (BOOL)routeMessage:(NSString *)message toSandbox:(NSString *)targetId
+{
+  SandboxReactNativeDelegate *target = [self getSandbox:targetId];
+  if (!target) {
+    NSLog(@"[SandboxRegistry] Cannot route message: target sandbox '%@' not found", targetId);
+    return NO;
+  }
+
+  [target postMessage:message];
+  NSLog(@"[SandboxRegistry] Routed message to sandbox: %@", targetId);
+  return YES;
+}
+
+#pragma mark - Instance Methods
+
+- (void)setSandboxId:(NSString *)sandboxId
+{
+  if ([sandboxId isEqual:_sandboxId]) {
+    return;
+  }
+
+  // Unregister old ID if it exists
+  if (_sandboxId) {
+    [SandboxReactNativeDelegate unregisterSandbox:_sandboxId];
+  }
+
+  // Set new ID
+  _sandboxId = [sandboxId copy];
+
+  // Register new ID if it's not nil
+  if (_sandboxId) {
+    [SandboxReactNativeDelegate registerSandbox:_sandboxId delegate:self];
+  }
+}
 
 - (void)setAllowedTurboModules:(NSArray<NSString *> *)allowedTurboModules
 {
@@ -65,15 +160,22 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
   }
 }
 
-- (instancetype)initWithJSBundleSource:(NSString *)jsBundleSource
+- (instancetype)init
 {
   if (self = [super init]) {
-    _jsBundleSource = jsBundleSource;
     _hasOnMessageHandler = NO;
     _hasOnErrorHandler = NO;
     self.dependencyProvider = [[RCTAppDependencyProvider alloc] init];
   }
   return self;
+}
+
+- (void)dealloc
+{
+  // Auto-unregister when delegate is deallocated
+  if (self.sandboxId) {
+    [SandboxReactNativeDelegate unregisterSandbox:self.sandboxId];
+  }
 }
 
 - (NSURL *)sourceURLForBridge:(RCTBridge *)bridge
@@ -83,6 +185,10 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
 - (NSURL *)bundleURL
 {
+  if (!self.jsBundleSource) {
+    return nil;
+  }
+
   NSURL *url = [NSURL URLWithString:self.jsBundleSource];
   if (url && url.scheme) {
     return url;
@@ -106,6 +212,9 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
   [_rctInstance callFunctionOnBufferedRuntimeExecutor:[=](jsi::Runtime &runtime) {
     try {
+      // Validate runtime before any JSI operations
+      runtime.global(); // Test if runtime is accessible
+
       std::string jsonString = [message UTF8String];
 
       jsi::Value parsedValue = runtime.global()
@@ -123,15 +232,44 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
     } catch (const std::exception &e) {
       if (self.eventEmitter && self.hasOnErrorHandler) {
         SandboxReactNativeViewEventEmitter::OnError errorEvent = {
-            .isFatal = false, .name = "JSONParseError", .message = e.what(), .stack = ""};
+            .isFatal = false, .name = "RuntimeError", .message = e.what(), .stack = ""};
         self.eventEmitter->onError(errorEvent);
       }
+    } catch (...) {
+      NSLog(@"[SandboxReactNativeDelegate] Runtime invalid during postMessage for sandbox %@", self.sandboxId);
     }
   }];
 }
 
+- (BOOL)isCommunicationReady
+{
+  BOOL hasEventEmitter = (self.eventEmitter != nullptr);
+  BOOL hasMessageSandbox = (_onMessageSandbox != nullptr);
+  BOOL isRegistered = (self.sandboxId != nil);
+
+  NSLog(
+      @"[SandboxReactNativeDelegate] Communication status for %@: eventEmitter=%@, messageSandbox=%@, registered=%@",
+      self.sandboxId ?: @"(nil)",
+      hasEventEmitter ? @"YES" : @"NO",
+      hasMessageSandbox ? @"YES" : @"NO",
+      isRegistered ? @"YES" : @"NO");
+
+  return hasEventEmitter && hasMessageSandbox && isRegistered;
+}
+
 - (void)hostDidStart:(RCTHost *)host
 {
+  // Safely clear any existing JSI function before new runtime setup
+  // This prevents crash on reload when old function is tied to invalid runtime
+  try {
+    _onMessageSandbox = nullptr;
+  } catch (...) {
+    // Old function destructor might crash if tied to invalid runtime
+    NSLog(
+        @"[SandboxReactNativeDelegate] Warning: Exception while clearing old JSI function for sandbox %@",
+        self.sandboxId);
+  }
+
   Ivar ivar = class_getInstanceVariable([host class], "_instance");
   _rctInstance = object_getIvar(host, ivar);
 
@@ -142,21 +280,88 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
         jsi::Function::createFromHostFunction(
             runtime,
             jsi::PropNameID::forAscii(runtime, "postMessage"),
-            1,
+            2, // Updated to accept up to 2 arguments
             [=](jsi::Runtime &rt, const jsi::Value &, const jsi::Value *args, size_t count) {
-              if (count != 1) {
-                throw jsi::JSError(rt, "Expected exactly one argument");
+              // Validate runtime before any JSI operations
+              try {
+                rt.global(); // Test if runtime is accessible
+              } catch (...) {
+                NSLog(@"[SandboxReactNativeDelegate] Runtime invalid in postMessage for sandbox %@", self.sandboxId);
+                return jsi::Value::undefined();
               }
 
-              const jsi::Value &arg = args[0];
-              if (!arg.isObject()) {
-                throw jsi::JSError(rt, "Expected a object as the first argument");
+              if (count < 1 || count > 2) {
+                throw jsi::JSError(rt, "Expected 1 or 2 arguments: postMessage(message, targetOrigin?)");
               }
 
-              if (self.eventEmitter && self.hasOnMessageHandler) {
-                SandboxReactNativeViewEventEmitter::OnMessage messageEvent = {
-                    .data = jsi::dynamicFromValue(rt, args[0])};
-                self.eventEmitter->onMessage(messageEvent);
+              const jsi::Value &messageArg = args[0];
+              if (!messageArg.isObject()) {
+                throw jsi::JSError(rt, "Expected an object as the first argument");
+              }
+
+              // Check if targetOrigin is provided
+              if (count == 2 && !args[1].isNull() && !args[1].isUndefined()) {
+                const jsi::Value &targetOriginArg = args[1];
+                if (!targetOriginArg.isString()) {
+                  throw jsi::JSError(rt, "Expected a string as the second argument (targetOrigin)");
+                }
+
+                std::string targetOrigin = targetOriginArg.getString(rt).utf8(rt);
+                NSString *targetOriginNS = [NSString stringWithUTF8String:targetOrigin.c_str()];
+
+                // Prevent self-targeting
+                if (self.sandboxId && [self.sandboxId isEqualToString:targetOriginNS]) {
+                  if (self.eventEmitter && self.hasOnErrorHandler) {
+                    std::string errorMessage = "Cannot send message to self (sandbox '" + targetOrigin + "')";
+                    SandboxReactNativeViewEventEmitter::OnError errorEvent = {
+                        .isFatal = false, .name = "SelfTargetingError", .message = errorMessage, .stack = ""};
+                    self.eventEmitter->onError(errorEvent);
+                  } else {
+                    // Fallback: throw JSError if no error handler
+                    throw jsi::JSError(rt, ("Cannot send message to self (sandbox '" + targetOrigin + "')").c_str());
+                  }
+                  return jsi::Value::undefined();
+                }
+
+                // Convert message to JSON string
+                jsi::Object jsonObject = rt.global().getPropertyAsObject(rt, "JSON");
+                jsi::Function jsonStringify = jsonObject.getPropertyAsFunction(rt, "stringify");
+                jsi::Value jsonResult = jsonStringify.call(rt, messageArg);
+                std::string messageJson = jsonResult.getString(rt).utf8(rt);
+                NSString *messageNS = [NSString stringWithUTF8String:messageJson.c_str()];
+
+                // Route message to specific sandbox
+                BOOL success = [SandboxReactNativeDelegate routeMessage:messageNS toSandbox:targetOriginNS];
+                if (!success) {
+                  // Target sandbox doesn't exist - trigger error event
+                  if (self.eventEmitter && self.hasOnErrorHandler) {
+                    std::string errorMessage = "Target sandbox '" + targetOrigin + "' not found";
+                    SandboxReactNativeViewEventEmitter::OnError errorEvent = {
+                        .isFatal = false, .name = "SandboxRoutingError", .message = errorMessage, .stack = ""};
+                    self.eventEmitter->onError(errorEvent);
+                  } else {
+                    // Fallback: throw JSError if no error handler
+                    throw jsi::JSError(rt, ("Target sandbox '" + targetOrigin + "' not found").c_str());
+                  }
+                }
+              } else {
+                // targetOrigin is undefined/null - route to host (backward compatibility)
+                if (self.eventEmitter && self.hasOnMessageHandler) {
+                  SandboxReactNativeViewEventEmitter::OnMessage messageEvent = {
+                      .data = jsi::dynamicFromValue(rt, args[0])};
+                  self.eventEmitter->onMessage(messageEvent);
+                } else {
+                  // Log why message to host failed
+                  if (!self.eventEmitter) {
+                    NSLog(
+                        @"[SandboxReactNativeDelegate] Cannot send message to host: eventEmitter is nullptr for sandbox %@",
+                        self.sandboxId);
+                  } else if (!self.hasOnMessageHandler) {
+                    NSLog(
+                        @"[SandboxReactNativeDelegate] Cannot send message to host: no message handler for sandbox %@",
+                        self.sandboxId);
+                  }
+                }
               }
 
               return jsi::Value::undefined();
@@ -178,7 +383,13 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
                 throw jsi::JSError(rt, "Expected a function as the first argument");
               }
 
+              NSLog(@"[SandboxReactNativeDelegate] setOnMessage for sandbox %@", self.sandboxId);
+
               jsi::Function fn = arg.asObject(rt).asFunction(rt);
+
+              // Safely reset existing function before assigning new one
+              // This prevents crash if old function is tied to invalid runtime
+              _onMessageSandbox.reset();
               _onMessageSandbox = std::make_shared<jsi::Function>(std::move(fn));
 
               return jsi::Value::undefined();
