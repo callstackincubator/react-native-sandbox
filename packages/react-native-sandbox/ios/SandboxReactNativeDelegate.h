@@ -1,6 +1,6 @@
 //
 //  SandboxReactNativeDelegate.h
-//  react-native-multinstance
+//  react-native-sandbox
 //
 //  Created by Aliaksandr Babrykovich on 25/06/2025.
 //

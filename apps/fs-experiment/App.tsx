@@ -13,7 +13,7 @@ import {
 } from 'react-native'
 // File system imports
 import RNFS from 'react-native-fs'
-import SandboxReactNativeView from 'react-native-multinstance'
+import SandboxReactNativeView from 'react-native-sandbox'
 
 const SHARED_FILE_PATH = `${RNFS.DocumentDirectoryPath}/shared_test_file.txt`
 

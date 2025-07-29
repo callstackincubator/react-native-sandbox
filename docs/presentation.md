@@ -16,7 +16,7 @@ style: |
 
 <!-- footer: "[1] module work in progress\n[2] name work in progress" -->
 
-# react-native-multinstance<sup>[1][2]</sup>
+# react-native-sandbox<sup>[1][2]</sup>
 
 Run multiple isolated React Native apps (micro apps) in the same app.
 
@@ -41,7 +41,7 @@ Client came to us with requirements:
 
 <!-- footer: "" -->
 
-## ❓ **What** react-native-multinstance offer
+## ❓ **What** react-native-sandbox offer
 
 - Easy creation of sandbox react-native instances: no native code required
 - Isolated `RCTInstance`/`JSContext` that works like an sandbox
@@ -58,7 +58,7 @@ Client came to us with requirements:
 ```tsx
 ...
 import SandboxReactNativeView, {SandboxReactNativeViewRef}
-  from 'react-native-multinstance';
+  from 'react-native-sandbox';
 
 function App() {
   const sandboxRef = useRef<SandboxReactNativeViewRef>(null);
@@ -163,7 +163,7 @@ AppRegistry.registerComponent("SandboxApp", () => App);
 ```tsx
 ...
 import SandboxReactNativeView, {SandboxReactNativeViewRef}
-  from 'react-native-multinstance';
+  from 'react-native-sandbox';
 
 function App() {
   const sandboxRef = useRef<SandboxReactNativeViewRef>(null);
@@ -198,7 +198,7 @@ AppRegistry.registerComponent("HostApp", () => App);
 ```diff
 ...
 - import MultiReactMediatorModule from
--  'react-native-multinstance';
+-  'react-native-sandbox';
 
 - type AppProps = { contextId: string };
 
