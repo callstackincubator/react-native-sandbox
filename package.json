@@ -10,7 +10,8 @@
     "android": "bun run android --filter=@apps/side-by-side",
     "lint": "eslint . && bun --filter=react-native-sandbox lint",
     "format": "eslint . --fix && bun --filter=react-native-sandbox format",
-    "test": "jest"
+    "test": "jest",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
