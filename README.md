@@ -36,6 +36,7 @@ This project is structured as a monorepo.
 - [`packages/react-native-sandbox`](./packages/react-native-sandbox/): the core library.
 - [`apps/side-by-side`](./apps/side-by-side/README.md): An example application with two sandbox instances.
 - [`apps/recursive`](./apps/recursive/README.md): An example application with few nested sandbox instances.
+- [`apps/demo`](./apps/demo/README.md): Security demo.
 
 To run the examples:
 
@@ -134,7 +135,7 @@ AppRegistry.registerComponent("SandboxApp", () => App);
 We're actively working on expanding the capabilities of `react-native-sandbox`. Here's what's planned:
 
 - [ ] **Android Support** - Full cross-platform compatibility
-- [ ] **Inter-Sandbox Communication** - Secure communication between sandbox instances
+- [ ] **Inter-Sandbox Communication** - Secure direct communication between sandbox instances
 - [ ] **[RE.Pack](https://github.com/callstack/repack) Integration** - Advanced bundling and module federation
   - Hot-reloading for sandbox instances in development
   - Dynamic bundle fetching from remote sources
@@ -144,6 +145,7 @@ We're actively working on expanding the capabilities of `react-native-sandbox`. 
   - Custom permission system for sandbox instances
   - Resource usage limits and monitoring
   - Sandbox capability restrictions
+  - Unresponsiveness detection 
 - [ ] **Storage Isolation** - Secure data partitioning
   - Per-sandbox AsyncStorage isolation
   - Secure file system access controls
