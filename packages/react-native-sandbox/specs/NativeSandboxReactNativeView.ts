@@ -18,6 +18,7 @@ export interface MessageEvent {
 
 export interface NativeProps extends ViewProps {
   // Component properties
+  id?: string
   moduleName: string
   jsBundleSource?: string
   initialProperties?: CodegenTypes.UnsafeMixed

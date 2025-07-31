@@ -13,11 +13,11 @@
     "react-native": "*"
   },
   "codegenConfig": {
-    "name": "RNMultInstanceSpec",
+    "name": "RNSandboxSpec",
     "type": "components",
     "jsSrcsDir": "specs",
     "android": {
-      "javaPackageName": "ios.callstack.reactnativemultinstance"
+      "javaPackageName": "io.callstack.rnsandbox"
     },
     "ios": {
       "componentProvider": {
