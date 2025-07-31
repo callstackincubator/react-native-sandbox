@@ -1,6 +1,6 @@
 <a href="https://www.callstack.com/open-source?utm_campaign=generic&utm_source=github&utm_medium=referral&utm_content=react-native-legal" align="center">
   <picture>
-    <img alt="React Native Sandbox" src="./docs/images/rn-sandbox-banner.svg">
+    <img alt="React Native Sandbox" src="./docs/images/rn-sandbox-banner.jpg">
   </picture>
 </a>
 
