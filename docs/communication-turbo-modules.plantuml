@@ -2,59 +2,59 @@
 
 skinparam DefaultFontSize 21
 
-participant AppReactInstance
-participant MultiReactMediatorModule1
+participant HostReactInstance
+participant SandboxReactNativeView
 
-participant "//ReactInstanceRegistry//" as ReactInstanceRegistry
+participant "//SandboxReactNativeDelegate//" as Delegate
 
-participant MultiReactMediatorModule2
 participant SandboxReactInstance
 
-note over ReactInstanceRegistry
-  It's not actual class or struct
-  but rather a ""std::map"". To
-  thread-safe access to registered
-  ""jsi::Runtime"" by ""std::string""
-  symbolic name
+note over Delegate
+  Creates isolated React instance,
+  injects global ""postMessage"" and
+  ""setOnMessage"" functions into
+  sandbox JavaScript runtime
 end note
 
-group Register App
+group Initialize Sandbox
 
-AppReactInstance -> MultiReactMediatorModule1 : registerRuntime("App", onSandboxMessage)
-MultiReactMediatorModule1 -> ReactInstanceRegistry : store pointer to jsi::Runtime
-
-end
-
-...
-
-group App start Sandbox
-
-SandboxReactInstance -> MultiReactMediatorModule2 : registerRuntime("Sandbox", onAppMessage)
-MultiReactMediatorModule2 -> ReactInstanceRegistry : store pointer to jsi::Runtime
-
-AppReactInstance -> MultiReactMediatorModule1 : postMessage(\n  "Sandbox",\n  {\n    action: "SETUP",\n    data: { language: 'PL', units: 'm' ...}\n  }\n)
-MultiReactMediatorModule1 -> ReactInstanceRegistry : get pointer to jsi::Runtime
-MultiReactMediatorModule1 -> SandboxReactInstance: onAppMessage (via ""jsi::Runtime"")
+HostReactInstance -> SandboxReactNativeView : <SandboxReactNativeView>\n  onMessage={handleMessage}\n  onError={handleError}\n/>
+SandboxReactNativeView -> Delegate : create isolated React instance
+Delegate -> SandboxReactInstance : setup runtime & inject globals
+note right of SandboxReactInstance
+  ""global.postMessage"" - send to host
+  ""global.setOnMessage"" - listen from host
+end note
 
 end
 
 ...
 
-group Sandbox -> App
+group Host -> Sandbox
 
-SandboxReactInstance -> MultiReactMediatorModule2 : postMessage(\n  "App",\n  {action: "ADD_MENU_ITEM"}\n)
-MultiReactMediatorModule2 -> ReactInstanceRegistry : get pointer to jsi::Runtime
-MultiReactMediatorModule2 -> AppReactInstance: onSandboxMessage (via ""jsi::Runtime"")
+HostReactInstance -> SandboxReactNativeView : Commands.postMessage(\n  JSON.stringify({\n    action: "SETUP",\n    data: { language: 'PL', units: 'm' ...}\n  })\n)
+SandboxReactNativeView -> Delegate : postMessage(message)
+Delegate -> SandboxReactInstance: call onMessage handler\n(via ""jsi::Runtime"")
 
 end
 
 ...
 
-group App -> Sandbox
+group Sandbox -> Host
 
-AppReactInstance -> MultiReactMediatorModule1 : postMessage(\n  "Sandbox",\n    {action: "UPDATE_PROFILE"}\n)
-MultiReactMediatorModule1 -> ReactInstanceRegistry : get pointer to jsi::Runtime
-MultiReactMediatorModule1 -> SandboxReactInstance: onAppMessage (via ""jsi::Runtime"")
+SandboxReactInstance -> Delegate : global.postMessage(\n  {action: "ADD_MENU_ITEM"}\n)
+Delegate -> SandboxReactNativeView: emit onMessage event\n(via Fabric Event Emitter)
+SandboxReactNativeView -> HostReactInstance: onMessage callback\nwith event data
+
+end
+
+...
+
+group Error Handling
+
+SandboxReactInstance -> Delegate : JavaScript error occurs
+Delegate -> SandboxReactNativeView: emit onError event\n(via Fabric Event Emitter)
+SandboxReactNativeView -> HostReactInstance: onError callback\nwith error details
 
 end
 

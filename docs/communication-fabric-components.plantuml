@@ -1,0 +1,87 @@
+@startuml
+
+!theme aws-orange
+skinparam DefaultFontSize 16
+skinparam DefaultFontName "Inter, system-ui, sans-serif"
+
+skinparam ParticipantBackgroundColor #F8FAFC
+skinparam ParticipantBorderColor #64748B
+skinparam ParticipantFontColor #1E293B
+skinparam ParticipantFontSize 14
+skinparam ParticipantFontStyle bold
+
+skinparam ActorBackgroundColor #EFF6FF
+skinparam ActorBorderColor #3B82F6
+skinparam ActorFontColor #1E40AF
+
+skinparam GroupBorderColor #E2E8F0
+skinparam GroupBackgroundColor #F1F5F9
+skinparam GroupFontColor #475569
+skinparam GroupFontSize 13
+skinparam GroupFontStyle bold
+
+skinparam NoteBackgroundColor #F3F4F6
+skinparam NoteBorderColor #C4B5FD
+skinparam NoteFontColor #5B21B6
+skinparam NoteFontSize 12
+
+skinparam ArrowColor #64748B
+skinparam ArrowFontColor #374151
+skinparam ArrowFontSize 12
+
+skinparam SequenceMessageAlign center
+
+participant HostReactInstance
+participant SandboxReactNativeView
+participant SandboxReactInstance
+participant "//SandboxReactNativeDelegate//" as Delegate
+
+note over SandboxReactInstance
+  **Isolated JavaScript VM**
+  Separate JSI runtime with
+  own global scope and context
+end note
+
+group Initialize Sandbox
+
+HostReactInstance -> SandboxReactNativeView : <SandboxReactNativeView>\n  onMessage={handleMessage}\n  onError={handleError}\n/>
+SandboxReactNativeView -> Delegate : create delegate with configuration
+SandboxReactNativeView -> SandboxReactInstance : create isolated React instance\n(via RCTReactNativeFactory)
+Delegate -> SandboxReactInstance : setup runtime & inject globals
+note right of SandboxReactInstance
+  Manages and configures the
+  isolated React instance, injects
+  global ""postMessage"" and ""setOnMessage""
+  functions into sandbox runtime
+end note
+
+end
+
+...
+
+group Host -> Sandbox
+
+HostReactInstance -> SandboxReactNativeView : postMessage(JSON.stringify({\naction: "SETUP_SND",\ndata: { unit: 'm', ...}\n}))
+SandboxReactNativeView -> SandboxReactInstance: call onMessage handler\n(via injected globals)
+
+end
+
+...
+
+group Sandbox -> Host
+
+SandboxReactInstance -> SandboxReactNativeView : global.postMessage({action: "ADD_MENU_ITEM"})
+SandboxReactNativeView -> HostReactInstance: onMessage callback\n(via Fabric Event Emitter)
+
+end
+
+...
+
+group Error Handling
+
+SandboxReactInstance -> SandboxReactNativeView : JavaScript error occurs
+SandboxReactNativeView -> HostReactInstance: onError callback\n(via Fabric Event Emitter)
+
+end
+
+@enduml
