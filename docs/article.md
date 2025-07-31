@@ -8,7 +8,10 @@ The response was... well, let's just say the React community wasn't exactly burs
 
 And that was it. Case closed. The post quietly disappeared into the digital abyss where brave but unpopular ideas go to die... or not!
 
-![Hold my beer meme](./images/hold-my-beer.png)
+<div align="center">
+  <img src="./images/hold-my-beer.png" alt="Hold my beer meme" width="400" />
+</div>
+<br/>
 
 Well, sometimes the "easier way around" is actually the boring way around, and where's the engineering joy in doing things the sensible way? I'm here to tell you that there **actually is a place for this idea**, and the `react-native-sandbox` package is here to prove it.
 
@@ -16,7 +19,10 @@ What if I told you that you *can* actually run React Native inside React Native?
 
 Yes, this is the story of how we took the concept of "nested apps" and made it so meta that even Christopher Nolan would be envious.
 
-![Yo Dawg meme](./images/yo-dawg.png)
+<div align="center">
+  <img src="./images/yo-dawg.png" alt="Yo Dawg meme" width="400" />
+</div>
+<br/>
 
 So we put React Native in your React Native so you can render components while you render components! It's like when someone first figured out you could run a virtual machine inside a virtual machine.
 
@@ -72,12 +78,20 @@ The `jsBundleSource` property is flexible and supports multiple ways to load you
 
 You can also control security and permissions using `allowedTurboModules` to specify which native modules the sandbox can access i.e. whitelist approach
 
+Communication works between the host app and sandbox instances using Fabric Native Components:
+
+<div align="center">
+  <img src="./communication-fabric-components.png" alt="Communication Architecture between Host and Sandbox" width="600" />
+</div>
+
 ## It's show time!
 
 Our demo app is delightfully destructive—in the name of science, of course.
 
-![Demo Screenshot](../apps/demo/docs/screenshot.png)
-
+<div align="center" style="width: 240px; height: 300px; margin: 0 auto;">
+  <img src="../apps/demo/docs/screenshot.png" alt="Demo Screenshot" style="width: 100%; height: 100%; object-fit: cover; object-position: top;" />
+</div>
+<br/>
 On the left, you'll see the "Main App" column running a component directly in the host application. On the right, the "Sandboxed" column runs the exact same component inside a `SandboxReactNativeView`. While they visually look identical, the sandboxed version is running in complete isolation.
 
 ```jsx
@@ -131,5 +145,9 @@ A: Yes. You can whitelist which native modules (TurboModules) are available to e
 
 We have a lot of ideas of upcoming features in our [Roadmap](https://github.com/callstackincubator/react-native-sandbox?tab=readme-ov-file#-roadmap) is something is missing don't hesitate to [let us know](https://github.com/callstackincubator/react-native-sandbox/issues/new)
 
-[![Let's see how deep recursive example goes](./images/how-deep.png)](https://github.com/callstackincubator/react-native-sandbox/blob/main/apps/recursive/README.md)
+<div align="center">
+  <a href="https://github.com/callstackincubator/react-native-sandbox/blob/main/apps/recursive/README.md">
+    <img src="./images/how-deep.png" alt="Let's see how deep recursive example goes" width="400" />
+  </a>
+</div>
 
