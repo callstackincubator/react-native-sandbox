@@ -1,12 +1,26 @@
-<p align="center">
-  <img src="./docs/logo.svg" width="30%" />
-</p>
+<a href="https://www.callstack.com/open-source?utm_campaign=generic&utm_source=github&utm_medium=referral&utm_content=react-native-legal" align="center">
+  <picture>
+    <img alt="React Native Sandbox" src="./docs/images/rn-sandbox-banner.svg">
+  </picture>
+</a>
 
-# @callstack/react-native-sandbox
+<div align="center">
 
-[![check](https://github.com/callstackincubator/react-native-sandbox/actions/workflows/check.yml/badge.svg)](https://github.com/callstackincubator/react-native-sandbox/actions/workflows/check.yml)
-![platform: iOS](https://img.shields.io/badge/platform-iOS-blue.svg)
-![license: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+Execute React Native micro-apps with confidence
+
+</div>
+
+
+<div align="center">
+
+[![mit licence](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://github.com/callstackincubator/react-native-sandbox/blob/main/LICENSE)
+[![npm version](https://img.shields.io/npm/v/@callstack/react-native-sandbox?style=for-the-badge)](https://www.npmjs.org/package/@callstack/react-native-sandbox)
+[![npm downloads](https://img.shields.io/npm/dt/@callstack/react-native-sandbox.svg?style=for-the-badge)](https://www.npmjs.org/package/@callstack/react-native-sandbox)
+[![npm downloads](https://img.shields.io/npm/dm/@callstack/react-native-sandbox.svg?style=for-the-badge)](https://www.npmjs.org/package/@callstack/react-native-sandbox)
+[![check](https://img.shields.io/github/actions/workflow/status/callstackincubator/react-native-sandbox/check.yml?style=for-the-badge)](https://github.com/callstackincubator/react-native-sandbox/actions/workflows/check.yml)
+[![platform: iOS](https://img.shields.io/badge/platform-iOS-blue.svg?style=for-the-badge)](https://img.shields.io/badge/platform-iOS-blue.svg)
+
+</div>
 
 - [💡 Project Overview](#-project-overview)
 - [📝 API Example](#-api-example)

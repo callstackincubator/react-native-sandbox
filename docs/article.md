@@ -81,7 +81,7 @@ You can also control security and permissions using `allowedTurboModules` to spe
 Communication works between the host app and sandbox instances using Fabric Native Components:
 
 <div align="center">
-  <img src="./communication-fabric-components.png" alt="Communication Architecture between Host and Sandbox" width="600" />
+  <img src="./images/communication-fabric-components.png" alt="Communication Architecture between Host and Sandbox" width="600" />
 </div>
 
 ## It's show time!
