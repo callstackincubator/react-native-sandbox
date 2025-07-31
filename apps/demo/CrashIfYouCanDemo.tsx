@@ -1,7 +1,16 @@
-import React from 'react'
-import {Button, NativeModules, ScrollView, StyleSheet, View} from 'react-native'
+import React, {useState} from 'react'
+import {
+  Button,
+  LogBox,
+  NativeModules,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native'
 
 export default function CrashIfYouCanDemo() {
+  const [counter, setCounter] = useState(0)
+
   const triggerCrash = () => {
     // @ts-ignore
     global.nonExistentMethod() // Should crash the app
@@ -26,6 +35,10 @@ export default function CrashIfYouCanDemo() {
     while (true) {}
   }
 
+  const incrementCounter = () => {
+    setCounter(counter + 1)
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Button title="1. Crash App (undefined global)" onPress={triggerCrash} />
@@ -41,10 +54,13 @@ export default function CrashIfYouCanDemo() {
       />
       <View style={styles.spacer} />
       <Button title="4. Infinite Loop" onPress={infiniteLoop} />
-      <View style={styles.bottom} />
+      <View style={styles.spacer} />
+      <Button title={`Increment ${counter}`} onPress={incrementCounter} />
     </ScrollView>
   )
 }
+
+LogBox.ignoreAllLogs()
 
 const styles = StyleSheet.create({
   container: {
@@ -53,8 +69,5 @@ const styles = StyleSheet.create({
   },
   spacer: {
     height: 16,
-  },
-  bottom: {
-    height: 36,
   },
 })
