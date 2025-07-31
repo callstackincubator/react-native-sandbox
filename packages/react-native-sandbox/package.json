@@ -1,6 +1,6 @@
 {
   "name": "@callstack/react-native-sandbox",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "A component to run multiple React Native instances side-by-side.",
   "main": "src/index.tsx",
   "author": "Aliaksandr Babrykovich <aliaksandr.babrykovich@callstack.com>",
@@ -10,8 +10,19 @@
     "url": "https://github.com/callstackincubator/react-native-sandbox"
   },
   "homepage": "https://github.com/callstackincubator/react-native-sandbox#readme",
-  "keywords": ["react-native", "security", "sandbox", "isolation"],
-  "files": ["src", "ios", "android", "specs", "React-Sandbox.podspec"],
+  "keywords": [
+    "react-native",
+    "security",
+    "sandbox",
+    "isolation"
+  ],
+  "files": [
+    "src",
+    "ios",
+    "android",
+    "specs",
+    "React-Sandbox.podspec"
+  ],
   "scripts": {
     "lint": "clang-format --dry-run --Werror ios/*.{h,mm}",
     "format": "clang-format -i ios/*.{h,mm}"
