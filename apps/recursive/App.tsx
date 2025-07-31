@@ -1,3 +1,4 @@
+import SandboxReactNativeView from '@callstack/react-native-sandbox'
 import React from 'react'
 import {
   SafeAreaView,
@@ -8,7 +9,6 @@ import {
   useColorScheme,
   View,
 } from 'react-native'
-import SandboxReactNativeView from 'react-native-sandbox'
 
 const Colors = {
   light: '#ffffff',

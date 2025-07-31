@@ -36,9 +36,9 @@
       "name": "@apps/demo",
       "version": "1.0.0",
       "dependencies": {
+        "@callstack/react-native-sandbox": "workspace:*",
         "react": "19.1.0",
         "react-native": "0.80.1",
-        "react-native-sandbox": "workspace:*",
         "react-native-toast-message": "^2.3.2",
       },
       "devDependencies": {
@@ -59,11 +59,11 @@
       "name": "@apps/fs-experiment",
       "version": "1.0.0",
       "dependencies": {
+        "@callstack/react-native-sandbox": "workspace:*",
         "react": "19.1.0",
         "react-native": "0.80.1",
         "react-native-file-access": "^3.1.1",
         "react-native-fs": "^2.20.0",
-        "react-native-sandbox": "workspace:*",
       },
       "devDependencies": {
         "@babel/core": "^7.25.2",
@@ -80,9 +80,9 @@
       "name": "@apps/recursive",
       "version": "1.0.0",
       "dependencies": {
+        "@callstack/react-native-sandbox": "workspace:*",
         "react": "19.1.0",
         "react-native": "0.80.1",
-        "react-native-sandbox": "workspace:*",
       },
       "devDependencies": {
         "@babel/core": "^7.25.2",
@@ -99,10 +99,10 @@
       "name": "@apps/side-by-side",
       "version": "1.0.0",
       "dependencies": {
+        "@callstack/react-native-sandbox": "workspace:*",
         "react": "19.1.0",
         "react-native": "0.80.1",
         "react-native-reanimated": "^3.18.0",
-        "react-native-sandbox": "workspace:*",
         "react-native-toast-message": "^2.3.2",
       },
       "devDependencies": {
@@ -120,7 +120,7 @@
       },
     },
     "packages/react-native-sandbox": {
-      "name": "react-native-sandbox",
+      "name": "@callstack/react-native-sandbox",
       "version": "0.0.1",
       "peerDependencies": {
         "react": "*",
@@ -390,6 +390,8 @@
     "@babel/types": ["@babel/types@7.28.2", "", { "dependencies": { "@babel/helper-string-parser": "^7.27.1", "@babel/helper-validator-identifier": "^7.27.1" } }, "sha512-ruv7Ae4J5dUYULmeXw1gmb7rYRz57OWCPM57pHojnLq/3Z1CK2lNSLTCVjxVk1F/TZHwOZZrOWi0ur95BbLxNQ=="],
 
     "@bcoe/v8-coverage": ["@bcoe/v8-coverage@0.2.3", "", {}, "sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw=="],
+
+    "@callstack/react-native-sandbox": ["@callstack/react-native-sandbox@workspace:packages/react-native-sandbox"],
 
     "@commitlint/cli": ["@commitlint/cli@17.8.1", "", { "dependencies": { "@commitlint/format": "^17.8.1", "@commitlint/lint": "^17.8.1", "@commitlint/load": "^17.8.1", "@commitlint/read": "^17.8.1", "@commitlint/types": "^17.8.1", "execa": "^5.0.0", "lodash.isfunction": "^3.0.9", "resolve-from": "5.0.0", "resolve-global": "1.0.0", "yargs": "^17.0.0" }, "bin": { "commitlint": "cli.js" } }, "sha512-ay+WbzQesE0Rv4EQKfNbSMiJJ12KdKTDzIt0tcK4k11FdsWmtwP0Kp1NWMOUswfIWo6Eb7p7Ln721Nx9FLNBjg=="],
 
@@ -1872,8 +1874,6 @@
     "react-native-is-edge-to-edge": ["react-native-is-edge-to-edge@1.1.7", "", { "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-EH6i7E8epJGIcu7KpfXYXiV2JFIYITtq+rVS8uEb+92naMRBdxhTuS8Wn2Q7j9sqyO0B+Xbaaf9VdipIAmGW4w=="],
 
     "react-native-reanimated": ["react-native-reanimated@3.19.0", "", { "dependencies": { "@babel/plugin-transform-arrow-functions": "^7.0.0-0", "@babel/plugin-transform-class-properties": "^7.0.0-0", "@babel/plugin-transform-classes": "^7.0.0-0", "@babel/plugin-transform-nullish-coalescing-operator": "^7.0.0-0", "@babel/plugin-transform-optional-chaining": "^7.0.0-0", "@babel/plugin-transform-shorthand-properties": "^7.0.0-0", "@babel/plugin-transform-template-literals": "^7.0.0-0", "@babel/plugin-transform-unicode-regex": "^7.0.0-0", "@babel/preset-typescript": "^7.16.7", "convert-source-map": "^2.0.0", "invariant": "^2.2.4", "react-native-is-edge-to-edge": "1.1.7" }, "peerDependencies": { "@babel/core": "^7.0.0-0", "react": "*", "react-native": "*" } }, "sha512-FNfqLuPuVHsW9KcsZtnJqIPlMQvuySnSFJXgSt9fVDPqptbSUkiAF6MthUwd4Mxt05hCRcbV+T65CENgVS5iCg=="],
-
-    "react-native-sandbox": ["react-native-sandbox@workspace:packages/react-native-sandbox"],
 
     "react-native-toast-message": ["react-native-toast-message@2.3.3", "", { "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-4IIUHwUPvKHu4gjD0Vj2aGQzqPATiblL1ey8tOqsxOWRPGGu52iIbL8M/mCz4uyqecvPdIcMY38AfwRuUADfQQ=="],
 

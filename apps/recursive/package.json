@@ -10,7 +10,7 @@
   "dependencies": {
     "react": "19.1.0",
     "react-native": "0.80.1",
-    "react-native-sandbox": "workspace:*"
+    "@callstack/react-native-sandbox": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

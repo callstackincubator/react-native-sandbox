@@ -1,3 +1,4 @@
+import SandboxReactNativeView from '@callstack/react-native-sandbox'
 import React, {useState} from 'react'
 import {
   Platform,
@@ -13,7 +14,6 @@ import {
 } from 'react-native'
 // File system imports
 import RNFS from 'react-native-fs'
-import SandboxReactNativeView from 'react-native-sandbox'
 
 const SHARED_FILE_PATH = `${RNFS.DocumentDirectoryPath}/shared_test_file.txt`
 

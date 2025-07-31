@@ -2371,7 +2371,7 @@ DEPENDENCIES:
   - React-runtimeexecutor (from `../../../node_modules/react-native/ReactCommon/runtimeexecutor`)
   - React-RuntimeHermes (from `../../../node_modules/react-native/ReactCommon/react/runtime`)
   - React-runtimescheduler (from `../../../node_modules/react-native/ReactCommon/react/renderer/runtimescheduler`)
-  - React-Sandbox (from `../../../node_modules/react-native-sandbox`)
+  - "React-Sandbox (from `../../../node_modules/@callstack/react-native-sandbox`)"
   - React-timing (from `../../../node_modules/react-native/ReactCommon/react/timing`)
   - React-utils (from `../../../node_modules/react-native/ReactCommon/react/utils`)
   - ReactAppDependencyProvider (from `build/generated/ios`)
@@ -2520,7 +2520,7 @@ EXTERNAL SOURCES:
   React-runtimescheduler:
     :path: "../../../node_modules/react-native/ReactCommon/react/renderer/runtimescheduler"
   React-Sandbox:
-    :path: "../../../node_modules/react-native-sandbox"
+    :path: "../../../node_modules/@callstack/react-native-sandbox"
   React-timing:
     :path: "../../../node_modules/react-native/ReactCommon/react/timing"
   React-utils:

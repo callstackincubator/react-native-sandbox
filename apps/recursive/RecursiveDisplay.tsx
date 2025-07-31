@@ -1,6 +1,6 @@
+import SandboxReactNativeView from '@callstack/react-native-sandbox'
 import React from 'react'
 import {StyleSheet, Text, View} from 'react-native'
-import SandboxReactNativeView from 'react-native-sandbox'
 
 const MAX_DEPTH = 5
 

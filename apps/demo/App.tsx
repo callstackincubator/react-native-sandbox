@@ -1,6 +1,6 @@
+import SandboxReactNativeView from '@callstack/react-native-sandbox'
 import React from 'react'
 import {SafeAreaView, StyleSheet, Text, View} from 'react-native'
-import SandboxReactNativeView from 'react-native-sandbox'
 import Toast from 'react-native-toast-message'
 
 import CrashIfYouCanDemo from './CrashIfYouCanDemo'
