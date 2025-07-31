@@ -2,7 +2,7 @@
   <img src="./docs/logo.svg" width="30%" />
 </p>
 
-# react-native-sandbox
+# @callstack/react-native-sandbox
 
 [![check](https://github.com/callstackincubator/react-native-sandbox/actions/workflows/check.yml/badge.svg)](https://github.com/callstackincubator/react-native-sandbox/actions/workflows/check.yml)
 ![platform: iOS](https://img.shields.io/badge/platform-iOS-blue.svg)

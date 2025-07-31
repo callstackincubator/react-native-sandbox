@@ -9,7 +9,7 @@
 
 #import <React-RCTAppDelegate/RCTDefaultReactNativeFactoryDelegate.h>
 #import <React/RCTComponent.h>
-#import <react/renderer/components/RNMultInstanceSpec/EventEmitters.h>
+#import <react/renderer/components/RNSandboxSpec/EventEmitters.h>
 
 NS_ASSUME_NONNULL_BEGIN
 

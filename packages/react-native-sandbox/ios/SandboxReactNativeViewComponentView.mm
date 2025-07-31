@@ -1,9 +1,9 @@
 #import "SandboxReactNativeViewComponentView.h"
 
-#import <react/renderer/components/RNMultInstanceSpec/ComponentDescriptors.h>
-#import <react/renderer/components/RNMultInstanceSpec/EventEmitters.h>
-#import <react/renderer/components/RNMultInstanceSpec/Props.h>
-#import <react/renderer/components/RNMultInstanceSpec/RCTComponentViewHelpers.h>
+#import <react/renderer/components/RNSandboxSpec/ComponentDescriptors.h>
+#import <react/renderer/components/RNSandboxSpec/EventEmitters.h>
+#import <react/renderer/components/RNSandboxSpec/Props.h>
+#import <react/renderer/components/RNSandboxSpec/RCTComponentViewHelpers.h>
 
 #import <React-RCTAppDelegate/RCTReactNativeFactory.h>
 #import <React/RCTConversions.h>
