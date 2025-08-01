@@ -33,7 +33,7 @@ The package uses **autolinking** and supports the **React Native New Architectur
 import SandboxReactNativeView from '@callstack/react-native-sandbox';
 
 <SandboxReactNativeView
-  moduleName="YourSandboxModule"
+  componentName="YourSandboxModule"
   jsBundleSource="sandbox" // bundle file name
   onMessage={(data) => console.log('From sandbox:', data)}
   onError={(error) => console.error('Sandbox error:', error)}
@@ -46,7 +46,8 @@ import SandboxReactNativeView from '@callstack/react-native-sandbox';
 
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
-| `moduleName` | `string` | :ballot_box_with_check: | - | Name of the registered component to load from bundle specified in `jsBundleSource` |
+| `componentName` | `string` | :ballot_box_with_check: | - | Name of the registered component to load from bundle specified in `jsBundleSource` |
+| `moduleName` | `string` | :white_large_square: | - | **⚠️ Deprecated**: Use `componentName` instead. Will be removed in a future version. |
 | `jsBundleSource` | `string` | :ballot_box_with_check: | - | Name on file storage or URL to the JavaScript bundle to load |
 | `initialProperties` | `object` | :white_large_square: | `{}` | Initial props for the sandboxed app |
 | `launchOptions` | `object` | :white_large_square: | `{}` | Launch configuration options |
@@ -157,7 +158,7 @@ useEffect(() => {
 
 return (
   <SandboxReactNativeView
-    moduleName="DynamicApp"
+    componentName="DynamicApp"
     jsBundleSource={bundleUrl}
     initialProperties={{ 
       userId: currentUser.id,
@@ -262,7 +263,7 @@ Enable additional logging:
 const isDebug = __DEV__;
 
 <SandboxReactNativeView
-  moduleName="DebugApp"
+  componentName="DebugApp"
   launchOptions={{ debug: isDebug }}
   onError={(error) => {
     if (isDebug) {

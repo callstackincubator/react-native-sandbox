@@ -47,7 +47,7 @@ using namespace facebook::react;
 
   bool shouldReload = false;
 
-  if (oldViewProps.moduleName != newViewProps.moduleName ||
+  if (oldViewProps.componentName != newViewProps.componentName ||
       oldViewProps.jsBundleSource != newViewProps.jsBundleSource ||
       oldViewProps.initialProperties != newViewProps.initialProperties ||
       oldViewProps.launchOptions != newViewProps.launchOptions ||
@@ -93,10 +93,10 @@ using namespace facebook::react;
 {
   const auto &props = *std::static_pointer_cast<const SandboxReactNativeViewProps>(_props);
 
-  NSString *moduleName = RCTNSStringFromString(props.moduleName);
+  NSString *componentName = RCTNSStringFromString(props.componentName);
   NSString *jsBundleSource = RCTNSStringFromString(props.jsBundleSource);
 
-  if (moduleName.length == 0 || jsBundleSource.length == 0) {
+  if (componentName.length == 0 || jsBundleSource.length == 0) {
     return;
   }
 
@@ -131,7 +131,7 @@ using namespace facebook::react;
   delegate.hasOnErrorHandler = props.hasOnErrorHandler;
 
   RCTReactNativeFactory *factory = [[RCTReactNativeFactory alloc] initWithDelegate:delegate];
-  UIView *rnView = [factory.rootViewFactory viewWithModuleName:moduleName
+  UIView *rnView = [factory.rootViewFactory viewWithModuleName:componentName
                                              initialProperties:initialProperties
                                                  launchOptions:launchOptions];
 

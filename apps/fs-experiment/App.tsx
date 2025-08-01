@@ -177,7 +177,7 @@ function App(): React.JSX.Element {
                 styles.sandbox,
                 {backgroundColor: theme.background, borderColor: theme.border},
               ]}
-              moduleName={'AppFS'}
+              componentName={'AppFS'}
               jsBundleSource="sandbox-fs"
               allowedTurboModules={['RNFSManager', 'FileReaderModule']}
               onMessage={message => {
@@ -207,7 +207,7 @@ function App(): React.JSX.Element {
                 styles.sandbox,
                 {backgroundColor: theme.background, borderColor: theme.border},
               ]}
-              moduleName={'AppFileAccess'}
+              componentName={'AppFileAccess'}
               allowedTurboModules={['FileAccess']}
               jsBundleSource="sandbox-file-access"
               onMessage={message => {

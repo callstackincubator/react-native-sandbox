@@ -18,7 +18,7 @@ const SideBySideDemo: React.FC = () => {
           <SandboxReactNativeView
             style={styles.sandboxView}
             jsBundleSource={'sandbox'}
-            moduleName={'CrashIfYouCanDemo'}
+            componentName={'CrashIfYouCanDemo'}
             onError={error => {
               const message = `Got ${error.isFatal ? 'fatal' : 'non-fatal'} error from sandbox`
               console.warn(message, error)

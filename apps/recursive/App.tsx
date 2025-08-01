@@ -100,7 +100,7 @@ function App({depth = 1}: AppProps): React.JSX.Element {
               <SandboxReactNativeView
                 style={styles.recursiveSandbox}
                 jsBundleSource="index"
-                moduleName="App" // Recursively load App itself
+                componentName="App" // Recursively load App itself
                 initialProperties={{depth: depth + 1}}
                 onMessage={msg => console.log('message', msg)}
                 onError={e => console.error('error', e)}

@@ -39,10 +39,10 @@ export interface MessageEvent {
  */
 export interface NativeProps extends ViewProps {
   /**
-   * The name of the React Native module to load in the sandbox.
+   * The name of the React Native component to load in the sandbox.
    * Must match with the registered component name from the JavaScript bundle
    */
-  moduleName: string
+  componentName: string
 
   /** Name on file storage or URL to the JavaScript bundle to load */
   jsBundleSource: string

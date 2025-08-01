@@ -19,7 +19,7 @@ const RecursiveDisplay = ({depth}: Props) => {
       {depth < MAX_DEPTH ? (
         <SandboxReactNativeView
           style={styles.flex}
-          moduleName="RecursiveDisplay"
+          componentName="RecursiveDisplay"
           initialProperties={{depth: depth + 1}}
         />
       ) : (

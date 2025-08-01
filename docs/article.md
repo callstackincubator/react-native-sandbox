@@ -60,7 +60,7 @@ On API level you will deal with `SandboxReactNativeView` component in your JSX:
 <SandboxReactNativeView
   style={styles.sandboxContainer}
   jsBundleSource={'my-plugin'}
-  moduleName={'PluginComponent'}
+  componentName={'PluginComponent'}
   onMessage={(message) => {
     console.log(`Message: ${message} received through safe API`)
   }}
@@ -105,7 +105,7 @@ On the left, you'll see the "Main App" column running a component directly in th
     <SandboxReactNativeView
       style={styles.sandboxView}
       jsBundleSource={'sandbox'}
-      moduleName={'CrashIfYouCanDemo'}
+      componentName={'CrashIfYouCanDemo'}
       onError={error => {
         Toast.show({...})
         return false

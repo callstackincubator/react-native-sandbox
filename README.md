@@ -92,7 +92,7 @@ function HostApp() {
     <View>
       <Button onPress={sendMessageToSandbox} title="Send to Sandbox" />
       <SandboxReactNativeView ref={sandboxRef}
-        moduleName={"ModuleName"} // The name of your JS module
+        componentName={"ModuleName"} // The name of your JS component
         jsBundleSource={"sandbox"} // The JS bundle: file name or URL
         onMessage={handleMessage}
         onError={handleError}

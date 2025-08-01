@@ -45,7 +45,7 @@ function SandboxDemoView({initialProperties}: {initialProperties: any}) {
           <SandboxReactNativeView
             ref={sandboxRef}
             jsBundleSource={'sandbox'}
-            moduleName={'SandboxApp'}
+            componentName={'SandboxApp'}
             style={styles.sandboxView}
             initialProperties={initialProperties}
             onMessage={msg => {
