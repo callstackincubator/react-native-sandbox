@@ -44,24 +44,147 @@ const SANDBOX_TURBOMODULES_WHITELIST = [
   'I18nManager',
 ]
 
+/**
+ * Generic object type for props that can contain any key-value pairs.
+ * Used for initialProperties and launchOptions to allow flexible configuration.
+ */
 type GenericProps = {
   [key: string]: any
 }
 
+/**
+ * Props for the SandboxReactNativeView component.
+ * Extends ViewProps to include all standard React Native View properties.
+ */
 export type SandboxReactNativeViewProps = ViewProps & {
+  /**
+   * The name of the React Native module to load in the sandbox.
+   * This should match the component name registered in your JavaScript bundle.
+   */
   moduleName: string
+
+  /**
+   * Optional path or URL to the JavaScript bundle to load.
+   * If not provided, the default bundle will be used.
+   */
   jsBundleSource?: string
+
+  /**
+   * Initial properties to pass to the sandboxed React Native app.
+   * These will be available as props in the root component of the sandbox.
+   */
   initialProperties?: GenericProps
+
+  /**
+   * Launch options for configuring the sandbox environment.
+   * Platform-specific options for initializing the React Native instance.
+   */
   launchOptions?: GenericProps
+
+  /**
+   * Array of additional TurboModule names to allow in the sandbox.
+   * These will be merged with the default whitelist for enhanced functionality.
+   */
   allowedTurboModules?: string[]
+
+  /**
+   * Callback function called when the sandbox sends a message to the parent.
+   * Use this for bidirectional communication between parent and sandbox.
+   *
+   * @param data - The data sent from the sandbox, can be any serializable value
+   */
   onMessage?: (data: unknown) => void
+
+  /**
+   * Callback function called when an error occurs in the sandbox.
+   *
+   * @param error - Error details including name, message, stack trace, and fatality
+   */
   onError?: (error: ErrorEvent) => void
 }
 
+/**
+ * Ref interface for SandboxReactNativeView component.
+ * Provides methods to interact with the sandbox from the parent component.
+ *
+ * @example
+ * ```tsx
+ * const sandboxRef = useRef<SandboxReactNativeViewRef>(null);
+ *
+ * // Send a message to the sandbox
+ * sandboxRef.current?.postMessage({
+ *   type: 'update',
+ *   payload: { theme: 'light' }
+ * });
+ * ```
+ */
 export interface SandboxReactNativeViewRef {
+  /**
+   * Send a message to the sandboxed React Native instance.
+   * The message will be serialized to JSON before transmission.
+   *
+   * @param message - Any serializable data to send to the sandbox
+   */
   postMessage: (message: unknown) => void
 }
 
+/**
+ * SandboxReactNativeView component for running isolated React Native instances.
+ *
+ * This component creates a secure sandbox environment where you can run multiple
+ * React Native apps side-by-side with controlled access to TurboModules and
+ * bidirectional communication capabilities.
+ *
+ * Key features:
+ * - Security isolation through TurboModule whitelisting
+ * - Bidirectional communication via postMessage
+ * - Error handling and monitoring
+ * - Support for custom launch configurations
+ *
+ * @example
+ * Basic usage:
+ * ```tsx
+ * function App() {
+ *   const sandboxRef = useRef<SandboxReactNativeViewRef>(null);
+ *
+ *   const handleMessage = (data: unknown) => {
+ *     console.log('Message from sandbox:', data);
+ *   };
+ *
+ *   const sendMessage = () => {
+ *     sandboxRef.current?.postMessage({ action: 'refresh' });
+ *   };
+ *
+ *   return (
+ *     <SandboxReactNativeView
+ *       ref={sandboxRef}
+ *       moduleName="MyDynamicApp"
+ *       jsBundleSource="https://example.com/app.bundle.js"
+ *       initialProperties={{ userId: '123', theme: 'dark' }}
+ *       onMessage={handleMessage}
+ *       onError={(error) => console.error('Sandbox error:', error)}
+ *       style={{ flex: 1 }}
+ *     />
+ *   );
+ * }
+ * ```
+ *
+ * @example
+ * Advanced usage with custom TurboModules:
+ * ```tsx
+ * <SandboxReactNativeView
+ *   moduleName="SecureApp"
+ *   allowedTurboModules={['MyCustomModule', 'CryptoModule']}
+ *   launchOptions={{ debugMode: false, securityLevel: 'high' }}
+ *   onMessage={(data) => {
+ *     // Handle different message types
+ *     if (data?.type === 'auth') {
+ *       handleAuthentication(data.payload);
+ *     }
+ *   }}
+ * />
+ * ```
+ */
 const SandboxReactNativeView = forwardRef<
   SandboxReactNativeViewRef,
   SandboxReactNativeViewProps
