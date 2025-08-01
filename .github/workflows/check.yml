@@ -48,6 +48,10 @@ jobs:
       - name: Run ESLint
         run: bun run lint
 
+      - name: Test pack
+        working-directory: packages/react-native-sandbox
+        run: npm pack
+
   example-compilation:
     runs-on: macos-15
     strategy:
