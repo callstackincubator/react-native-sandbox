@@ -6,13 +6,6 @@
 
 <div align="center">
 
-Execute React Native micro-apps with confidence
-
-</div>
-
-
-<div align="center">
-
 [![mit licence](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://github.com/callstackincubator/react-native-sandbox/blob/main/LICENSE)
 [![npm version](https://img.shields.io/npm/v/@callstack/react-native-sandbox?style=for-the-badge)](https://www.npmjs.org/package/@callstack/react-native-sandbox)
 [![npm downloads](https://img.shields.io/npm/dt/@callstack/react-native-sandbox.svg?style=for-the-badge)](https://www.npmjs.org/package/@callstack/react-native-sandbox)
@@ -21,6 +14,12 @@ Execute React Native micro-apps with confidence
 [![platform: iOS](https://img.shields.io/badge/platform-iOS-blue.svg?style=for-the-badge)](https://img.shields.io/badge/platform-iOS-blue.svg)
 
 </div>
+
+Execute React Native micro-apps with confidence using [`react-native-sandbox`](./packages/react-native-sandbox/README.md)
+
+```bash
+npm install @callstack/react-native-sandbox
+```
 
 - [💡 Project Overview](#-project-overview)
 - [📝 API Example](#-api-example)
