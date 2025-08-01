@@ -2019,7 +2019,7 @@ PODS:
     - React-timing
     - React-utils
     - SocketRocket
-  - React-Sandbox (0.0.1):
+  - React-Sandbox (0.1.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -2451,7 +2451,7 @@ SPEC CHECKSUMS:
   React-runtimeexecutor: 17c70842d5e611130cb66f91e247bc4a609c3508
   React-RuntimeHermes: 3c88e6e1ea7ea0899dcffc77c10d61ea46688cfd
   React-runtimescheduler: 024500621c7c93d65371498abb4ee26d34f5d47d
-  React-Sandbox: 54c22e07b36020687c46ee4b726f7bf0cc919494
+  React-Sandbox: 3e7ed5ba062a3f1b1c2ffb18064b08a31b4f44d2
   React-timing: c3c923df2b86194e1682e01167717481232f1dc7
   React-utils: 9154a037543147e1c24098f1a48fc8472602c092
   ReactAppDependencyProvider: afd905e84ee36e1678016ae04d7370c75ed539be
@@ -2460,6 +2460,6 @@ SPEC CHECKSUMS:
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: daa1e4de4b971b977b23bc842aaa3e135324f1f3
 
-PODFILE CHECKSUM: f1d3d831180547c653d274d959340a6c5a74dbec
+PODFILE CHECKSUM: 5a84e4b97971d8ea6afcd805e0f67ace94e714f1
 
 COCOAPODS: 1.16.2
