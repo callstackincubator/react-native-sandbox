@@ -13,11 +13,7 @@ const SideBySideDemo: React.FC = () => {
           <Text style={styles.header}>Main App</Text>
           <CrashIfYouCanDemo />
         </View>
-        <View
-          style={[
-            styles.column,
-            styles.columnSandbox,
-          ]}>
+        <View style={[styles.column, styles.columnSandbox]}>
           <Text style={styles.header}>Sandboxed</Text>
           <SandboxReactNativeView
             style={styles.sandboxView}
