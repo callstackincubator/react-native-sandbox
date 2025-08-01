@@ -13,8 +13,7 @@ const SideBySideDemo: React.FC = () => {
           <Text style={styles.header}>Main App</Text>
           <CrashIfYouCanDemo />
         </View>
-        <View style={styles.divider} />
-        <View style={styles.column}>
+        <View style={[styles.column, styles.columnSandbox]}>
           <Text style={styles.header}>Sandboxed</Text>
           <SandboxReactNativeView
             style={styles.sandboxView}
@@ -44,6 +43,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 16,
     justifyContent: 'space-between',
+  },
+  columnSandbox: {
+    borderWidth: 1,
+    borderColor: '#8232ff',
+    borderRadius: 4,
   },
   column: {
     flex: 1,
