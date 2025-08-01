@@ -2019,7 +2019,7 @@ PODS:
     - React-timing
     - React-utils
     - SocketRocket
-  - React-Sandbox (0.1.0):
+  - React-Sandbox (0.2.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -2603,7 +2603,7 @@ SPEC CHECKSUMS:
   React-runtimeexecutor: 17c70842d5e611130cb66f91e247bc4a609c3508
   React-RuntimeHermes: 3c88e6e1ea7ea0899dcffc77c10d61ea46688cfd
   React-runtimescheduler: 024500621c7c93d65371498abb4ee26d34f5d47d
-  React-Sandbox: 3e7ed5ba062a3f1b1c2ffb18064b08a31b4f44d2
+  React-Sandbox: 789583cf1f6db8c2bf95e54125aef4314fe9d8ca
   React-timing: c3c923df2b86194e1682e01167717481232f1dc7
   React-utils: 9154a037543147e1c24098f1a48fc8472602c092
   ReactAppDependencyProvider: afd905e84ee36e1678016ae04d7370c75ed539be
