@@ -82,5 +82,5 @@ android/keystores/debug.keystore
 lib/
 
 # other
-
 dist/
+*.tgz

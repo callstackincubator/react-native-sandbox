@@ -3,8 +3,22 @@ name: check
 on:
   push:
     branches: [ main, develop ]
+    paths-ignore:
+      - '**/*.md'
+      - '.gitignore'
+      - 'docs/**'
+      - '**/*.txt'
+      - 'LICENSE'
+      - '**/README*'
   pull_request:
     branches: [ main, develop ]
+    paths-ignore:
+      - '**/*.md'
+      - '.gitignore'
+      - 'docs/**'
+      - '**/*.txt'
+      - 'LICENSE'
+      - '**/README*'
   workflow_dispatch:
 
 jobs:
