@@ -1,6 +1,6 @@
 {
   "name": "@callstack/react-native-sandbox",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "A component to run multiple React Native instances side-by-side.",
   "main": "lib/commonjs/index.js",
   "module": "lib/module/index.js",
