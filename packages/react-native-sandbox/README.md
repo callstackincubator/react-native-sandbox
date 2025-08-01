@@ -44,16 +44,16 @@ import SandboxReactNativeView from '@callstack/react-native-sandbox';
 
 ### Component Props
 
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| `moduleName` | `string` | ✅ | Name of the React Native module to load |
-| `jsBundleSource` | `string` | ❌ | Path or URL to JavaScript bundle |
-| `initialProperties` | `object` | ❌ | Initial props for the sandboxed app |
-| `launchOptions` | `object` | ❌ | Launch configuration options |
-| `allowedTurboModules` | `string[]` | ❌ | Additional TurboModules to allow |
-| `onMessage` | `function` | ❌ | Callback for messages from sandbox |
-| `onError` | `function` | ❌ | Callback for sandbox errors |
-| `style` | `ViewStyle` | ❌ | Container styling |
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `moduleName` | `string` | :ballot_box_with_check: | - | Name of the registered component to load from bundle specified in `jsBundleSource` |
+| `jsBundleSource` | `string` | :ballot_box_with_check: | - | Name on file storage or URL to the JavaScript bundle to load |
+| `initialProperties` | `object` | :white_large_square: | `{}` | Initial props for the sandboxed app |
+| `launchOptions` | `object` | :white_large_square: | `{}` | Launch configuration options |
+| `allowedTurboModules` | `string[]` | :white_large_square: | [check here](./src/index.tsx#L18) | Additional TurboModules to allow |
+| `onMessage` | `function` | :white_large_square: | `undefined` | Callback for messages from sandbox |
+| `onError` | `function` | :white_large_square: | `undefined` | Callback for sandbox errors |
+| `style` | `ViewStyle` | :white_large_square: | `undefined` | Container styling |
 
 ### Ref Methods
 

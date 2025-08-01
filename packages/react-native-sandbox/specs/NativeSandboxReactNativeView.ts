@@ -44,8 +44,8 @@ export interface NativeProps extends ViewProps {
    */
   moduleName: string
 
-  /** Optional path or URL to the JavaScript bundle source */
-  jsBundleSource?: string
+  /** Name on file storage or URL to the JavaScript bundle to load */
+  jsBundleSource: string
 
   /** Initial properties to pass to the sandboxed app's root component */
   initialProperties?: CodegenTypes.UnsafeMixed

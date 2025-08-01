@@ -67,7 +67,7 @@ export type SandboxReactNativeViewProps = ViewProps & {
    * Optional path or URL to the JavaScript bundle to load.
    * If not provided, the default bundle will be used.
    */
-  jsBundleSource?: string
+  jsBundleSource: string
 
   /**
    * Initial properties to pass to the sandboxed React Native app.
@@ -203,7 +203,7 @@ const SandboxReactNativeView = forwardRef<
   const _onError = useCallback(
     (e: NativeSyntheticEvent<ErrorEvent>) => {
       // @ts-ignore
-      onError?.(e.nativeEvent)
+      onError?.(e.nativeEvent as ErrorEvent)
     },
     [onError]
   )
