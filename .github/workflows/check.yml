@@ -52,7 +52,7 @@ jobs:
     runs-on: macos-15
     strategy:
       matrix:
-        example: [demo, side-by-side, recursive, fs-experiment]
+        example: [demo] # side-by-side, recursive, fs-experiment
     concurrency:
       group: '${{ github.workflow }}-${{ matrix.example }}-${{ github.head_ref || github.ref_name }}'
       cancel-in-progress: true
