@@ -1,3 +1,22 @@
 {
-  "extends": "@react-native/typescript-config/tsconfig.json"
+  "compilerOptions": {
+    "allowJs": true,
+    "esModuleInterop": true,
+    "paths": {
+      "@react-native-ai/mlc": ["./packages/mlc/src/index"],
+      "@react-native-ai/apple": ["./packages/apple-llm/src"]
+    },
+    "jsx": "react-native",
+    "lib": ["DOM", "ESNext"],
+    "module": "preserve",
+    "moduleDetection": "force",
+    "moduleResolution": "bundler",
+    "customConditions": ["react-native"],
+    "resolveJsonModule": true,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "skipLibCheck": true,
+    "target": "ESNext"
+  },
+  "exclude": ["node_modules", "babel.config.js", "metro.config.js", "jest.config.js", "lib"],
 }

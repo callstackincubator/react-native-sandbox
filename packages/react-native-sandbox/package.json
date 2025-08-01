@@ -2,7 +2,11 @@
   "name": "@callstack/react-native-sandbox",
   "version": "0.1.0",
   "description": "A component to run multiple React Native instances side-by-side.",
-  "main": "src/index.tsx",
+  "main": "lib/commonjs/index.js",
+  "module": "lib/module/index.js",
+  "types": "lib/typescript/src/index.d.ts",
+  "react-native": "src/index",
+  "source": "src/index",
   "author": "Aliaksandr Babrykovich <aliaksandr.babrykovich@callstack.com>",
   "license": "MIT",
   "repository": {
@@ -25,11 +29,26 @@
   ],
   "scripts": {
     "lint": "clang-format --dry-run --Werror ios/*.{h,mm}",
-    "format": "clang-format -i ios/*.{h,mm}"
+    "format": "clang-format -i ios/*.{h,mm}",
+    "typecheck": "tsc --noEmit",
+    "prepare": "bob build"
+  },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      "commonjs",
+      "module",
+      "typescript"
+    ]
   },
   "peerDependencies": {
     "react": "*",
     "react-native": "*"
+  },
+  "devDependencies": {
+    "react": "19.1.0",
+    "react-native": "0.80.1"
   },
   "codegenConfig": {
     "name": "RNSandboxSpec",

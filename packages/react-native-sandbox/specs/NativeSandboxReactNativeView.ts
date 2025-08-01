@@ -1,3 +1,4 @@
+import type React from 'react'
 import type {HostComponent, ViewProps} from 'react-native'
 import {
   codegenNativeCommands,
@@ -33,16 +34,15 @@ export interface NativeProps extends ViewProps {
   onError?: CodegenTypes.BubblingEventHandler<ErrorEvent>
 }
 
+export type NativeSandboxReactNativeViewComponentType =
+  HostComponent<NativeProps>
+
 interface NativeCommands {
   postMessage: (
-    // Despites the deprecation warning, codegen requires ElementRef, otherwise:
-    // Error: The first argument of method postMessage must be of type React.ElementRef<>
-    viewRef: React.ElementRef<SandboxReactNativeViewComponentType>,
+    viewRef: React.ElementRef<NativeSandboxReactNativeViewComponentType>,
     message: string
   ) => void
 }
-
-export type SandboxReactNativeViewComponentType = HostComponent<NativeProps>
 
 export const Commands: NativeCommands = codegenNativeCommands<NativeCommands>({
   supportedCommands: ['postMessage'],
@@ -50,4 +50,4 @@ export const Commands: NativeCommands = codegenNativeCommands<NativeCommands>({
 
 export default codegenNativeComponent<NativeProps>(
   'SandboxReactNativeView'
-) as SandboxReactNativeViewComponentType
+) as NativeSandboxReactNativeViewComponentType

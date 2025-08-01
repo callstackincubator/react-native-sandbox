@@ -1,3 +1,4 @@
+import type React from 'react'
 import {
   forwardRef,
   useCallback,
@@ -5,15 +6,10 @@ import {
   useMemo,
   useRef,
 } from 'react'
-import {
-  NativeSyntheticEvent,
-  StyleProp,
-  StyleSheet,
-  View,
-  ViewProps,
-  ViewStyle,
-} from 'react-native'
+import type {NativeSyntheticEvent} from 'react-native'
+import {StyleProp, StyleSheet, View, ViewProps, ViewStyle} from 'react-native'
 
+import type {NativeSandboxReactNativeViewComponentType} from '../specs/NativeSandboxReactNativeView'
 import NativeSandboxReactNativeView, {
   Commands,
   ErrorEvent,
@@ -52,7 +48,7 @@ type GenericProps = {
   [key: string]: any
 }
 
-export interface SandboxReactNativeViewProps extends ViewProps {
+export type SandboxReactNativeViewProps = ViewProps & {
   moduleName: string
   jsBundleSource?: string
   initialProperties?: GenericProps
@@ -71,7 +67,9 @@ const SandboxReactNativeView = forwardRef<
   SandboxReactNativeViewProps
 >(({onMessage, onError, allowedTurboModules, style, ...rest}, ref) => {
   const nativeRef =
-    useRef<React.ComponentRef<typeof NativeSandboxReactNativeView>>(null)
+    useRef<React.ElementRef<NativeSandboxReactNativeViewComponentType> | null>(
+      null
+    )
 
   const postMessage = useCallback((message: any) => {
     if (nativeRef.current) {
@@ -81,13 +79,15 @@ const SandboxReactNativeView = forwardRef<
 
   const _onError = useCallback(
     (e: NativeSyntheticEvent<ErrorEvent>) => {
+      // @ts-ignore
       onError?.(e.nativeEvent)
     },
     [onError]
   )
 
   const _onMessage = useCallback(
-    (e: NativeSyntheticEvent<{data: any}>) => {
+    (e: NativeSyntheticEvent<MessageEvent>) => {
+      // @ts-ignore
       onMessage?.(e.nativeEvent.data)
     },
     [onMessage]
@@ -123,6 +123,7 @@ const SandboxReactNativeView = forwardRef<
   return (
     <View style={style}>
       <NativeSandboxReactNativeView
+        // @ts-ignore
         ref={nativeRef}
         hasOnMessageHandler={!!onMessage}
         hasOnErrorHandler={!!onError}

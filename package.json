@@ -38,7 +38,7 @@
     "react-native-builder-bob": "^0.23.2",
     "react-test-renderer": "19.1.0",
     "release-it": "^17.6.0",
-    "typescript": "5.0.4"
+    "typescript": "^5.2.2"
   },
   "commitlint": {
     "extends": [
