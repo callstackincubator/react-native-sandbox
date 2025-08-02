@@ -46,7 +46,7 @@ import SandboxReactNativeView from '@callstack/react-native-sandbox';
 
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
-| `componentName` | `string` | :ballot_box_with_check: | - | Name of the registered component to load from bundle specified in `jsBundleSource` |
+| `componentName` | `string` | :ballot_box_with_check: | - | Name of the component registered through `AppRegistry.registerComponent` call inside the bundle file specified in `jsBundleSource` |
 | `moduleName` | `string` | :white_large_square: | - | **⚠️ Deprecated**: Use `componentName` instead. Will be removed in a future version. |
 | `jsBundleSource` | `string` | :ballot_box_with_check: | - | Name on file storage or URL to the JavaScript bundle to load |
 | `initialProperties` | `object` | :white_large_square: | `{}` | Initial props for the sandboxed app |
