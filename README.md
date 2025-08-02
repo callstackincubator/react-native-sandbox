@@ -92,8 +92,8 @@ function HostApp() {
     <View>
       <Button onPress={sendMessageToSandbox} title="Send to Sandbox" />
       <SandboxReactNativeView ref={sandboxRef}
-        componentName={"ModuleName"} // The name of your JS component
         jsBundleSource={"sandbox"} // The JS bundle: file name or URL
+        componentName={"SandboxApp"} // The name of your JS component from jsBundleSource
         onMessage={handleMessage}
         onError={handleError}
       />
@@ -108,7 +108,7 @@ function HostApp() {
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Button, Text } from 'react-native';
 
-// No import required API available through global
+// No import required, API available through global
 declare global {
   var postMessage: (message: object) => void;
   var setOnMessage: (handler: (payload: object) => void) => void;

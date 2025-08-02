@@ -44,8 +44,8 @@ function SandboxDemoView({initialProperties}: {initialProperties: any}) {
         {isVisible ? (
           <SandboxReactNativeView
             ref={sandboxRef}
-            jsBundleSource={'sandbox'}
-            componentName={'SandboxApp'}
+            jsBundleSource={'sandbox'} // bundle name for query from metro
+            componentName={'SandboxApp'} // componentName registered in sandbox.js
             style={styles.sandboxView}
             initialProperties={initialProperties}
             onMessage={msg => {

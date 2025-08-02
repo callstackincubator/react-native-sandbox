@@ -33,7 +33,7 @@ The package uses **autolinking** and supports the **React Native New Architectur
 import SandboxReactNativeView from '@callstack/react-native-sandbox';
 
 <SandboxReactNativeView
-  componentName="YourSandboxModule"
+  componentName="YourSandboxComponent"
   jsBundleSource="sandbox" // bundle file name
   onMessage={(data) => console.log('From sandbox:', data)}
   onError={(error) => console.error('Sandbox error:', error)}

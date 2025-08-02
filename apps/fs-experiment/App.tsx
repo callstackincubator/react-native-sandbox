@@ -177,8 +177,8 @@ function App(): React.JSX.Element {
                 styles.sandbox,
                 {backgroundColor: theme.background, borderColor: theme.border},
               ]}
-              componentName={'AppFS'}
-              jsBundleSource="sandbox-fs"
+              componentName={'AppFS'} // componentName from sandbox-fs.js
+              jsBundleSource="sandbox-fs" // bundle name for query from metro
               allowedTurboModules={['RNFSManager', 'FileReaderModule']}
               onMessage={message => {
                 console.log('Host received message from sandbox:', message)
@@ -207,9 +207,9 @@ function App(): React.JSX.Element {
                 styles.sandbox,
                 {backgroundColor: theme.background, borderColor: theme.border},
               ]}
-              componentName={'AppFileAccess'}
+              componentName={'AppFileAccess'} // componentName from sandbox-file-access.js
               allowedTurboModules={['FileAccess']}
-              jsBundleSource="sandbox-file-access"
+              jsBundleSource="sandbox-file-access" // bundle name for query from metro
               onMessage={message => {
                 console.log('Host received message from sandbox:', message)
               }}

@@ -65,7 +65,7 @@ export type SandboxReactNativeViewProps = ViewProps & {
 
   /**
    * @deprecated Use componentName instead. Will be removed in a future version.
-   * The name of the React Native module to load in the sandbox.
+   * The name of the React Native component to load in the sandbox.
    * This should match the component name registered in your JavaScript bundle.
    */
   moduleName?: string
