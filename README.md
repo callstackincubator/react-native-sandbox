@@ -47,10 +47,8 @@ This project was born from the need to safely run third-party code within a reac
 
 This project is structured as a monorepo.
 
-- [`packages/react-native-sandbox`](./packages/react-native-sandbox/): the core library.
-- [`apps/side-by-side`](./apps/side-by-side/README.md): An example application with two sandbox instances.
-- [`apps/recursive`](./apps/recursive/README.md): An example application with few nested sandbox instances.
-- [`apps/demo`](./apps/demo/README.md): Security demo.
+- [`packages/react-native-sandbox`](./packages/react-native-sandbox/): the core library
+- [`apps/*`](./apps/): examples
 
 To run the examples:
 
@@ -66,8 +64,6 @@ To run the examples:
 
     ```sh
     bun ios
-    # or
-    bun android
     ```
 
 
@@ -143,6 +139,12 @@ function SandboxApp() {
 
 AppRegistry.registerComponent("SandboxApp", () => App);
 ```
+
+Full examples:
+
+- [`apps/side-by-side`](./apps/side-by-side/README.md): An example application with two sandbox instances.
+- [`apps/recursive`](./apps/recursive/README.md): An example application with few nested sandbox instances.
+- [`apps/demo`](./apps/demo/README.md): Security demo.
 
 ## 📚 API Reference
 
