@@ -23,6 +23,7 @@ npm install @callstack/react-native-sandbox
 
 - [💡 Project Overview](#-project-overview)
 - [📝 API Example](#-api-example)
+- [📚 API Reference](#-api-reference)
 - [🎨 Roadmap](#-roadmap)
 - [🔒 Security Considerations](#-security-considerations)
   - [TurboModules](#turbomodules)
@@ -93,7 +94,7 @@ function HostApp() {
       <Button onPress={sendMessageToSandbox} title="Send to Sandbox" />
       <SandboxReactNativeView ref={sandboxRef}
         jsBundleSource={"sandbox"} // The JS bundle: file name or URL
-        componentName={"SandboxApp"} // The name of your JS component from jsBundleSource
+        componentName={"SandboxApp"} // Name of component registered in bundle provided with jsBundleSource
         onMessage={handleMessage}
         onError={handleError}
       />
@@ -142,6 +143,10 @@ function SandboxApp() {
 
 AppRegistry.registerComponent("SandboxApp", () => App);
 ```
+
+## 📚 API Reference
+
+For comprehensive API documentation, installation instructions, and advanced usage patterns, see the [package documentation](https://github.com/callstackincubator/react-native-sandbox/blob/main/packages/react-native-sandbox/README.md).
 
 ## 🎨 Roadmap
 

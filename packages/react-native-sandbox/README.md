@@ -3,7 +3,7 @@
 [![npm version](https://badge.fury.io/js/@callstack%2Freact-native-sandbox.svg)](https://badge.fury.io/js/@callstack%2Freact-native-sandbox)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/callstackincubator/react-native-sandbox/blob/main/LICENSE)
 
-> **Library Documentation** - For project overview, examples, and security considerations, see the [main repository README](../../README.md).
+> **Library Documentation** - For project overview, examples, and security considerations, see the [main repository README](https://github.com/callstackincubator/react-native-sandbox#readme).
 
 This is the **developer documentation** for installing and using `@callstack/react-native-sandbox` in your React Native application.
 
@@ -27,13 +27,13 @@ The package uses **autolinking** and supports the **React Native New Architectur
 
 ## 🎯 Basic Usage
 
-> For complete examples with both host and sandbox code, see the [project examples](../../README.md#-api-example).
+> For complete examples with both host and sandbox code, see the [project examples](https://github.com/callstackincubator/react-native-sandbox#-api-example).
 
 ```tsx
 import SandboxReactNativeView from '@callstack/react-native-sandbox';
 
 <SandboxReactNativeView
-  componentName="YourSandboxComponent"
+  componentName="YourSandboxComponent" // Name of component registered in bundle provided with jsBundleSource
   jsBundleSource="sandbox" // bundle file name
   onMessage={(data) => console.log('From sandbox:', data)}
   onError={(error) => console.error('Sandbox error:', error)}
@@ -51,7 +51,7 @@ import SandboxReactNativeView from '@callstack/react-native-sandbox';
 | `jsBundleSource` | `string` | :ballot_box_with_check: | - | Name on file storage or URL to the JavaScript bundle to load |
 | `initialProperties` | `object` | :white_large_square: | `{}` | Initial props for the sandboxed app |
 | `launchOptions` | `object` | :white_large_square: | `{}` | Launch configuration options |
-| `allowedTurboModules` | `string[]` | :white_large_square: | [check here](./src/index.tsx#L18) | Additional TurboModules to allow |
+| `allowedTurboModules` | `string[]` | :white_large_square: | [check here](https://github.com/callstackincubator/react-native-sandbox/blob/main/packages/react-native-sandbox/src/index.tsx#L18) | Additional TurboModules to allow |
 | `onMessage` | `function` | :white_large_square: | `undefined` | Callback for messages from sandbox |
 | `onError` | `function` | :white_large_square: | `undefined` | Callback for sandbox errors |
 | `style` | `ViewStyle` | :white_large_square: | `undefined` | Container styling |
@@ -77,7 +77,7 @@ interface ErrorEvent {
 
 ## 🔒 Security & TurboModules
 
-> For detailed security considerations, see the [Security section](../../README.md#-security-considerations) in the main README.
+> For detailed security considerations, see the [Security section](https://github.com/callstackincubator/react-native-sandbox#-security-considerations) in the main README.
 
 This package is built with **React Native New Architecture** using Fabric for optimal performance and type safety.
 
@@ -92,7 +92,7 @@ Use `allowedTurboModules` to control which native modules the sandbox can access
 />
 ```
 
-**Default allowed modules** include essential React Native TurboModules like `EventDispatcher`, `AppState`, `Networking`, etc. See the [source code](./src/index.tsx) for the complete list.
+**Default allowed modules** include essential React Native TurboModules like `EventDispatcher`, `AppState`, `Networking`, etc. See the [source code](https://github.com/callstackincubator/react-native-sandbox/blob/main/packages/react-native-sandbox/src/index.tsx) for the complete list.
 
 > Note: This filtering works with both legacy native modules and new TurboModules, ensuring compatibility across React Native versions.
 
@@ -158,33 +158,12 @@ useEffect(() => {
 
 return (
   <SandboxReactNativeView
-    componentName="DynamicApp"
+    componentName="DynamicApp" // Name of component registered in bundle provided with jsBundleSource
     jsBundleSource={bundleUrl}
     initialProperties={{ 
       userId: currentUser.id,
       theme: userPreferences.theme 
     }}
-  />
-);
-```
-
-### Error Recovery Pattern
-
-```tsx
-const [sandboxKey, setSandboxKey] = useState(0);
-
-const handleError = (error: ErrorEvent) => {
-  if (error.isFatal) {
-    // Force re-mount to recover from fatal errors
-    setSandboxKey(prev => prev + 1);
-  }
-};
-
-return (
-  <SandboxReactNativeView
-    key={sandboxKey} // Re-mount on fatal errors
-    onError={handleError}
-    // ... other props
   />
 );
 ```
@@ -205,19 +184,8 @@ const handleMessage = (data: unknown) => {
 ### Memory Management
 
 - Each sandbox creates a separate JavaScript context
-- Limit the number of concurrent sandbox instances
 - Use `key` prop to force re-mount when needed
 - Monitor memory usage in production
-
-### Bundle Optimization
-
-```tsx
-// ✅ Good: Small, focused bundles
-jsBundleSource="micro-app-dashboard.bundle.js"
-
-// ❌ Avoid: Large monolithic bundles
-jsBundleSource="entire-app-with-everything.bundle.js" 
-```
 
 ### Communication Efficiency
 
@@ -254,36 +222,48 @@ jsBundleSource="micro-app.jsbundle"
 allowedTurboModules={['MyModule']}
 ```
 
-### Debug Mode
-
-Enable additional logging:
-
+**3. Fatal Error Recovery**
 ```tsx
-// In development
-const isDebug = __DEV__;
+// ❌ Sandbox crashed and won't recover
+<SandboxReactNativeView
+  onError={(error) => {
+    console.log('Error:', error);
+    // Sandbox remains broken after fatal error
+  }}
+/>
+
+// ✅ Auto-recover from fatal errors by re-mounting
+const [sandboxKey, setSandboxKey] = useState(0);
+
+const handleError = (error: ErrorEvent) => {
+  if (error.isFatal) {
+    // Force re-mount to recover from fatal errors
+    setSandboxKey(prev => prev + 1);
+  }
+};
 
 <SandboxReactNativeView
-  componentName="DebugApp"
-  launchOptions={{ debug: isDebug }}
-  onError={(error) => {
-    if (isDebug) {
-      console.log('Full error details:', error);
-    }
-  }}
+  key={sandboxKey} // Re-mount on fatal errors
+  componentName={"SandboxedApp"} // Name of component registered in bundle provided with jsBundleSource
+  jsBundleSource={"sandbox"}
+  onError={handleError}
 />
 ```
 
-## 🐛 Known Issues
+**4. Bundle Size Performance Issues**
+```tsx
+// ❌ Avoid: Large monolithic bundles (slow loading)
+jsBundleSource="entire-app-with-everything.bundle.js"
 
-### iOS
-- Multiple rapid sandbox creation/destruction may cause memory spikes
-- Large bundles (>10MB) may impact initial load time
-- First sandbox load may be slower due to JavaScript context initialization
+// ✅ Good: Small, focused bundles (fast loading)
+jsBundleSource="micro-app-dashboard.bundle.js"
+// or
+jsBundleSource="https://cdn.example.com/lightweight-feature.bundle.js"
+```
 
 ## 📄 More Information
 
-- **📖 Project Overview & Examples**: [Main README](../../README.md)
-- **🔒 Security Considerations**: [Security Documentation](../../README.md#-security-considerations)
-- **🎨 Roadmap**: [Development Plans](../../README.md#-roadmap)
+- **📖 Project Overview & Examples**: [Main README](https://github.com/callstackincubator/react-native-sandbox#readme)
+- **🔒 Security Considerations**: [Security Documentation](https://github.com/callstackincubator/react-native-sandbox#-security-considerations)
+- **🎨 Roadmap**: [Development Plans](https://github.com/callstackincubator/react-native-sandbox#-roadmap)
 - **🐛 Issues**: [GitHub Issues](https://github.com/callstackincubator/react-native-sandbox/issues)
-- **📦 npm**: [@callstack/react-native-sandbox](https://www.npmjs.com/package/@callstack/react-native-sandbox)
