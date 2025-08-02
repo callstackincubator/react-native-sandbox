@@ -10,6 +10,7 @@
     "android": "bun run android --filter=@apps/side-by-side",
     "lint": "eslint . && bun --filter=@callstack/react-native-sandbox lint",
     "format": "eslint . --fix && bun --filter=@callstack/react-native-sandbox format",
+    "typecheck": "bun --filter=@callstack/react-native-sandbox typecheck",
     "test": "jest"
   },
   "devDependencies": {
