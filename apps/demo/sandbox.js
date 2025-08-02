@@ -4,4 +4,4 @@ import CrashIfYouCanDemo from './CrashIfYouCanDemo'
 
 LogBox.uninstall()
 
-AppRegistry.registerComponent('CrashIfYouCanDemo', () => CrashIfYouCanDemo)
+AppRegistry.registerComponent('SandboxedDemo', () => CrashIfYouCanDemo)

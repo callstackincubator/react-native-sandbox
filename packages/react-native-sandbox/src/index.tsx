@@ -58,10 +58,17 @@ type GenericProps = {
  */
 export type SandboxReactNativeViewProps = ViewProps & {
   /**
-   * The name of the React Native module to load in the sandbox.
+   * The name of the React Native component to load in the sandbox.
    * This should match the component name registered in your JavaScript bundle.
    */
-  moduleName: string
+  componentName: string
+
+  /**
+   * @deprecated Use componentName instead. Will be removed in a future version.
+   * The name of the React Native component to load in the sandbox.
+   * This should match the component name registered in your JavaScript bundle.
+   */
+  moduleName?: string
 
   /**
    * Optional path or URL to the JavaScript bundle to load.
@@ -158,7 +165,7 @@ export interface SandboxReactNativeViewRef {
  *   return (
  *     <SandboxReactNativeView
  *       ref={sandboxRef}
- *       moduleName="MyDynamicApp"
+ *       componentName="MyDynamicApp"
  *       jsBundleSource="https://example.com/app.bundle.js"
  *       initialProperties={{ userId: '123', theme: 'dark' }}
  *       onMessage={handleMessage}
@@ -173,7 +180,7 @@ export interface SandboxReactNativeViewRef {
  * Advanced usage with custom TurboModules:
  * ```tsx
  * <SandboxReactNativeView
- *   moduleName="SecureApp"
+ *   componentName="SecureApp"
  *   allowedTurboModules={['MyCustomModule', 'CryptoModule']}
  *   launchOptions={{ debugMode: false, securityLevel: 'high' }}
  *   onMessage={(data) => {
@@ -188,78 +195,116 @@ export interface SandboxReactNativeViewRef {
 const SandboxReactNativeView = forwardRef<
   SandboxReactNativeViewRef,
   SandboxReactNativeViewProps
->(({onMessage, onError, allowedTurboModules, style, ...rest}, ref) => {
-  const nativeRef =
-    useRef<React.ElementRef<NativeSandboxReactNativeViewComponentType> | null>(
-      null
+>(
+  (
+    {
+      onMessage,
+      onError,
+      allowedTurboModules,
+      style,
+      componentName,
+      moduleName,
+      ...rest
+    },
+    ref
+  ) => {
+    const nativeRef =
+      useRef<React.ElementRef<NativeSandboxReactNativeViewComponentType> | null>(
+        null
+      )
+
+    const postMessage = useCallback((message: any) => {
+      if (nativeRef.current) {
+        Commands.postMessage(nativeRef.current, JSON.stringify(message))
+      }
+    }, [])
+
+    const _onError = useCallback(
+      (e: NativeSyntheticEvent<ErrorEvent>) => {
+        // @ts-ignore
+        onError?.(e.nativeEvent as ErrorEvent)
+      },
+      [onError]
     )
 
-  const postMessage = useCallback((message: any) => {
-    if (nativeRef.current) {
-      Commands.postMessage(nativeRef.current, JSON.stringify(message))
-    }
-  }, [])
-
-  const _onError = useCallback(
-    (e: NativeSyntheticEvent<ErrorEvent>) => {
-      // @ts-ignore
-      onError?.(e.nativeEvent as ErrorEvent)
-    },
-    [onError]
-  )
-
-  const _onMessage = useCallback(
-    (e: NativeSyntheticEvent<MessageEvent>) => {
-      // @ts-ignore
-      onMessage?.(e.nativeEvent.data)
-    },
-    [onMessage]
-  )
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      postMessage,
-    }),
-    [postMessage]
-  )
-
-  const _renderOverlay = useCallback(() => {
-    // TODO implement some loading/error/handling screen
-    return null
-  }, [])
-
-  const _style: StyleProp<ViewStyle> = useMemo(
-    () => ({
-      ...StyleSheet.absoluteFillObject,
-    }),
-    []
-  )
-
-  const _allowedTurboModules = [
-    ...new Set([
-      ...(allowedTurboModules ?? []),
-      ...SANDBOX_TURBOMODULES_WHITELIST,
-    ]),
-  ]
-
-  return (
-    <View style={style}>
-      <NativeSandboxReactNativeView
+    const _onMessage = useCallback(
+      (e: NativeSyntheticEvent<MessageEvent>) => {
         // @ts-ignore
-        ref={nativeRef}
-        hasOnMessageHandler={!!onMessage}
-        hasOnErrorHandler={!!onError}
-        onError={onError ? _onError : undefined}
-        onMessage={onMessage ? _onMessage : undefined}
-        allowedTurboModules={_allowedTurboModules}
-        style={_style}
-        {...rest}
-      />
-      {_renderOverlay()}
-    </View>
-  )
-})
+        onMessage?.(e.nativeEvent.data)
+      },
+      [onMessage]
+    )
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        postMessage,
+      }),
+      [postMessage]
+    )
+
+    const _renderOverlay = useCallback(() => {
+      // TODO implement some loading/error/handling screen
+      return null
+    }, [])
+
+    const _style: StyleProp<ViewStyle> = useMemo(
+      () => ({
+        ...StyleSheet.absoluteFillObject,
+      }),
+      []
+    )
+
+    const _allowedTurboModules = [
+      ...new Set([
+        ...(allowedTurboModules ?? []),
+        ...SANDBOX_TURBOMODULES_WHITELIST,
+      ]),
+    ]
+
+    // Handle backward compatibility for moduleName -> componentName
+    const resolvedComponentName = useMemo(() => {
+      if (componentName && moduleName) {
+        console.warn(
+          'Both componentName and moduleName are provided. Using componentName and ignoring moduleName. ' +
+            'Please migrate to using componentName only as moduleName is deprecated.'
+        )
+        return componentName
+      }
+
+      if (moduleName) {
+        console.warn(
+          'moduleName is deprecated. Please use componentName instead. moduleName will be removed in a future version.'
+        )
+        return moduleName
+      }
+
+      if (!componentName) {
+        throw new Error('Either componentName or moduleName must be provided')
+      }
+
+      return componentName
+    }, [componentName, moduleName])
+
+    return (
+      <View style={style}>
+        <NativeSandboxReactNativeView
+          // @ts-ignore
+          ref={nativeRef}
+          componentName={resolvedComponentName}
+          hasOnMessageHandler={!!onMessage}
+          hasOnErrorHandler={!!onError}
+          onError={onError ? _onError : undefined}
+          onMessage={onMessage ? _onMessage : undefined}
+          allowedTurboModules={_allowedTurboModules}
+          style={_style}
+          {...rest}
+        />
+        {_renderOverlay()}
+      </View>
+    )
+  }
+)
 
 SandboxReactNativeView.displayName = 'SandboxReactNativeView'
 export default SandboxReactNativeView

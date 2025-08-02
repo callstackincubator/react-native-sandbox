@@ -3,8 +3,7 @@
     "allowJs": true,
     "esModuleInterop": true,
     "paths": {
-      "@react-native-ai/mlc": ["./packages/mlc/src/index"],
-      "@react-native-ai/apple": ["./packages/apple-llm/src"]
+      "@callstack/react-native-sandbox": ["./packages/react-native-sandbox/src/index"],
     },
     "jsx": "react-native",
     "lib": ["DOM", "ESNext"],

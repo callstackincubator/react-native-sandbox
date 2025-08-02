@@ -121,7 +121,7 @@
     },
     "packages/react-native-sandbox": {
       "name": "@callstack/react-native-sandbox",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "devDependencies": {
         "react": "19.1.0",
         "react-native": "0.80.1",

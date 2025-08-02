@@ -74,7 +74,7 @@ function App() {
       ...
       <SandboxReactNativeView ref={sandbox1Ref}
         jsBundleSource={"sandbox"}
-        moduleName={"SandboxApp"}
+        componentName={"SandboxApp"}
         onMessage={onMessage}
         onError={onError}
         initialProperties={...} launchOptions={...} />
@@ -179,7 +179,7 @@ function App() {
       ...
       <SandboxReactNativeView ref={sandbox1Ref}
         jsBundleSource={"sandbox"}
-        moduleName={"SandboxApp"}
+        componentName={"SandboxApp"}
         onMessage={onMessage}
         onError={onError}
         initialProperties={...} launchOptions={...} />
