@@ -5,7 +5,7 @@ import Toast from 'react-native-toast-message'
 
 import CrashIfYouCanDemo from './CrashIfYouCanDemo'
 
-const SideBySideDemo: React.FC = () => {
+const DemoApp: React.FC = () => {
   return (
     <SafeAreaView>
       <View style={styles.container}>
@@ -69,4 +69,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default SideBySideDemo
+export default DemoApp

@@ -48,6 +48,9 @@ jobs:
       - name: Run ESLint
         run: bun run lint
 
+      - name: Run Test
+        run: bun run test
+
       - name: Test pack
         working-directory: packages/react-native-sandbox
         run: npm pack
