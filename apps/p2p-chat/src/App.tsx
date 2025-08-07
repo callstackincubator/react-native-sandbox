@@ -1,16 +1,12 @@
-import React, {useCallback, useRef} from 'react'
-import {
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  SafeAreaView,
-  StatusBar,
-} from 'react-native'
+import React, {useRef} from 'react'
+import {Dimensions, SafeAreaView, StatusBar} from 'react-native'
 
 import {ChatCarousel} from './components'
-import {CHAT_WIDTH} from './constants'
-import {useChatInstances} from './hooks'
+import {useChatInstances, useScrollColorInterpolation} from './hooks'
 import {MessageHandler} from './services'
 import {carouselStyles} from './styles'
+
+const {width: screenWidth} = Dimensions.get('window')
 
 const App = () => {
   const {
@@ -33,19 +29,24 @@ const App = () => {
     triggerFriendshipUpdate
   )
 
-  const onScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const slideIndex = Math.round(
-        event.nativeEvent.contentOffset.x / CHAT_WIDTH
-      )
-      setCurrentIndex(slideIndex)
-    },
-    [setCurrentIndex]
-  )
+  // Use the scroll color interpolation hook
+  const {currentBackgroundColor, onScroll} = useScrollColorInterpolation({
+    chatInstances,
+    scrollStep: screenWidth, // Now each slide takes full screen width
+    onIndexChange: setCurrentIndex,
+  })
 
   return (
-    <SafeAreaView style={carouselStyles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+    <SafeAreaView
+      style={[
+        carouselStyles.container,
+        {backgroundColor: currentBackgroundColor},
+      ]}>
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={currentBackgroundColor}
+        translucent
+      />
 
       <ChatCarousel
         chatInstances={chatInstances}

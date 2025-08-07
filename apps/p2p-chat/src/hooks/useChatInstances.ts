@@ -1,13 +1,13 @@
 import {useCallback, useRef, useState} from 'react'
 
-import {ChatInstance, MAX_CHAT_INSTANCES, PRESET_USERS} from '../constants'
+import {ChatMeta, MAX_CHAT_INSTANCES, USER_THEMES} from '../constants'
 import {FriendshipManager} from '../services'
 import {createChatInstance} from '../utils/chatHelpers'
 
 export const useChatInstances = () => {
-  const [chatInstances, setChatInstances] = useState<ChatInstance[]>([
-    {id: 'alice', userName: 'Alice', backgroundColor: '#e3f2fd'},
-    {id: 'bob', userName: 'Bob', backgroundColor: '#f3e5f5'},
+  const [chatInstances, setChatInstances] = useState<ChatMeta[]>([
+    createChatInstance(USER_THEMES[0].name, USER_THEMES[0].color),
+    createChatInstance(USER_THEMES[1].name, USER_THEMES[1].color),
   ])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [friendshipTrigger, setFriendshipTrigger] = useState(0)
@@ -21,7 +21,7 @@ export const useChatInstances = () => {
 
     // Find the next available preset user
     const usedNames = new Set(chatInstances.map(chat => chat.userName))
-    const availableUser = PRESET_USERS.find(user => !usedNames.has(user.name))
+    const availableUser = USER_THEMES.find(user => !usedNames.has(user.name))
 
     if (!availableUser) {
       console.log('No more preset users available')

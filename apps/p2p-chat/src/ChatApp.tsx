@@ -1,13 +1,10 @@
 import React, {useCallback, useState} from 'react'
-import {LogBox, View} from 'react-native'
+import {LogBox, StatusBar, View} from 'react-native'
 
 import {
-  ChatHeader,
-  DebugInfo,
   FriendRequestsList,
   MessageInput,
   MessagesList,
-  NotificationsList,
   TargetSelector,
 } from './components'
 import {
@@ -19,6 +16,22 @@ import {
 import {commonStyles} from './styles'
 import {ChatAppProps, MessageData} from './types'
 
+// Utility function to create subtle background from vibrant color
+const createSubtleBackground = (vibrantColor: string): string => {
+  // Convert hex to RGB
+  const hex = vibrantColor.replace('#', '')
+  const r = parseInt(hex.substr(0, 2), 16)
+  const g = parseInt(hex.substr(2, 2), 16)
+  const b = parseInt(hex.substr(4, 2), 16)
+
+  // Create a very light version (90% white + 10% color)
+  const lightR = Math.round(255 * 0.9 + r * 0.1)
+  const lightG = Math.round(255 * 0.9 + g * 0.1)
+  const lightB = Math.round(255 * 0.9 + b * 0.1)
+
+  return `rgb(${lightR}, ${lightG}, ${lightB})`
+}
+
 LogBox.ignoreAllLogs()
 
 const ChatApp: React.FC<ChatAppProps> = ({
@@ -29,7 +42,7 @@ const ChatApp: React.FC<ChatAppProps> = ({
   pendingRequests,
   backgroundColor,
 }) => {
-  const [isConnected, setIsConnected] = useState(false)
+  const [, setIsConnected] = useState(false)
 
   const {sendMessage, sendConnectionMessage} = useCommunication({
     userName,
@@ -67,16 +80,11 @@ const ChatApp: React.FC<ChatAppProps> = ({
     },
   })
 
-  const {
-    friendNotifications,
-    clearNotification,
-    respondToFriendRequest,
-    handleFriendMessage,
-    sendFriendRequest,
-  } = useFriendRequests({
-    userName,
-    onSendMessage: sendMessage,
-  })
+  const {respondToFriendRequest, handleFriendMessage, sendFriendRequest} =
+    useFriendRequests({
+      userName,
+      onSendMessage: sendMessage,
+    })
 
   function handleIncomingMessage(data: MessageData) {
     console.log(`[${userName}] Processing message type: ${data.type}`)
@@ -109,14 +117,11 @@ const ChatApp: React.FC<ChatAppProps> = ({
     [sendFriendRequest]
   )
 
-  return (
-    <View style={[commonStyles.container, {backgroundColor}]}>
-      <ChatHeader userName={userName} isConnected={isConnected} />
+  const subtleBackground = createSubtleBackground(backgroundColor)
 
-      <NotificationsList
-        notifications={friendNotifications}
-        onClearNotification={clearNotification}
-      />
+  return (
+    <View style={[commonStyles.container, {backgroundColor: subtleBackground}]}>
+      <StatusBar backgroundColor={backgroundColor} barStyle="light-content" />
 
       <FriendRequestsList
         pendingRequests={pendingRequests}
@@ -128,7 +133,6 @@ const ChatApp: React.FC<ChatAppProps> = ({
         potentialFriends={potentialFriends}
         selectedTarget={selectedTarget}
         onTargetSelect={handleTargetSelect}
-        onTargetChange={setSelectedTarget}
         onSendFriendRequest={handleSendFriendRequest}
       />
 
@@ -139,13 +143,6 @@ const ChatApp: React.FC<ChatAppProps> = ({
         selectedTarget={selectedTarget}
         onInputChange={setInputText}
         onSendMessage={handleSendMessage}
-      />
-
-      <DebugInfo
-        userId={userId}
-        targetOptions={targetOptions}
-        potentialFriendsCount={potentialFriends.length}
-        messageCount={messages.length}
       />
     </View>
   )

@@ -2,7 +2,7 @@ import React, {useEffect, useRef} from 'react'
 import {ScrollView, StyleSheet, Text, View} from 'react-native'
 
 import {colors, commonStyles, spacing, typography} from '../styles/common'
-import {Message} from '../types/chat'
+import {Message} from '../types'
 
 interface MessagesListProps {
   messages: Message[]
@@ -87,7 +87,8 @@ export const MessagesList: React.FC<MessagesListProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: spacing.md,
+    padding: spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.3)',
   },
   emptyState: {
     flex: 1,
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
   },
   receivedMessage: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(255,255,255,0.95)',
     ...commonStyles.border,
   },
   errorMessage: {

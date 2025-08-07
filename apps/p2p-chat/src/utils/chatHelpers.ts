@@ -1,8 +1,8 @@
-import {ChatInstance} from '../constants'
+import {ChatMeta} from '../constants'
 import {FriendshipManager} from '../services'
 
 export const getChatHelpers = (
-  chatInstances: ChatInstance[],
+  chatInstances: ChatMeta[],
   friendshipManager: FriendshipManager
 ) => {
   const getTargetOptions = (chatId: string): string[] => {
@@ -30,10 +30,7 @@ export const getChatHelpers = (
   }
 }
 
-export const createChatInstance = (
-  name: string,
-  color: string
-): ChatInstance => ({
+export const createChatInstance = (name: string, color: string): ChatMeta => ({
   id: name.toLowerCase(),
   userName: name,
   backgroundColor: color,

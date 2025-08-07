@@ -1,13 +1,19 @@
-import {ChatInstance} from '../constants'
+import {ChatMeta} from '../constants'
 import {FriendshipManager} from './FriendshipManager'
 
 export class MessageHandler {
+  private scrollToChat?: (chatId: string) => void
+
   constructor(
-    private chatInstances: ChatInstance[],
+    private chatInstances: ChatMeta[],
     private friendshipManager: FriendshipManager,
     private sandboxRefs: React.MutableRefObject<Record<string, any>>,
     private triggerFriendshipUpdate: () => void
   ) {}
+
+  setScrollToChat = (scrollFunction: (chatId: string) => void) => {
+    this.scrollToChat = scrollFunction
+  }
 
   handleChatError = (chatId: string) => (error: any) => {
     console.log(`[${chatId}] Error:`, error)
@@ -64,6 +70,13 @@ export class MessageHandler {
     }
 
     const requestId = this.friendshipManager.sendFriendRequest(chatId, target)
+
+    // Automatically scroll to target chat to make it easier to accept the invite
+    if (this.scrollToChat) {
+      setTimeout(() => {
+        this.scrollToChat!(target)
+      }, 100) // Small delay for UX
+    }
 
     setTimeout(() => {
       const hostMessage = {
@@ -174,16 +187,5 @@ export class MessageHandler {
     } else {
       console.error(`[Host] Target ref for ${targetId} not found`)
     }
-  }
-
-  testHostToSandboxCommunication = (targetId: string) => {
-    const testMessage = {
-      type: 'test_message',
-      message: `Hello from host! Time: ${new Date().toLocaleTimeString()}`,
-      timestamp: Date.now(),
-    }
-
-    console.log(`[Host] Sending test message to ${targetId}:`, testMessage)
-    this.sendToSandbox(targetId, testMessage)
   }
 }

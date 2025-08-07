@@ -91,16 +91,6 @@ export const useFriendRequests = ({
           }
           break
         }
-
-        case 'test_message': {
-          if (data.message) {
-            console.log(
-              `[${userName}] 🧪 RECEIVED TEST MESSAGE from host: ${data.message}`
-            )
-            addNotification(`Test: ${data.message}`)
-          }
-          break
-        }
       }
     },
     [userName, addNotification]

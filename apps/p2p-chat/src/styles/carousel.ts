@@ -1,26 +1,37 @@
-import {StyleSheet} from 'react-native'
+import {Dimensions, StyleSheet} from 'react-native'
 
-import {CHAT_WIDTH} from '../constants'
+import {CHAT_WIDTH, SLIDE_MARGIN} from '../constants'
+
+const {width: screenWidth} = Dimensions.get('window')
 
 export const carouselStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'transparent',
   },
   carouselContainer: {
     flex: 1,
   },
   carousel: {
     flex: 1,
-    backgroundColor: '#e3f2fd',
+    backgroundColor: 'transparent',
+  },
+  carouselContent: {
+    paddingHorizontal: SLIDE_MARGIN,
   },
   chatSlide: {
-    width: CHAT_WIDTH,
+    width: screenWidth, // Full screen width for proper paging
     flex: 1,
-    marginHorizontal: 20,
+    paddingHorizontal: SLIDE_MARGIN, // Use padding instead of margin
+    alignItems: 'center', // Center the content
+    justifyContent: 'center',
+  },
+  chatContent: {
+    width: CHAT_WIDTH, // The actual chat content width
+    flex: 1,
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    marginVertical: 20,
+    marginVertical: 8,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.1,
@@ -29,18 +40,20 @@ export const carouselStyles = StyleSheet.create({
     overflow: 'hidden',
   },
   chatHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    position: 'relative',
     backgroundColor: '#ffffff',
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.1)',
     minHeight: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   chatHeaderContent: {
-    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
   },
   chatTitle: {
     fontSize: 18,
@@ -62,6 +75,9 @@ export const carouselStyles = StyleSheet.create({
     overflow: 'hidden',
   },
   deleteButton: {
+    position: 'absolute',
+    left: 15,
+    top: 15,
     padding: 5,
     borderRadius: 10,
     backgroundColor: '#f44336',
@@ -69,7 +85,7 @@ export const carouselStyles = StyleSheet.create({
     height: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    zIndex: 1,
   },
   deleteButtonText: {
     color: '#ffffff',
@@ -81,10 +97,11 @@ export const carouselStyles = StyleSheet.create({
     opacity: 0.5,
   },
   addChatCard: {
-    flex: 1,
-    backgroundColor: '#ffffff',
+    width: '45%', // Make it 45% of the slide width
+    height: '60%', // Make it 60% of the slide height
+    backgroundColor: '#f8f9fa',
     borderRadius: 12,
-    padding: 40,
+    padding: 20, // Reduced padding
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -93,45 +110,35 @@ export const carouselStyles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 2,
-    borderColor: '#4caf50',
+    borderColor: '#dee2e6',
     borderStyle: 'dashed',
+    alignSelf: 'center', // Center horizontally in the slide
   },
   addChatContent: {
     alignItems: 'center',
   },
   addChatIcon: {
-    fontSize: 40,
-    color: '#4caf50',
-    marginBottom: 10,
+    fontSize: 30, // Reduced from 40
+    color: '#6c757d',
+    marginBottom: 8, // Reduced margin
   },
   addChatIconDisabled: {
     opacity: 0.5,
   },
   addChatText: {
-    fontSize: 18,
+    fontSize: 16, // Reduced from 18
     fontWeight: 'bold',
-    color: '#4caf50',
-    marginBottom: 5,
+    color: '#6c757d',
+    marginBottom: 4, // Reduced margin
   },
   addChatTextDisabled: {
     opacity: 0.5,
   },
   addChatLimitText: {
     fontSize: 12,
-    color: '#4caf50',
+    color: '#adb5bd',
   },
-  testButton: {
-    marginTop: 5,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    backgroundColor: '#2196f3',
-    borderRadius: 6,
-  },
-  testButtonText: {
-    color: '#ffffff',
-    fontSize: 10,
-    fontWeight: '600',
-  },
+
   pageIndicators: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -151,10 +158,10 @@ export const carouselStyles = StyleSheet.create({
     height: 8,
   },
   info: {
-    backgroundColor: '#ffffff',
-    margin: 20,
-    padding: 15,
-    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    margin: 10,
+    padding: 12,
+    borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,

@@ -3,20 +3,18 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
 
-import {colors, commonStyles, spacing, typography} from '../styles/common'
-import {PotentialFriend} from '../types/friends'
+import {colors, commonStyles, spacing, typography} from '../styles'
+import {PotentialFriend} from '../types'
 
 interface TargetSelectorProps {
   targetOptions: string[]
   potentialFriends: PotentialFriend[]
   selectedTarget: string
   onTargetSelect: (target: string) => void
-  onTargetChange: (target: string) => void
   onSendFriendRequest: (targetId: string) => void
 }
 
@@ -25,7 +23,6 @@ export const TargetSelector: React.FC<TargetSelectorProps> = ({
   potentialFriends,
   selectedTarget,
   onTargetSelect,
-  onTargetChange,
   onSendFriendRequest,
 }) => {
   const allPossibleTargets = [
@@ -80,22 +77,10 @@ export const TargetSelector: React.FC<TargetSelectorProps> = ({
       ) : (
         <View style={styles.noTargetsContainer}>
           <Text style={styles.noTargetsText}>
-            Type a target manually to start chatting!
+            No friends or available users to chat with.
           </Text>
         </View>
       )}
-
-      <View style={styles.manualTargetContainer}>
-        <Text style={styles.manualTargetLabel}>Or send to:</Text>
-        <TextInput
-          style={styles.manualTargetInput}
-          value={selectedTarget}
-          onChangeText={onTargetChange}
-          placeholder="Enter username..."
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-      </View>
     </>
   )
 }
@@ -105,7 +90,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.9)',
   },
   targetLabel: {
     fontSize: typography.sizes.md,
@@ -157,26 +142,5 @@ const styles = StyleSheet.create({
     color: colors.warning,
     textAlign: 'center',
     fontStyle: 'italic',
-  },
-  manualTargetContainer: {
-    padding: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-  },
-  manualTargetLabel: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold,
-    color: colors.text.secondary,
-    marginBottom: 6,
-  },
-  manualTargetInput: {
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.2)',
-    borderRadius: 12,
-    paddingHorizontal: spacing.sm + 2, // 10px
-    paddingVertical: spacing.sm,
-    fontSize: typography.sizes.lg,
-    backgroundColor: colors.surface,
   },
 })
