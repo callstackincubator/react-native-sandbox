@@ -107,18 +107,7 @@ using namespace facebook::react;
   if (self.reactNativeDelegate && _eventEmitter) {
     if (auto eventEmitter = std::static_pointer_cast<const SandboxReactNativeViewEventEmitter>(_eventEmitter)) {
       self.reactNativeDelegate.eventEmitter = eventEmitter;
-      NSLog(
-          @"[SandboxReactNativeViewComponentView] EventEmitter set for sandbox: %@",
-          self.reactNativeDelegate.sandboxId);
-    } else {
-      NSLog(
-          @"[SandboxReactNativeViewComponentView] Failed to cast eventEmitter for sandbox: %@",
-          self.reactNativeDelegate.sandboxId);
     }
-  } else {
-    NSLog(
-        @"[SandboxReactNativeViewComponentView] EventEmitter not available yet for sandbox: %@",
-        self.reactNativeDelegate.sandboxId);
   }
 }
 
@@ -187,10 +176,11 @@ using namespace facebook::react;
 - (void)prepareForRecycle
 {
   [super prepareForRecycle];
+
   [self.reactNativeRootView removeFromSuperview];
   self.reactNativeRootView = nil;
-  self.reactNativeDelegate = nil;
-  self.reactNativeFactory = nil;
+
+  // Keep the delegate for reuse - it holds configuration and is designed to be persistent
 }
 
 Class<RCTComponentViewProtocol> SandboxReactNativeViewCls(void)

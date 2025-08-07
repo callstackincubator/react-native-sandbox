@@ -1,5 +1,5 @@
 //
-//  SandboxReactNativeDelegate.h
+//  SandboxReactNativeDelegate.mm
 //  react-native-sandbox
 //
 //  Created by Aliaksandr Babrykovich on 25/06/2025.
@@ -53,6 +53,8 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
   std::set<std::string> _allowedModules;
 }
 
+- (void)cleanupResources;
+
 @end
 
 @implementation SandboxReactNativeDelegate
@@ -61,16 +63,15 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
 // Global static registry for sandbox communication
 static std::map<std::string, SandboxReactNativeDelegate *> _sandboxRegistry;
-static std::mutex _registryMutex;
+static std::recursive_mutex _registryMutex;
 
 + (void)registerSandbox:(NSString *)sandboxId delegate:(SandboxReactNativeDelegate *)delegate
 {
   if (!sandboxId || !delegate) {
-    NSLog(@"[SandboxRegistry] Cannot register sandbox: sandboxId=%@ delegate=%@", sandboxId, delegate);
     return;
   }
 
-  std::lock_guard<std::mutex> lock(_registryMutex);
+  std::lock_guard<std::recursive_mutex> lock(_registryMutex);
   std::string cppSandboxId = [sandboxId UTF8String];
 
   if (_sandboxRegistry.find(cppSandboxId) != _sandboxRegistry.end()) {
@@ -78,9 +79,6 @@ static std::mutex _registryMutex;
   }
 
   _sandboxRegistry[cppSandboxId] = delegate;
-  // delegate.sandboxId = sandboxId;
-
-  NSLog(@"[SandboxRegistry] Registered sandbox: %@ (total: %zu)", sandboxId, _sandboxRegistry.size());
 }
 
 + (void)unregisterSandbox:(NSString *)sandboxId
@@ -89,14 +87,15 @@ static std::mutex _registryMutex;
     return;
   }
 
-  std::lock_guard<std::mutex> lock(_registryMutex);
+  std::lock_guard<std::recursive_mutex> lock(_registryMutex);
   std::string cppSandboxId = [sandboxId UTF8String];
 
   auto it = _sandboxRegistry.find(cppSandboxId);
   if (it != _sandboxRegistry.end()) {
-    it->second.sandboxId = nil;
+    // Clean up the delegate before removing from registry
+    [it->second cleanupResources];
+    it->second->_sandboxId = nil;
     _sandboxRegistry.erase(it);
-    NSLog(@"[SandboxRegistry] Unregistered sandbox: %@ (total: %zu)", sandboxId, _sandboxRegistry.size());
   }
 }
 
@@ -106,7 +105,7 @@ static std::mutex _registryMutex;
     return nil;
   }
 
-  std::lock_guard<std::mutex> lock(_registryMutex);
+  std::lock_guard<std::recursive_mutex> lock(_registryMutex);
   std::string cppSandboxId = [sandboxId UTF8String];
 
   auto it = _sandboxRegistry.find(cppSandboxId);
@@ -121,12 +120,10 @@ static std::mutex _registryMutex;
 {
   SandboxReactNativeDelegate *target = [self getSandbox:targetId];
   if (!target) {
-    NSLog(@"[SandboxRegistry] Cannot route message: target sandbox '%@' not found", targetId);
     return NO;
   }
 
   [target postMessage:message];
-  NSLog(@"[SandboxRegistry] Routed message to sandbox: %@", targetId);
   return YES;
 }
 
@@ -170,11 +167,19 @@ static std::mutex _registryMutex;
   return self;
 }
 
+- (void)cleanupResources
+{
+  _onMessageSandbox.reset();
+  _rctInstance = nil;
+  _allowedModules.clear();
+}
+
 - (void)dealloc
 {
-  // Auto-unregister when delegate is deallocated
   if (self.sandboxId) {
     [SandboxReactNativeDelegate unregisterSandbox:self.sandboxId];
+  } else {
+    [self cleanupResources];
   }
 }
 
@@ -206,7 +211,7 @@ static std::mutex _registryMutex;
 
 - (void)postMessage:(NSString *)message
 {
-  if (!_onMessageSandbox) {
+  if (!_onMessageSandbox || !_rctInstance) {
     return;
   }
 
@@ -214,6 +219,11 @@ static std::mutex _registryMutex;
     try {
       // Validate runtime before any JSI operations
       runtime.global(); // Test if runtime is accessible
+
+      // Double-check the JSI function is still valid
+      if (!_onMessageSandbox) {
+        return;
+      }
 
       std::string jsonString = [message UTF8String];
 
@@ -241,37 +251,26 @@ static std::mutex _registryMutex;
   }];
 }
 
-- (BOOL)isCommunicationReady
-{
-  BOOL hasEventEmitter = (self.eventEmitter != nullptr);
-  BOOL hasMessageSandbox = (_onMessageSandbox != nullptr);
-  BOOL isRegistered = (self.sandboxId != nil);
-
-  NSLog(
-      @"[SandboxReactNativeDelegate] Communication status for %@: eventEmitter=%@, messageSandbox=%@, registered=%@",
-      self.sandboxId ?: @"(nil)",
-      hasEventEmitter ? @"YES" : @"NO",
-      hasMessageSandbox ? @"YES" : @"NO",
-      isRegistered ? @"YES" : @"NO");
-
-  return hasEventEmitter && hasMessageSandbox && isRegistered;
-}
-
 - (void)hostDidStart:(RCTHost *)host
 {
-  // Safely clear any existing JSI function before new runtime setup
-  // This prevents crash on reload when old function is tied to invalid runtime
-  try {
-    _onMessageSandbox = nullptr;
-  } catch (...) {
-    // Old function destructor might crash if tied to invalid runtime
-    NSLog(
-        @"[SandboxReactNativeDelegate] Warning: Exception while clearing old JSI function for sandbox %@",
-        self.sandboxId);
+  if (!host) {
+    return;
   }
+
+  // Safely clear any existing JSI function and instance before new runtime setup
+  // This prevents crash on reload when old function is tied to invalid runtime
+  _onMessageSandbox.reset();
+  _onMessageSandbox = nullptr;
+
+  // Clear old instance reference before setting new one
+  _rctInstance = nil;
 
   Ivar ivar = class_getInstanceVariable([host class], "_instance");
   _rctInstance = object_getIvar(host, ivar);
+
+  if (!_rctInstance) {
+    return;
+  }
 
   [_rctInstance callFunctionOnBufferedRuntimeExecutor:[=](jsi::Runtime &runtime) {
     facebook::react::defineReadOnlyGlobal(
@@ -286,7 +285,6 @@ static std::mutex _registryMutex;
               try {
                 rt.global(); // Test if runtime is accessible
               } catch (...) {
-                NSLog(@"[SandboxReactNativeDelegate] Runtime invalid in postMessage for sandbox %@", self.sandboxId);
                 return jsi::Value::undefined();
               }
 
@@ -350,17 +348,6 @@ static std::mutex _registryMutex;
                   SandboxReactNativeViewEventEmitter::OnMessage messageEvent = {
                       .data = jsi::dynamicFromValue(rt, args[0])};
                   self.eventEmitter->onMessage(messageEvent);
-                } else {
-                  // Log why message to host failed
-                  if (!self.eventEmitter) {
-                    NSLog(
-                        @"[SandboxReactNativeDelegate] Cannot send message to host: eventEmitter is nullptr for sandbox %@",
-                        self.sandboxId);
-                  } else if (!self.hasOnMessageHandler) {
-                    NSLog(
-                        @"[SandboxReactNativeDelegate] Cannot send message to host: no message handler for sandbox %@",
-                        self.sandboxId);
-                  }
                 }
               }
 
@@ -382,8 +369,6 @@ static std::mutex _registryMutex;
               if (!arg.isObject() || !arg.asObject(rt).isFunction(rt)) {
                 throw jsi::JSError(rt, "Expected a function as the first argument");
               }
-
-              NSLog(@"[SandboxReactNativeDelegate] setOnMessage for sandbox %@", self.sandboxId);
 
               jsi::Function fn = arg.asObject(rt).asFunction(rt);
 
@@ -451,7 +436,6 @@ static std::mutex _registryMutex;
 
 - (id<RCTModuleProvider>)getModuleProvider:(const char *)name
 {
-  NSLog(@"SandboxReactNativeDelegate.getModuleProvider %s", name);
   return _allowedModules.contains(name) ? [super getModuleProvider:name] : nullptr;
 }
 
@@ -461,9 +445,6 @@ static std::mutex _registryMutex;
   if (_allowedModules.contains(name)) {
     return [super getTurboModule:name jsInvoker:jsInvoker];
   } else {
-    NSLog(
-        @"SandboxReactNativeDelegate.getTurboModule: blocking access to C++ TurboModule '%s', returning C++ stub",
-        name.c_str());
     // Return C++ stub instead of nullptr
     return std::make_shared<facebook::react::StubTurboModuleCxx>(name, jsInvoker);
   }
