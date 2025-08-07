@@ -17,6 +17,8 @@ NS_ASSUME_NONNULL_BEGIN
  * A React Native delegate that provides sandboxed environments with filtered module access.
  * This delegate uses RCTFilteredAppDependencyProvider to restrict which native modules
  * are available to the JavaScript runtime, enhancing security in multi-instance scenarios.
+ *
+ * Registry functionality has been moved to SandboxRegistry class to maintain single responsibility.
  */
 @interface SandboxReactNativeDelegate : RCTDefaultReactNativeFactoryDelegate
 
@@ -45,40 +47,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)postMessage:(NSString *)message;
 
 /**
- * Checks if the delegate is properly configured for bidirectional communication
- * @return YES if both sandbox→host and host→sandbox communication should work
+ * Routes a message to a specific sandbox delegate.
+ * @param message The message to route
+ * @param targetId The ID of the target sandbox
+ * @return YES if the message was successfully routed, NO otherwise
  */
-- (BOOL)isCommunicationReady;
-
-#pragma mark - Static Registry Methods
-
-/**
- * Registers a sandbox delegate with the global registry
- * @param sandboxId Unique identifier for the sandbox
- * @param delegate The delegate instance to register
- */
-+ (void)registerSandbox:(NSString *)sandboxId delegate:(SandboxReactNativeDelegate *)delegate;
-
-/**
- * Unregisters a sandbox delegate from the global registry
- * @param sandboxId The sandbox identifier to unregister
- */
-+ (void)unregisterSandbox:(NSString *)sandboxId;
-
-/**
- * Retrieves a sandbox delegate by ID
- * @param sandboxId The sandbox identifier to look up
- * @return The delegate instance or nil if not found
- */
-+ (nullable SandboxReactNativeDelegate *)getSandbox:(NSString *)sandboxId;
-
-/**
- * Routes a message to a specific sandbox
- * @param message The message to send
- * @param targetId The target sandbox identifier
- * @return YES if message was routed successfully, NO if target not found
- */
-+ (BOOL)routeMessage:(NSString *)message toSandbox:(NSString *)targetId;
+- (BOOL)routeMessage:(NSString *)message toSandbox:(NSString *)targetId;
 
 @end
 

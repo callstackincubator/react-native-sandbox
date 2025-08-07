@@ -43,7 +43,7 @@ using namespace facebook::react;
   return self;
 }
 
-- (void)updateEventEmitter:(std::shared_ptr<const facebook::react::EventEmitter>)eventEmitter
+- (void)updateEventEmitter:(const facebook::react::EventEmitter::Shared &)eventEmitter
 {
   [super updateEventEmitter:eventEmitter];
 

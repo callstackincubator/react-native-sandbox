@@ -28,10 +28,11 @@
     "React-Sandbox.podspec"
   ],
   "scripts": {
-    "lint": "clang-format --dry-run --Werror ios/*.{h,mm}",
-    "format": "clang-format -i ios/*.{h,mm}",
+    "lint": "clang-format --dry-run --Werror ios/*.{h,mm} tests/*.{m,mm}",
+    "format": "clang-format -i ios/*.{h,mm} tests/*.{m,mm}",
     "typecheck": "tsc --noEmit",
-    "prepare": "bob build"
+    "prepare": "bob build",
+    "xctest": "cmake -S tests -B build && cmake --build build --target test"
   },
   "react-native-builder-bob": {
     "source": "src",
