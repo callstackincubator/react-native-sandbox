@@ -23,10 +23,18 @@ export const getChatHelpers = (
     return friendshipManager.getPendingRequestsFor(chatId)
   }
 
+  const getFriends = (chatId: string) => {
+    return chatInstances
+      .filter(chat => chat.id !== chatId) // Exclude self
+      .filter(chat => friendshipManager.areFriends(chatId, chat.id)) // Only include friends
+      .map(chat => ({id: chat.id, name: chat.userName}))
+  }
+
   return {
     getTargetOptions,
     getPotentialFriends,
     getPendingRequests,
+    getFriends,
   }
 }
 

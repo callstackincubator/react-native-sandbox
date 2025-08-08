@@ -35,8 +35,15 @@ const ChatInstanceView: React.FC<ChatInstanceViewProps> = ({
   chatInstances,
   onRemoveChatInstance,
 }) => {
-  const {getTargetOptions, getPotentialFriends, getPendingRequests} =
-    getChatHelpers(chatInstances, friendshipManager)
+  const {
+    getTargetOptions,
+    getPotentialFriends,
+    getPendingRequests,
+    getFriends,
+  } = getChatHelpers(chatInstances, friendshipManager)
+
+  // Get list of friend IDs for allowedOrigins
+  const allowedOrigins = getFriends(chat.id).map(friend => friend.id)
 
   return (
     <View key={chat.id} style={carouselStyles.chatSlide}>
@@ -88,6 +95,7 @@ const ChatInstanceView: React.FC<ChatInstanceViewProps> = ({
             }}
             onError={messageHandler.handleChatError(chat.userName)}
             onMessage={messageHandler.handleChatMessage(chat.id)}
+            allowedOrigins={allowedOrigins}
             style={carouselStyles.sandbox}
           />
         </View>

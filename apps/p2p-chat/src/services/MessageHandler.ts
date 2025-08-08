@@ -17,6 +17,16 @@ export class MessageHandler {
 
   handleChatError = (chatId: string) => (error: any) => {
     console.log(`[${chatId}] Error:`, error)
+
+    // Send error message to sandbox for display in chat history
+    const errorMessage = {
+      type: 'message_error',
+      errorText: error.message || 'An error occurred',
+      reason: error.name || 'unknown_error',
+      timestamp: Date.now(),
+    }
+
+    this.sendToSandbox(chatId, errorMessage)
   }
 
   handleChatMessage = (chatId: string) => (data: any) => {
@@ -152,17 +162,6 @@ export class MessageHandler {
       return
     }
 
-    if (!this.friendshipManager.canMessage(senderId, target)) {
-      const errorMessage = {
-        type: 'message_error',
-        errorText: `Cannot send message to ${target}: not friends`,
-        reason: 'not_friends',
-        timestamp: Date.now(),
-      }
-      this.sendToSandbox(senderId, errorMessage)
-      return
-    }
-
     const forwardedMessage = {
       type: 'chat_message',
       messageId,
@@ -172,6 +171,7 @@ export class MessageHandler {
       timestamp,
     }
 
+    // Message will be blocked at native level if not allowed
     this.sendToSandbox(target, forwardedMessage)
   }
 

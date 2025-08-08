@@ -50,13 +50,6 @@ export class FriendshipManager {
     return request
   }
 
-  canMessage(from: string, to: string): boolean {
-    const friendshipKey = this.createFriendshipKey(from, to)
-    const canSend = this.friendships.has(friendshipKey)
-    console.log(`[FriendshipManager] Can ${from} message ${to}? ${canSend}`)
-    return canSend
-  }
-
   getFriends(userId: string): string[] {
     const friends: string[] = []
     for (const friendship of this.friendships) {

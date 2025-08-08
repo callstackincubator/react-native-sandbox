@@ -65,6 +65,8 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
 @implementation SandboxReactNativeDelegate
 
+@synthesize allowedOrigins = _allowedOrigins;
+
 // Note: Registry functionality has been moved to SandboxRegistry class
 // This class now focuses solely on delegate responsibilities
 
@@ -86,7 +88,7 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
   // Register new ID if it's not nil
   if (_sandboxId) {
-    [[SandboxRegistry shared] register:_sandboxId delegate:self];
+    [[SandboxRegistry shared] registerSandbox:_sandboxId delegate:self allowedOrigins:self.allowedOrigins];
   }
 }
 
@@ -95,6 +97,16 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
   _allowedModules.clear();
   for (NSString *s in allowedTurboModules) {
     _allowedModules.insert([s UTF8String]);
+  }
+}
+
+- (void)setAllowedOrigins:(NSArray<NSString *> *)allowedOrigins
+{
+  _allowedOrigins = [allowedOrigins copy];
+
+  // Re-register with new allowedOrigins if sandboxId is set
+  if (self.sandboxId) {
+    [[SandboxRegistry shared] registerSandbox:self.sandboxId delegate:self allowedOrigins:self.allowedOrigins];
   }
 }
 
@@ -199,6 +211,21 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
     return NO;
   }
 
+  // Check if the current sandbox is permitted to send messages to the target
+  if (![[SandboxRegistry shared] isPermittedFrom:self.sandboxId to:targetId]) {
+    if (self.eventEmitter && self.hasOnErrorHandler) {
+      NSString *errorMessageNS =
+          [NSString stringWithFormat:@"Access denied: Sandbox '%@' is not permitted to send messages to '%@'",
+                                     self.sandboxId,
+                                     targetId];
+      std::string errorMessage = [errorMessageNS UTF8String];
+      SandboxReactNativeViewEventEmitter::OnError errorEvent = {
+          .isFatal = false, .name = "AccessDeniedError", .message = errorMessage, .stack = ""};
+      self.eventEmitter->onError(errorEvent);
+    }
+    return NO;
+  }
+
   [target postMessage:message];
   return YES;
 }
@@ -285,7 +312,9 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
           // Prevent self-targeting
           if (self.sandboxId && [self.sandboxId isEqualToString:targetOriginNS]) {
             if (self.eventEmitter && self.hasOnErrorHandler) {
-              std::string errorMessage = "Cannot send message to self (sandbox '" + targetOrigin + "')";
+              NSString *errorMessageNS =
+                  [NSString stringWithFormat:@"Cannot send message to self (sandbox '%@')", targetOriginNS];
+              std::string errorMessage = [errorMessageNS UTF8String];
               SandboxReactNativeViewEventEmitter::OnError errorEvent = {
                   .isFatal = false, .name = "SelfTargetingError", .message = errorMessage, .stack = ""};
               self.eventEmitter->onError(errorEvent);
@@ -308,13 +337,16 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
           if (!success) {
             // Target sandbox doesn't exist - trigger error event
             if (self.eventEmitter && self.hasOnErrorHandler) {
-              std::string errorMessage = "Target sandbox '" + targetOrigin + "' not found";
+              NSString *errorMessageNS = [NSString stringWithFormat:@"Target sandbox '%@' not found", targetOriginNS];
+              std::string errorMessage = [errorMessageNS UTF8String];
               SandboxReactNativeViewEventEmitter::OnError errorEvent = {
                   .isFatal = false, .name = "SandboxRoutingError", .message = errorMessage, .stack = ""};
               self.eventEmitter->onError(errorEvent);
             } else {
               // Fallback: throw JSError if no error handler
-              throw jsi::JSError(rt, ("Target sandbox '" + targetOrigin + "' not found").c_str());
+              NSString *errorMessageNS = [NSString stringWithFormat:@"Target sandbox '%@' not found", targetOriginNS];
+              std::string errorMessage = [errorMessageNS UTF8String];
+              throw jsi::JSError(rt, errorMessage.c_str());
             }
           }
         } else {

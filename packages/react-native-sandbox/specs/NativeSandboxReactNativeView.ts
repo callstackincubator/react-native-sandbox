@@ -59,6 +59,9 @@ export interface NativeProps extends ViewProps {
   /** Array of TurboModule names allowed in the sandbox */
   allowedTurboModules?: readonly string[]
 
+  /** Array of sandbox IDs that are allowed to send messages to this sandbox */
+  allowedOrigins?: readonly string[]
+
   /** Internal flag indicating if onMessage handler is provided */
   hasOnMessageHandler?: boolean
 

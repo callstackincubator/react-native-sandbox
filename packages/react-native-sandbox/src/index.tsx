@@ -101,6 +101,13 @@ export interface SandboxReactNativeViewProps extends ViewProps {
   allowedTurboModules?: string[]
 
   /**
+   * Array of sandbox IDs that are allowed to send messages to this sandbox.
+   * If not provided or empty, no other sandboxes will be allowed to send messages.
+   * Re-registering with new allowedOrigins will override previous settings.
+   */
+  allowedOrigins?: string[]
+
+  /**
    * Callback function called when the sandbox sends a message to the parent.
    * Use this for bidirectional communication between parent and sandbox.
    *
@@ -309,8 +316,7 @@ const SandboxReactNativeView = forwardRef<
     return (
       <View style={style}>
         <NativeSandboxReactNativeView
-          // @ts-ignore
-          ref={nativeRef}
+          ref={nativeRef} // @ts-ignore
           id={sandboxId}
           componentName={resolvedComponentName}
           jsBundleSource={_jsBundleSource}

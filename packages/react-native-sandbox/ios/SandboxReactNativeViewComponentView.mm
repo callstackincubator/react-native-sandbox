@@ -88,6 +88,18 @@ using namespace facebook::react;
       self.reactNativeDelegate.allowedTurboModules = allowedTurboModules;
     }
 
+    if (oldViewProps.allowedOrigins != newViewProps.allowedOrigins) {
+      NSArray<NSString *> *allowedOrigins = @[];
+      if (!newViewProps.allowedOrigins.empty()) {
+        NSMutableArray *origins = [NSMutableArray new];
+        for (const auto &origin : newViewProps.allowedOrigins) {
+          [origins addObject:RCTNSStringFromString(origin)];
+        }
+        allowedOrigins = [origins copy];
+      }
+      self.reactNativeDelegate.allowedOrigins = allowedOrigins;
+    }
+
     self.reactNativeDelegate.hasOnMessageHandler = newViewProps.hasOnMessageHandler;
     self.reactNativeDelegate.hasOnErrorHandler = newViewProps.hasOnErrorHandler;
 

@@ -142,9 +142,13 @@ AppRegistry.registerComponent("SandboxApp", () => App);
 
 Full examples:
 
+- [`apps/demo`](./apps/demo/README.md): Security demo.
 - [`apps/side-by-side`](./apps/side-by-side/README.md): An example application with two sandbox instances.
 - [`apps/recursive`](./apps/recursive/README.md): An example application with few nested sandbox instances.
-- [`apps/demo`](./apps/demo/README.md): Security demo.
+- [`apps/p2p-counter`](./apps/p2p-counter/README.md): Direct sandbox-to-sandbox communication demo.
+
+
+
 
 ## 📚 API Reference
 
@@ -155,7 +159,7 @@ For comprehensive API documentation, installation instructions, and advanced usa
 We're actively working on expanding the capabilities of `react-native-sandbox`. Here's what's planned:
 
 - [ ] **Android Support** - Full cross-platform compatibility
-- [ ] **Inter-Sandbox Communication** - Secure direct communication between sandbox instances
+- [x] **Inter-Sandbox Communication** - Secure direct communication between sandbox instances
 - [ ] **[RE.Pack](https://github.com/callstack/repack) Integration** - Advanced bundling and module federation
   - Hot-reloading for sandbox instances in development
   - Dynamic bundle fetching from remote sources

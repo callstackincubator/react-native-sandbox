@@ -26,24 +26,37 @@ NS_ASSUME_NONNULL_BEGIN
 + (instancetype)shared;
 
 /**
- * Registers a delegate with the specified ID.
- * @param sandboxId Unique identifier for the sandbox
+ * Registers a delegate with the specified origin and allowed origins.
+ * @param sandboxOrigin Unique identifier for the sandbox
  * @param delegate The delegate instance to register (any type)
+ * @param allowedOrigins Array of sandbox origins that are allowed to send messages to this sandbox.
+ *                      If nil or empty, no other sandboxes will be allowed to send messages (except 'host').
+ *                      Re-registering with new allowedOrigins will override previous settings.
  */
-- (void)register:(NSString *)sandboxId delegate:(id)delegate;
+- (void)registerSandbox:(NSString *)sandboxOrigin
+               delegate:(id)delegate
+         allowedOrigins:(nullable NSArray<NSString *> *)allowedOrigins;
 
 /**
- * Unregisters a delegate by ID.
- * @param sandboxId The ID of the sandbox to unregister
+ * Unregisters a delegate by origin.
+ * @param sandboxOrigin The origin of the sandbox to unregister
  */
-- (void)unregister:(NSString *)sandboxId;
+- (void)unregister:(NSString *)sandboxOrigin;
 
 /**
- * Finds a delegate by ID.
- * @param sandboxId The ID of the sandbox to find
+ * Finds a delegate by origin.
+ * @param sandboxOrigin The origin of the sandbox to find
  * @return The registered delegate, or nil if not found
  */
-- (nullable id)find:(NSString *)sandboxId;
+- (nullable id)find:(NSString *)sandboxOrigin;
+
+/**
+ * Checks if communication is permitted from one sandbox to another.
+ * @param sourceOrigin The origin of the sandbox attempting to send a message
+ * @param targetOrigin The origin of the sandbox that would receive the message
+ * @return YES if the source sandbox is permitted to send messages to the target, NO otherwise
+ */
+- (BOOL)isPermittedFrom:(NSString *)sourceOrigin to:(NSString *)targetOrigin;
 
 @end
 
