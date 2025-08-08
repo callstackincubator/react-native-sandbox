@@ -155,11 +155,11 @@
 
   // Test unidirectional permission
   XCTAssertTrue(
-      [[SandboxRegistry shared] isPermittedFrom:@"sandbox2" to:@"sandbox1"],
-      @"sandbox2 should be permitted to send messages to sandbox1");
-  XCTAssertFalse(
       [[SandboxRegistry shared] isPermittedFrom:@"sandbox1" to:@"sandbox2"],
-      @"sandbox1 should not be permitted to send messages to sandbox2");
+      @"sandbox1 should be permitted to send messages to sandbox2");
+  XCTAssertFalse(
+      [[SandboxRegistry shared] isPermittedFrom:@"sandbox2" to:@"sandbox1"],
+      @"sandbox2 should not be permitted to send messages to sandbox1");
 }
 
 - (void)testAllowedOriginsReregistration
@@ -168,19 +168,19 @@
 
   // Initial registration with one allowed origin
   [[SandboxRegistry shared] registerSandbox:@"sandbox1" delegate:delegate allowedOrigins:@[ @"sandbox2" ]];
-  XCTAssertTrue([[SandboxRegistry shared] isPermittedFrom:@"sandbox2" to:@"sandbox1"]);
+  XCTAssertTrue([[SandboxRegistry shared] isPermittedFrom:@"sandbox1" to:@"sandbox2"]);
 
   // Re-register with different allowed origins
   [[SandboxRegistry shared] registerSandbox:@"sandbox1" delegate:delegate allowedOrigins:@[ @"sandbox3" ]];
 
   // Old permission should be removed
   XCTAssertFalse(
-      [[SandboxRegistry shared] isPermittedFrom:@"sandbox2" to:@"sandbox1"],
+      [[SandboxRegistry shared] isPermittedFrom:@"sandbox1" to:@"sandbox2"],
       @"Previous allowed origin should be removed after re-registration");
 
   // New permission should be granted
   XCTAssertTrue(
-      [[SandboxRegistry shared] isPermittedFrom:@"sandbox3" to:@"sandbox1"],
+      [[SandboxRegistry shared] isPermittedFrom:@"sandbox1" to:@"sandbox3"],
       @"New allowed origin should be granted after re-registration");
 }
 
