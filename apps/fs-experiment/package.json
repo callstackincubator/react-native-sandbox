@@ -9,7 +9,8 @@
     "bundle:sandbox": "bun run bundle:sandbox-fs && bun run bundle:sandbox-file-access",
     "bundle:sandbox-fs": "npx react-native bundle --platform ios --dev false --entry-file sandbox-fs.js --bundle-output ios/sandbox-fs.jsbundle --assets-dest ios/",
     "bundle:sandbox-file-access": "npx react-native bundle --platform ios --dev false --entry-file sandbox-file-access.js --bundle-output ios/sandbox-file-access.jsbundle --assets-dest ios/",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "jest": "echo 'No tests'"
   },
   "dependencies": {
     "react": "19.1.0",

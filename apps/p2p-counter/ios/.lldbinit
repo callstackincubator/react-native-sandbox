@@ -1,0 +1,2 @@
+target symbols add ~/Downloads/react-native-artifacts-0.79.3-hermes-framework-dSYM-debug/iphonesimulator/hermes.framework.dSYM/Contents/Resources/DWARF/hermes
+settings set target.source-map /Users/runner/work/react-native/react-native/packages/react-native/sdks/hermes /Users/aliaksandr.babrykovich/Projects/opensource/hermes

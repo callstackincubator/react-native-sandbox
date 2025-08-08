@@ -17,12 +17,16 @@ NS_ASSUME_NONNULL_BEGIN
  * A React Native delegate that provides sandboxed environments with filtered module access.
  * This delegate uses RCTFilteredAppDependencyProvider to restrict which native modules
  * are available to the JavaScript runtime, enhancing security in multi-instance scenarios.
+ *
+ * Registry functionality has been moved to SandboxRegistry class to maintain single responsibility.
  */
 @interface SandboxReactNativeDelegate : RCTDefaultReactNativeFactoryDelegate
 
 @property (nonatomic) std::shared_ptr<const facebook::react::SandboxReactNativeViewEventEmitter> eventEmitter;
 @property (nonatomic, assign) BOOL hasOnMessageHandler;
 @property (nonatomic, assign) BOOL hasOnErrorHandler;
+@property (nonatomic, copy, nullable) NSString *sandboxId;
+@property (nonatomic, copy, nullable) NSString *jsBundleSource;
 
 /**
  * Sets the list of allowed TurboModules for this sandbox instance.
@@ -31,17 +35,30 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) NSArray<NSString *> *allowedTurboModules;
 
 /**
- * Initializes the delegate with a specific JS bundle source.
- * @param jsBundleSource The source for the JavaScript bundle (file path or URL)
+ * Sets the list of allowed origins for this sandbox instance.
+ * Only sandboxes with IDs in this list can send messages to this sandbox.
+ */
+@property (nonatomic, copy) NSArray<NSString *> *allowedOrigins;
+
+/**
+ * Initializes the delegate.
  * @return Initialized delegate instance with filtered module access
  */
-- (instancetype)initWithJSBundleSource:(NSString *)jsBundleSource;
+- (instancetype)init;
 
 /**
  * Posts a message to the JavaScript runtime.
  * @param message String containing the JSON.stringified message
  */
 - (void)postMessage:(NSString *)message;
+
+/**
+ * Routes a message to a specific sandbox delegate.
+ * @param message The message to route
+ * @param targetId The ID of the target sandbox
+ * @return YES if the message was successfully routed, NO otherwise
+ */
+- (BOOL)routeMessage:(NSString *)message toSandbox:(NSString *)targetId;
 
 @end
 
