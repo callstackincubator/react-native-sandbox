@@ -4,6 +4,6 @@
 
 import {AppRegistry} from 'react-native'
 
-import App from './SandboxApp'
+import App from './CounterApp'
 
 AppRegistry.registerComponent('CounterApp', () => App)

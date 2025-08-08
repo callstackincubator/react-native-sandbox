@@ -54,7 +54,10 @@ function App({sourceName, backgroundColor, targetOrigin}: AppProps) {
 
           <View style={styles.buttonSpacer} />
 
-          <Button title="Increment That" onPress={incrementThat} />
+          <Button
+            title={`Increment Sandbox ${targetOrigin}`}
+            onPress={incrementThat}
+          />
         </View>
       </View>
     </View>
