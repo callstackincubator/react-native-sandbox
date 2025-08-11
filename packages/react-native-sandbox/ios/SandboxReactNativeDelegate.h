@@ -25,7 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) std::shared_ptr<const facebook::react::SandboxReactNativeViewEventEmitter> eventEmitter;
 @property (nonatomic, assign) BOOL hasOnMessageHandler;
 @property (nonatomic, assign) BOOL hasOnErrorHandler;
-@property (nonatomic, copy, nullable) NSString *sandboxId;
+@property (nonatomic, copy, nullable) NSString *origin;
 @property (nonatomic, copy, nullable) NSString *jsBundleSource;
 
 /**
@@ -36,7 +36,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Sets the list of allowed origins for this sandbox instance.
- * Only sandboxes with IDs in this list can send messages to this sandbox.
+ * Only sandboxes with origins in this list can send messages to this sandbox.
  */
 @property (nonatomic, copy) NSArray<NSString *> *allowedOrigins;
 

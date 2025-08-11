@@ -56,7 +56,7 @@ function CounterSandboxView({
         />
       </View>
       <SandboxReactNativeView
-        id={sourceName}
+        origin={sourceName}
         ref={sandboxRef}
         jsBundleSource={'sandbox'}
         componentName={'CounterApp'}

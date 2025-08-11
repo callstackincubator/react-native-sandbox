@@ -72,23 +72,23 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
 #pragma mark - Instance Methods
 
-- (void)setSandboxId:(NSString *)sandboxId
+- (void)setOrigin:(NSString *)origin
 {
-  if ([sandboxId isEqual:_sandboxId]) {
+  if ([origin isEqual:_origin]) {
     return;
   }
 
-  // Unregister old ID if it exists
-  if (_sandboxId) {
-    [[SandboxRegistry shared] unregister:_sandboxId];
+  // Unregister old origin if it exists
+  if (_origin) {
+    [[SandboxRegistry shared] unregister:_origin];
   }
 
-  // Set new ID
-  _sandboxId = [sandboxId copy];
+  // Set new origin
+  _origin = [origin copy];
 
-  // Register new ID if it's not nil
-  if (_sandboxId) {
-    [[SandboxRegistry shared] registerSandbox:_sandboxId delegate:self allowedOrigins:self.allowedOrigins];
+  // Register new origin if it's not nil
+  if (_origin) {
+    [[SandboxRegistry shared] registerSandbox:_origin delegate:self allowedOrigins:self.allowedOrigins];
   }
 }
 
@@ -104,9 +104,9 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 {
   _allowedOrigins = [allowedOrigins copy];
 
-  // Re-register with new allowedOrigins if sandboxId is set
-  if (self.sandboxId) {
-    [[SandboxRegistry shared] registerSandbox:self.sandboxId delegate:self allowedOrigins:self.allowedOrigins];
+  // Re-register with new allowedOrigins if origin is set
+  if (self.origin) {
+    [[SandboxRegistry shared] registerSandbox:self.origin delegate:self allowedOrigins:self.allowedOrigins];
   }
 }
 
@@ -129,8 +129,8 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
 - (void)dealloc
 {
-  if (self.sandboxId) {
-    [[SandboxRegistry shared] unregister:self.sandboxId];
+  if (self.origin) {
+    [[SandboxRegistry shared] unregister:self.origin];
   } else {
     [self cleanupResources];
   }
@@ -199,7 +199,7 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
         self.eventEmitter->onError(errorEvent);
       }
     } catch (...) {
-      NSLog(@"[SandboxReactNativeDelegate] Runtime invalid during postMessage for sandbox %@", self.sandboxId);
+      NSLog(@"[SandboxReactNativeDelegate] Runtime invalid during postMessage for sandbox %@", self.origin);
     }
   }];
 }
@@ -212,11 +212,11 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
   }
 
   // Check if the current sandbox is permitted to send messages to the target
-  if (![[SandboxRegistry shared] isPermittedFrom:self.sandboxId to:targetId]) {
+  if (![[SandboxRegistry shared] isPermittedFrom:self.origin to:targetId]) {
     if (self.eventEmitter && self.hasOnErrorHandler) {
       NSString *errorMessageNS =
           [NSString stringWithFormat:@"Access denied: Sandbox '%@' is not permitted to send messages to '%@'",
-                                     self.sandboxId,
+                                     self.origin,
                                      targetId];
       std::string errorMessage = [errorMessageNS UTF8String];
       SandboxReactNativeViewEventEmitter::OnError errorEvent = {
@@ -310,7 +310,7 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
           NSString *targetOriginNS = [NSString stringWithUTF8String:targetOrigin.c_str()];
 
           // Prevent self-targeting
-          if (self.sandboxId && [self.sandboxId isEqualToString:targetOriginNS]) {
+          if (self.origin && [self.origin isEqualToString:targetOriginNS]) {
             if (self.eventEmitter && self.hasOnErrorHandler) {
               NSString *errorMessageNS =
                   [NSString stringWithFormat:@"Cannot send message to self (sandbox '%@')", targetOriginNS];

@@ -59,9 +59,8 @@ const generateSandboxId = (): string => {
 }
 
 export interface SandboxReactNativeViewProps extends ViewProps {
-  /** Optional unique identifier for the sandbox instance */
-  // TODO rename to not colide with ViewProps.id
-  id?: string
+  /** Optional unique origin identifier for the sandbox instance */
+  origin?: string
 
   /**
    * The name of the React Native component to load in the sandbox.
@@ -101,7 +100,7 @@ export interface SandboxReactNativeViewProps extends ViewProps {
   allowedTurboModules?: string[]
 
   /**
-   * Array of sandbox IDs that are allowed to send messages to this sandbox.
+   * Array of sandbox origins that are allowed to send messages to this sandbox.
    * If not provided or empty, no other sandboxes will be allowed to send messages.
    * Re-registering with new allowedOrigins will override previous settings.
    */
@@ -211,7 +210,7 @@ const SandboxReactNativeView = forwardRef<
 >(
   (
     {
-      id,
+      origin,
       jsBundleSource,
       allowedTurboModules,
       style,
@@ -228,7 +227,8 @@ const SandboxReactNativeView = forwardRef<
         null
       )
 
-    const sandboxId = useMemo(() => id || generateSandboxId(), [id])
+    // Use provided origin or assign a unique ID
+    const sandboxOrigin = useMemo(() => origin || generateSandboxId(), [origin])
 
     const postMessage = useCallback((message: any) => {
       if (nativeRef.current) {
@@ -317,7 +317,7 @@ const SandboxReactNativeView = forwardRef<
       <View style={style}>
         <NativeSandboxReactNativeView
           ref={nativeRef} // @ts-ignore
-          id={sandboxId}
+          origin={sandboxOrigin}
           componentName={resolvedComponentName}
           jsBundleSource={_jsBundleSource}
           hasOnMessageHandler={!!onMessage}

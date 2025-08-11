@@ -49,6 +49,7 @@ import SandboxReactNativeView from '@callstack/react-native-sandbox';
 | `componentName` | `string` | :ballot_box_with_check: | - | Name of the component registered through `AppRegistry.registerComponent` call inside the bundle file specified in `jsBundleSource` |
 | `moduleName` | `string` | :white_large_square: | - | **⚠️ Deprecated**: Use `componentName` instead. Will be removed in a future version. |
 | `jsBundleSource` | `string` | :ballot_box_with_check: | - | Name on file storage or URL to the JavaScript bundle to load |
+| `origin` | `string` | :white_large_square: | React Native view ID | Unique origin identifier for the sandbox instance (web-compatible) |
 | `initialProperties` | `object` | :white_large_square: | `{}` | Initial props for the sandboxed app |
 | `launchOptions` | `object` | :white_large_square: | `{}` | Launch configuration options |
 | `allowedTurboModules` | `string[]` | :white_large_square: | [check here](https://github.com/callstackincubator/react-native-sandbox/blob/main/packages/react-native-sandbox/src/index.tsx#L18) | Additional TurboModules to allow |
@@ -100,10 +101,11 @@ Use `allowedTurboModules` to control which native modules the sandbox can access
 
 #### Message Origin Control
 
-Use `allowedOrigins` to specify which sandbox IDs are allowed to send messages to this sandbox:
+Use `allowedOrigins` to specify which sandbox origins are allowed to send messages to this sandbox:
 
 ```tsx
 <SandboxReactNativeView
+  origin="my-sandbox"
   allowedOrigins={['sandbox1', 'sandbox2']}
   // ... other props
 />

@@ -68,8 +68,8 @@ using namespace facebook::react;
   [super updateProps:props oldProps:oldProps];
 
   if (self.reactNativeDelegate) {
-    if (oldViewProps.id != newViewProps.id) {
-      self.reactNativeDelegate.sandboxId = RCTNSStringFromString(newViewProps.id);
+    if (oldViewProps.origin != newViewProps.origin) {
+      self.reactNativeDelegate.origin = RCTNSStringFromString(newViewProps.origin);
     }
 
     if (oldViewProps.jsBundleSource != newViewProps.jsBundleSource) {

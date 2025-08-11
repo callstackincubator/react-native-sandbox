@@ -82,7 +82,7 @@ const ChatInstanceView: React.FC<ChatInstanceViewProps> = ({
                 delete sandboxRefs.current[chat.id]
               }
             }}
-            id={chat.id}
+            origin={chat.id}
             componentName="ChatApp"
             initialProperties={{
               userId: chat.id,
