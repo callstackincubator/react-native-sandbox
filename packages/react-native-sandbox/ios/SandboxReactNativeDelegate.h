@@ -7,7 +7,17 @@
 
 #import <Foundation/Foundation.h>
 
+// Conditional imports based on platform
+#ifdef EXPO_MODULE
+// Expo imports
+#import <ExpoModulesCore/ExpoReactNativeFactoryDelegate.h>
+#define SANDBOX_REACT_NATIVE_FACTORY_DELEGATE ExpoReactNativeFactoryDelegate
+#else
+// React Native imports
 #import <React-RCTAppDelegate/RCTDefaultReactNativeFactoryDelegate.h>
+#define SANDBOX_REACT_NATIVE_FACTORY_DELEGATE RCTDefaultReactNativeFactoryDelegate
+#endif
+
 #import <React/RCTComponent.h>
 #import <react/renderer/components/RNSandboxSpec/EventEmitters.h>
 
@@ -23,8 +33,11 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * This class provides the core React Native integration functionality.
  * For C++ registry integration, use SandboxDelegateWrapper.
+ *
+ * Supports both React Native and Expo environments through conditional compilation.
  */
-@interface SandboxReactNativeDelegate : RCTDefaultReactNativeFactoryDelegate
+
+@interface SandboxReactNativeDelegate : SANDBOX_REACT_NATIVE_FACTORY_DELEGATE
 
 @property (nonatomic) std::shared_ptr<const facebook::react::SandboxReactNativeViewEventEmitter> eventEmitter;
 @property (nonatomic, assign) BOOL hasOnMessageHandler;

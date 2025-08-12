@@ -1,0 +1,26 @@
+{
+  "name": "expo-demo",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "build:ios": "eas build --platform ios",
+    "build:android": "eas build --platform android"
+  },
+  "dependencies": {
+    "@callstack/react-native-sandbox": "file:../../packages/react-native-sandbox",
+    "expo": "~53.0.0",
+    "expo-build-properties": "~0.14.8",
+    "expo-status-bar": "~2.2.3",
+    "react": "19.0.0",
+    "react-native": "0.79.5"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0",
+    "@expo/cli": "^0.17.0"
+  },
+  "private": true
+}

@@ -5,10 +5,17 @@
 #import <react/renderer/components/RNSandboxSpec/Props.h>
 #import <react/renderer/components/RNSandboxSpec/RCTComponentViewHelpers.h>
 
+// Conditional imports based on platform
+#ifdef EXPO_MODULE
+#import <ExpoModulesCore/ExpoReactNativeFactory.h>
+#define SANDBOX_REACT_NATIVE_FACTORY ExpoReactNativeFactory
+#else
 #import <React-RCTAppDelegate/RCTReactNativeFactory.h>
+#define SANDBOX_REACT_NATIVE_FACTORY RCTReactNativeFactory
+#endif
+
 #import <React/RCTConversions.h>
 #import <React/RCTFabricComponentsPlugins.h>
-#import <React/RCTFollyConvert.h>
 #import <ReactCommon/RCTHost.h>
 
 #import "SandboxReactNativeDelegate.h"
@@ -16,7 +23,7 @@
 using namespace facebook::react;
 
 @interface SandboxReactNativeViewComponentView () <RCTSandboxReactNativeViewViewProtocol>
-@property (nonatomic, strong) RCTReactNativeFactory *reactNativeFactory;
+@property (nonatomic, strong) SANDBOX_REACT_NATIVE_FACTORY *reactNativeFactory;
 @property (nonatomic, strong, nullable) SandboxReactNativeDelegate *reactNativeDelegate;
 @property (nonatomic, assign) BOOL didScheduleLoad;
 @end
@@ -159,8 +166,9 @@ using namespace facebook::react;
 
   // Use existing delegate (properties already updated in updateProps)
   if (!self.reactNativeFactory) {
-    self.reactNativeFactory = [[RCTReactNativeFactory alloc] initWithDelegate:self.reactNativeDelegate];
+    self.reactNativeFactory = [[SANDBOX_REACT_NATIVE_FACTORY alloc] initWithDelegate:self.reactNativeDelegate];
   }
+
   UIView *rnView = [self.reactNativeFactory.rootViewFactory viewWithModuleName:moduleName
                                                              initialProperties:initialProperties
                                                                  launchOptions:launchOptions];

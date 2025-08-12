@@ -48,10 +48,9 @@ const SANDBOX_TURBOMODULES_WHITELIST = [
 /**
  * Generic object type for props that can contain any key-value pairs.
  * Used for initialProperties and launchOptions to allow flexible configuration.
+ * Using Record<string, unknown> for better Expo codegen compatibility.
  */
-type GenericProps = {
-  [key: string]: any
-}
+type GenericProps = Record<string, unknown>
 
 let sandboxCounter = 0
 const generateSandboxId = (): string => {

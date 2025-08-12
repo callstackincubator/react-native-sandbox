@@ -16,8 +16,9 @@
 
 #import <React/RCTBridge.h>
 #import <React/RCTBundleURLProvider.h>
-#import <React/RCTFollyConvert.h>
+#ifndef EXPO_MODULE
 #import <ReactAppDependencyProvider/RCTAppDependencyProvider.h>
+#endif
 #import <ReactCommon/RCTTurboModule.h>
 
 #import <objc/runtime.h>
@@ -26,6 +27,12 @@
 #include "SandboxDelegateWrapper.h"
 #include "SandboxRegistry.h"
 #import "StubTurboModuleCxx.h"
+
+// Conditional imports for Expo support
+#ifdef EXPO_MODULE
+#import <ExpoModulesCore/EXAppDefines.h>
+#import <ExpoModulesCore/ExpoModulesCore.h>
+#endif
 
 namespace jsi = facebook::jsi;
 namespace TurboModuleConvertUtils = facebook::react::TurboModuleConvertUtils;
@@ -80,7 +87,15 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
   if (self = [super init]) {
     _hasOnMessageHandler = NO;
     _hasOnErrorHandler = NO;
+
+#ifdef EXPO_MODULE
+    // Expo-specific initialization
+    // Note: Expo may handle dependency provider differently
+    NSLog(@"[SandboxReactNativeDelegate] Initialized for Expo environment");
+#else
+    // React Native initialization
     self.dependencyProvider = [[RCTAppDependencyProvider alloc] init];
+#endif
   }
   return self;
 }
@@ -193,7 +208,14 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
   NSString *bundleName =
       [jsBundleSourceNS hasSuffix:@".bundle"] ? [jsBundleSourceNS stringByDeletingPathExtension] : jsBundleSourceNS;
+#ifdef EXPO_MODULE
+  // Expo-specific bundle URL handling
+  // Expo may have different bundle URL provider
+  return [[NSBundle mainBundle] URLForResource:bundleName withExtension:@"bundle"];
+#else
+  // React Native bundle URL handling
   return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:bundleName];
+#endif
 }
 
 - (void)postMessage:(const std::string &)message

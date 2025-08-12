@@ -27,6 +27,7 @@ export interface ErrorEvent {
 /**
  * Message event structure for communication from sandbox to parent.
  * Wraps arbitrary data sent from the sandboxed React Native instance.
+ * Using explicit types for better Expo codegen compatibility.
  */
 export interface MessageEvent {
   /** The actual data payload sent from the sandbox (can be any serializable type) */
@@ -36,6 +37,7 @@ export interface MessageEvent {
 /**
  * Native props interface for the SandboxReactNativeView component.
  * Extends ViewProps and defines all properties that can be passed to the native view.
+ * Using explicit types for better Expo codegen compatibility.
  */
 export interface NativeProps extends ViewProps {
   /** Optional unique origin identifier for the sandbox instance */
@@ -69,10 +71,10 @@ export interface NativeProps extends ViewProps {
   hasOnErrorHandler?: boolean
 
   /** Handler for messages sent from the sandbox */
-  onMessage?: CodegenTypes.BubblingEventHandler<MessageEvent>
+  onMessage?: CodegenTypes.BubblingEventHandler<CodegenTypes.UnsafeMixed>
 
   /** Handler for errors that occur in the sandbox */
-  onError?: CodegenTypes.BubblingEventHandler<ErrorEvent>
+  onError?: CodegenTypes.BubblingEventHandler<CodegenTypes.UnsafeMixed>
 }
 
 export type NativeSandboxReactNativeViewComponentType =
