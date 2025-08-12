@@ -145,10 +145,8 @@ Full examples:
 - [`apps/demo`](./apps/demo/README.md): Security demo.
 - [`apps/side-by-side`](./apps/side-by-side/README.md): An example application with two sandbox instances.
 - [`apps/recursive`](./apps/recursive/README.md): An example application with few nested sandbox instances.
+- [`apps/p2p-chat`](./apps/p2p-counter/README.md): Direct sandbox-to-sandbox chat demo.
 - [`apps/p2p-counter`](./apps/p2p-counter/README.md): Direct sandbox-to-sandbox communication demo.
-
-
-
 
 ## 📚 API Reference
 
