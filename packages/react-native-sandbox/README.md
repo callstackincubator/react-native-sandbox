@@ -197,6 +197,71 @@ const handleMessage = (data: unknown) => {
 };
 ```
 
+### P2P Communication Between Sandboxes
+
+Enable direct communication between two sandbox instances:
+
+```tsx
+import SandboxReactNativeView from '@callstack/react-native-sandbox';
+
+export default function App() {
+  return (
+    <View style={styles.flexRow}>
+      <View style={styles.flex10Margin}>
+        <SandboxReactNativeView
+          origin="A"
+          jsBundleSource="sandbox"
+          componentName="SandboxA"
+          allowedOrigins={['B']}
+        />
+      </View>
+      <View style={styles.flex10Margin}>
+        <SandboxReactNativeView
+          origin="B"
+          jsBundleSource="sandbox"
+          componentName="SandboxB"
+          allowedOrigins={['A']}
+        />
+      </View>
+    </View>
+  );
+}
+```
+
+**Sandbox.tsx:**
+```tsx
+import { useCallback, useEffect, useState } from 'react';
+import { Button, Text, View } from 'react-native';
+
+export default function SandboxA() {
+  const [counter, setCounter] = useState(0);
+
+  const sendToB = () => {
+    globalThis.postMessage({ type: 'increment', value: 1 }, 'B');
+  };
+
+  const onMessage = useCallback((payload: any) => {
+    if (payload.type === 'increment') {
+      setCounter(prev => prev + payload.value);
+    }
+  }, []);
+
+  useEffect(() => {
+    globalThis.setOnMessage(onMessage);
+  }, [onMessage]);
+
+  return (
+    <View style={{ styles.padding20 }}>
+      <Text>Sandbox A</Text>
+      <Text>Counter: {counter}</Text>
+      <Button title="Send to B" onPress={sendToB} />
+    </View>
+  );
+}
+```
+
+The `SandboxB` component looks similar.
+
 ## ⚡ Performance & Best Practices
 
 ### Memory Management

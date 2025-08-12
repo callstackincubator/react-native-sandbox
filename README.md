@@ -157,7 +157,7 @@ For comprehensive API documentation, installation instructions, and advanced usa
 We're actively working on expanding the capabilities of `react-native-sandbox`. Here's what's planned:
 
 - [ ] **Android Support** - Full cross-platform compatibility
-- [x] **Inter-Sandbox Communication** - Secure direct communication between sandbox instances
+- [x] **Inter-Sandbox Communication** - [Secure direct communication between sandbox instances](packages/react-native-sandbox/README.md#p2p-communication-between-sandboxes)
 - [ ] **[RE.Pack](https://github.com/callstack/repack) Integration** - Advanced bundling and module federation
   - Hot-reloading for sandbox instances in development
   - Dynamic bundle fetching from remote sources
