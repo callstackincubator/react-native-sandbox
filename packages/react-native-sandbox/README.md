@@ -25,6 +25,51 @@ The package uses **autolinking** and supports the **React Native New Architectur
 
 > 🚧 **Under Construction** - Android support is currently in development. Stay tuned for updates!
 
+### Expo Support
+
+This package supports both **React Native CLI** and **Expo** projects. For Expo projects, the package automatically detects the environment and uses the appropriate React Native factory classes.
+
+#### Expo Setup
+
+1. **Install the package**:
+   ```bash
+   npx expo install @callstack/react-native-sandbox
+   ```
+
+2. **Configure your app.json** (optional):
+   ```json
+   {
+     "expo": {
+       "plugins": [
+         [
+           "expo-build-properties",
+           {
+             "ios": {
+               "useFrameworks": "static"
+             }
+           }
+         ]
+       ]
+     }
+   }
+   ```
+
+3. **Use the component** (same API as React Native CLI):
+   ```tsx
+   import SandboxReactNativeView from '@callstack/react-native-sandbox';
+   
+   <SandboxReactNativeView
+     componentName="YourSandboxComponent"
+     jsBundleSource="sandbox"
+     onMessage={(data) => console.log('From sandbox:', data)}
+     onError={(error) => console.error('Sandbox error:', error)}
+   />
+   ```
+
+#### Expo Demo
+
+Check out the [Expo demo app](https://github.com/callstackincubator/react-native-sandbox/blob/main/apps/expo-demo) for a complete example of using the sandbox in an Expo project.
+
 ## 🎯 Basic Usage
 
 > For complete examples with both host and sandbox code, see the [project examples](https://github.com/callstackincubator/react-native-sandbox#-api-example).
