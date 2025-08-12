@@ -197,7 +197,7 @@ const handleMessage = (data: unknown) => {
 };
 ```
 
-### P2P Communication Between Sandboxes
+### Direct communication Between Sandboxes
 
 Enable direct communication between two sandbox instances:
 
