@@ -22,7 +22,9 @@
 
 #import <objc/runtime.h>
 
-#import "SandboxRegistry.h"
+#include <fmt/format.h>
+#include "SandboxDelegateWrapper.h"
+#include "SandboxRegistry.h"
 #import "StubTurboModuleCxx.h"
 
 namespace jsi = facebook::jsi;
@@ -52,7 +54,10 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 @interface SandboxReactNativeDelegate () {
   RCTInstance *_rctInstance;
   std::shared_ptr<jsi::Function> _onMessageSandbox;
-  std::set<std::string> _allowedModules;
+  std::set<std::string> _allowedTurboModules;
+  std::set<std::string> _allowedOrigins;
+  std::string _origin;
+  std::string _jsBundleSource;
 }
 
 - (void)cleanupResources;
@@ -65,50 +70,10 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
 @implementation SandboxReactNativeDelegate
 
-@synthesize allowedOrigins = _allowedOrigins;
-
 // Note: Registry functionality has been moved to SandboxRegistry class
 // This class now focuses solely on delegate responsibilities
 
 #pragma mark - Instance Methods
-
-- (void)setOrigin:(NSString *)origin
-{
-  if ([origin isEqual:_origin]) {
-    return;
-  }
-
-  // Unregister old origin if it exists
-  if (_origin) {
-    [[SandboxRegistry shared] unregister:_origin];
-  }
-
-  // Set new origin
-  _origin = [origin copy];
-
-  // Register new origin if it's not nil
-  if (_origin) {
-    [[SandboxRegistry shared] registerSandbox:_origin delegate:self allowedOrigins:self.allowedOrigins];
-  }
-}
-
-- (void)setAllowedTurboModules:(NSArray<NSString *> *)allowedTurboModules
-{
-  _allowedModules.clear();
-  for (NSString *s in allowedTurboModules) {
-    _allowedModules.insert([s UTF8String]);
-  }
-}
-
-- (void)setAllowedOrigins:(NSArray<NSString *> *)allowedOrigins
-{
-  _allowedOrigins = [allowedOrigins copy];
-
-  // Re-register with new allowedOrigins if origin is set
-  if (self.origin) {
-    [[SandboxRegistry shared] registerSandbox:self.origin delegate:self allowedOrigins:self.allowedOrigins];
-  }
-}
 
 - (instancetype)init
 {
@@ -124,13 +89,82 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 {
   _onMessageSandbox.reset();
   _rctInstance = nil;
-  _allowedModules.clear();
+  _allowedTurboModules.clear();
+  _allowedOrigins.clear();
+}
+
+#pragma mark - C++ Property Getters
+
+- (std::string)origin
+{
+  return _origin;
+}
+
+- (std::string)jsBundleSource
+{
+  return _jsBundleSource;
+}
+
+- (std::set<std::string>)allowedOrigins
+{
+  return _allowedOrigins;
+}
+
+- (std::set<std::string>)allowedTurboModules
+{
+  return _allowedTurboModules;
+}
+
+- (void)setOrigin:(std::string)origin
+{
+  if (_origin == origin) {
+    return;
+  }
+
+  // Unregister old origin if it exists
+  if (!_origin.empty()) {
+    auto &registry = SandboxRegistry::getInstance();
+    registry.unregister(_origin);
+  }
+
+  // Set new origin
+  _origin = origin;
+
+  // Register new origin if it's not empty
+  if (!_origin.empty()) {
+    auto &registry = SandboxRegistry::getInstance();
+    auto wrapper = std::make_shared<SandboxDelegateWrapper>(self);
+    registry.registerSandbox(_origin, wrapper, _allowedOrigins);
+  }
+}
+
+- (void)setJsBundleSource:(std::string)jsBundleSource
+{
+  _jsBundleSource = jsBundleSource;
+}
+
+- (void)setAllowedOrigins:(std::set<std::string>)allowedOrigins
+{
+  _allowedOrigins = allowedOrigins;
+
+  // Re-register with new allowedOrigins if origin is set
+  if (!_origin.empty()) {
+    auto &registry = SandboxRegistry::getInstance();
+    auto wrapper = std::make_shared<SandboxDelegateWrapper>(self);
+    registry.registerSandbox(_origin, wrapper, _allowedOrigins);
+  }
+}
+
+- (void)setAllowedTurboModules:(std::set<std::string>)allowedTurboModules
+{
+  _allowedTurboModules = allowedTurboModules;
 }
 
 - (void)dealloc
 {
-  if (self.origin) {
-    [[SandboxRegistry shared] unregister:self.origin];
+  if (!_origin.empty()) {
+    auto &registry = SandboxRegistry::getInstance();
+    registry.unregister(_origin);
   } else {
     [self cleanupResources];
   }
@@ -143,26 +177,26 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
 - (NSURL *)bundleURL
 {
-  if (!self.jsBundleSource) {
+  if (_jsBundleSource.empty()) {
     return nil;
   }
 
-  NSURL *url = [NSURL URLWithString:self.jsBundleSource];
+  NSString *jsBundleSourceNS = [NSString stringWithUTF8String:_jsBundleSource.c_str()];
+  NSURL *url = [NSURL URLWithString:jsBundleSourceNS];
   if (url && url.scheme) {
     return url;
   }
 
-  if ([self.jsBundleSource hasSuffix:@".jsbundle"]) {
-    return [[NSBundle mainBundle] URLForResource:self.jsBundleSource withExtension:nil];
+  if ([jsBundleSourceNS hasSuffix:@".jsbundle"]) {
+    return [[NSBundle mainBundle] URLForResource:jsBundleSourceNS withExtension:nil];
   }
 
-  NSString *bundleName = [self.jsBundleSource hasSuffix:@".bundle"]
-      ? [self.jsBundleSource stringByDeletingPathExtension]
-      : self.jsBundleSource;
+  NSString *bundleName =
+      [jsBundleSourceNS hasSuffix:@".bundle"] ? [jsBundleSourceNS stringByDeletingPathExtension] : jsBundleSourceNS;
   return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:bundleName];
 }
 
-- (void)postMessage:(NSString *)message
+- (void)postMessage:(const std::string &)message
 {
   if (!_onMessageSandbox || !_rctInstance) {
     return;
@@ -178,12 +212,10 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
         return;
       }
 
-      std::string jsonString = [message UTF8String];
-
       jsi::Value parsedValue = runtime.global()
                                    .getPropertyAsObject(runtime, "JSON")
                                    .getPropertyAsFunction(runtime, "parse")
-                                   .call(runtime, jsi::String::createFromUtf8(runtime, jsonString));
+                                   .call(runtime, jsi::String::createFromUtf8(runtime, message));
 
       _onMessageSandbox->call(runtime, {std::move(parsedValue)});
     } catch (const jsi::JSError &e) {
@@ -199,35 +231,33 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
         self.eventEmitter->onError(errorEvent);
       }
     } catch (...) {
-      NSLog(@"[SandboxReactNativeDelegate] Runtime invalid during postMessage for sandbox %@", self.origin);
+      NSLog(@"[SandboxReactNativeDelegate] Runtime invalid during postMessage for sandbox %s", _origin.c_str());
     }
   }];
 }
 
-- (BOOL)routeMessage:(NSString *)message toSandbox:(NSString *)targetId
+- (bool)routeMessage:(const std::string &)message toSandbox:(const std::string &)targetId
 {
-  id target = [[SandboxRegistry shared] find:targetId];
-  if (!target || ![target respondsToSelector:@selector(postMessage:)]) {
-    return NO;
+  auto &registry = SandboxRegistry::getInstance();
+  auto target = registry.find(targetId);
+  if (!target) {
+    return false;
   }
 
   // Check if the current sandbox is permitted to send messages to the target
-  if (![[SandboxRegistry shared] isPermittedFrom:self.origin to:targetId]) {
+  if (!registry.isPermittedFrom(_origin, targetId)) {
     if (self.eventEmitter && self.hasOnErrorHandler) {
-      NSString *errorMessageNS =
-          [NSString stringWithFormat:@"Access denied: Sandbox '%@' is not permitted to send messages to '%@'",
-                                     self.origin,
-                                     targetId];
-      std::string errorMessage = [errorMessageNS UTF8String];
+      std::string errorMessage =
+          fmt::format("Access denied: Sandbox '{}' is not permitted to send messages to '{}'", _origin, targetId);
       SandboxReactNativeViewEventEmitter::OnError errorEvent = {
           .isFatal = false, .name = "AccessDeniedError", .message = errorMessage, .stack = ""};
       self.eventEmitter->onError(errorEvent);
     }
-    return NO;
+    return false;
   }
 
-  [target postMessage:message];
-  return YES;
+  target->postMessage(message);
+  return true;
 }
 
 - (void)hostDidStart:(RCTHost *)host
@@ -262,13 +292,13 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
 - (id<RCTModuleProvider>)getModuleProvider:(const char *)name
 {
-  return _allowedModules.contains(name) ? [super getModuleProvider:name] : nullptr;
+  return _allowedTurboModules.contains(name) ? [super getModuleProvider:name] : nullptr;
 }
 
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:(const std::string &)name
                                                       jsInvoker:(std::shared_ptr<facebook::react::CallInvoker>)jsInvoker
 {
-  if (_allowedModules.contains(name)) {
+  if (_allowedTurboModules.contains(name)) {
     return [super getTurboModule:name jsInvoker:jsInvoker];
   } else {
     // Return C++ stub instead of nullptr
@@ -307,20 +337,17 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
           }
 
           std::string targetOrigin = targetOriginArg.getString(rt).utf8(rt);
-          NSString *targetOriginNS = [NSString stringWithUTF8String:targetOrigin.c_str()];
 
           // Prevent self-targeting
-          if (self.origin && [self.origin isEqualToString:targetOriginNS]) {
+          if (_origin == targetOrigin) {
             if (self.eventEmitter && self.hasOnErrorHandler) {
-              NSString *errorMessageNS =
-                  [NSString stringWithFormat:@"Cannot send message to self (sandbox '%@')", targetOriginNS];
-              std::string errorMessage = [errorMessageNS UTF8String];
+              std::string errorMessage = fmt::format("Cannot send message to self (sandbox '{}')", targetOrigin);
               SandboxReactNativeViewEventEmitter::OnError errorEvent = {
                   .isFatal = false, .name = "SelfTargetingError", .message = errorMessage, .stack = ""};
               self.eventEmitter->onError(errorEvent);
             } else {
               // Fallback: throw JSError if no error handler
-              throw jsi::JSError(rt, ("Cannot send message to self (sandbox '" + targetOrigin + "')").c_str());
+              throw jsi::JSError(rt, fmt::format("Cannot send message to self (sandbox '{}')", targetOrigin).c_str());
             }
             return jsi::Value::undefined();
           }
@@ -333,19 +360,17 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
           NSString *messageNS = [NSString stringWithUTF8String:messageJson.c_str()];
 
           // Route message to specific sandbox
-          BOOL success = [self routeMessage:messageNS toSandbox:targetOriginNS];
+          BOOL success = [self routeMessage:messageJson toSandbox:targetOrigin];
           if (!success) {
             // Target sandbox doesn't exist - trigger error event
             if (self.eventEmitter && self.hasOnErrorHandler) {
-              NSString *errorMessageNS = [NSString stringWithFormat:@"Target sandbox '%@' not found", targetOriginNS];
-              std::string errorMessage = [errorMessageNS UTF8String];
+              std::string errorMessage = fmt::format("Target sandbox '{}' not found", targetOrigin);
               SandboxReactNativeViewEventEmitter::OnError errorEvent = {
                   .isFatal = false, .name = "SandboxRoutingError", .message = errorMessage, .stack = ""};
               self.eventEmitter->onError(errorEvent);
             } else {
               // Fallback: throw JSError if no error handler
-              NSString *errorMessageNS = [NSString stringWithFormat:@"Target sandbox '%@' not found", targetOriginNS];
-              std::string errorMessage = [errorMessageNS UTF8String];
+              std::string errorMessage = fmt::format("Target sandbox '{}' not found", targetOrigin);
               throw jsi::JSError(rt, errorMessage.c_str());
             }
           }

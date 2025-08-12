@@ -11,7 +11,7 @@
     "lint": "eslint . && bun --filter=@callstack/react-native-sandbox lint",
     "format": "eslint . --fix && bun --filter=@callstack/react-native-sandbox format",
     "typecheck": "bun --filter=@callstack/react-native-sandbox typecheck",
-    "test": "bun run jest && bun --filter=@callstack/react-native-sandbox xctest"
+    "test": "bun run jest && bun --filter=@callstack/react-native-sandbox ctest"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

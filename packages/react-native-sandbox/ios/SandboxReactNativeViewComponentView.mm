@@ -69,35 +69,24 @@ using namespace facebook::react;
 
   if (self.reactNativeDelegate) {
     if (oldViewProps.origin != newViewProps.origin) {
-      self.reactNativeDelegate.origin = RCTNSStringFromString(newViewProps.origin);
+      [self.reactNativeDelegate setOrigin:newViewProps.origin];
     }
 
     if (oldViewProps.jsBundleSource != newViewProps.jsBundleSource) {
-      self.reactNativeDelegate.jsBundleSource = RCTNSStringFromString(newViewProps.jsBundleSource);
+      [self.reactNativeDelegate setJsBundleSource:newViewProps.jsBundleSource];
     }
 
     if (oldViewProps.allowedTurboModules != newViewProps.allowedTurboModules) {
-      NSArray<NSString *> *allowedTurboModules = @[];
-      if (!newViewProps.allowedTurboModules.empty()) {
-        NSMutableArray *modules = [NSMutableArray new];
-        for (const auto &module : newViewProps.allowedTurboModules) {
-          [modules addObject:RCTNSStringFromString(module)];
-        }
-        allowedTurboModules = [modules copy];
-      }
-      self.reactNativeDelegate.allowedTurboModules = allowedTurboModules;
+      // Convert std::vector to std::set
+      std::set<std::string> allowedModules(
+          newViewProps.allowedTurboModules.begin(), newViewProps.allowedTurboModules.end());
+      [self.reactNativeDelegate setAllowedTurboModules:allowedModules];
     }
 
     if (oldViewProps.allowedOrigins != newViewProps.allowedOrigins) {
-      NSArray<NSString *> *allowedOrigins = @[];
-      if (!newViewProps.allowedOrigins.empty()) {
-        NSMutableArray *origins = [NSMutableArray new];
-        for (const auto &origin : newViewProps.allowedOrigins) {
-          [origins addObject:RCTNSStringFromString(origin)];
-        }
-        allowedOrigins = [origins copy];
-      }
-      self.reactNativeDelegate.allowedOrigins = allowedOrigins;
+      // Convert std::vector to std::set
+      std::set<std::string> allowedOrigins(newViewProps.allowedOrigins.begin(), newViewProps.allowedOrigins.end());
+      [self.reactNativeDelegate setAllowedOrigins:allowedOrigins];
     }
 
     self.reactNativeDelegate.hasOnMessageHandler = newViewProps.hasOnMessageHandler;
@@ -130,7 +119,8 @@ using namespace facebook::react;
 
 - (void)postMessage:(NSString *)message
 {
-  [self.reactNativeDelegate postMessage:message];
+  std::string messageStr = [message UTF8String];
+  [self.reactNativeDelegate postMessage:messageStr];
 }
 
 - (void)scheduleReactViewLoad
