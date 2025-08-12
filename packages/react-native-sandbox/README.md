@@ -49,6 +49,7 @@ import SandboxReactNativeView from '@callstack/react-native-sandbox';
 | `componentName` | `string` | :ballot_box_with_check: | - | Name of the component registered through `AppRegistry.registerComponent` call inside the bundle file specified in `jsBundleSource` |
 | `moduleName` | `string` | :white_large_square: | - | **⚠️ Deprecated**: Use `componentName` instead. Will be removed in a future version. |
 | `jsBundleSource` | `string` | :ballot_box_with_check: | - | Name on file storage or URL to the JavaScript bundle to load |
+| `origin` | `string` | :white_large_square: | React Native view ID | Unique origin identifier for the sandbox instance (web-compatible) |
 | `initialProperties` | `object` | :white_large_square: | `{}` | Initial props for the sandboxed app |
 | `launchOptions` | `object` | :white_large_square: | `{}` | Launch configuration options |
 | `allowedTurboModules` | `string[]` | :white_large_square: | [check here](https://github.com/callstackincubator/react-native-sandbox/blob/main/packages/react-native-sandbox/src/index.tsx#L18) | Additional TurboModules to allow |
@@ -81,7 +82,9 @@ interface ErrorEvent {
 
 This package is built with **React Native New Architecture** using Fabric for optimal performance and type safety.
 
-### TurboModule Filtering
+### Security Controls
+
+#### TurboModule Filtering
 
 Use `allowedTurboModules` to control which native modules the sandbox can access:
 
@@ -95,6 +98,21 @@ Use `allowedTurboModules` to control which native modules the sandbox can access
 **Default allowed modules** include essential React Native TurboModules like `EventDispatcher`, `AppState`, `Networking`, etc. See the [source code](https://github.com/callstackincubator/react-native-sandbox/blob/main/packages/react-native-sandbox/src/index.tsx) for the complete list.
 
 > Note: This filtering works with both legacy native modules and new TurboModules, ensuring compatibility across React Native versions.
+
+#### Message Origin Control
+
+Use `allowedOrigins` to specify which sandbox origins are allowed to send messages to this sandbox:
+
+```tsx
+<SandboxReactNativeView
+  origin="my-sandbox"
+  allowedOrigins={['sandbox1', 'sandbox2']}
+  // ... other props
+/>
+```
+ - By default, no sandboxes are allowed to send messages to each other (only to host). The `allowedOrigins` list is unidirectional - if sandbox A allows messages from sandbox B, sandbox B still needs to explicitly allow messages from sandbox A to enable two-way communication.
+ - The `allowedOrigins` can be changed at run-time.
+ - When a sandbox attempts to send a message to another sandbox that hasn't allowed it, an `AccessDeniedError` will be triggered through the `onError` callback.
 
 ## 💬 Communication Patterns
 

@@ -35,9 +35,29 @@ using namespace facebook::react;
   if (self = [super initWithFrame:frame]) {
     static const auto defaultProps = std::make_shared<const SandboxReactNativeViewProps>();
     _props = defaultProps;
+
+    // Create delegate once during initialization
+    self.reactNativeDelegate = [[SandboxReactNativeDelegate alloc] init];
   }
 
   return self;
+}
+
+- (void)updateEventEmitter:(const facebook::react::EventEmitter::Shared &)eventEmitter
+{
+  [super updateEventEmitter:eventEmitter];
+
+  // EventEmitter has been updated, try to set it on the delegate
+  [self updateEventEmitterIfNeeded];
+}
+
+- (void)updateState:(const facebook::react::State::Shared &)state
+           oldState:(const facebook::react::State::Shared &)oldState
+{
+  [super updateState:state oldState:oldState];
+
+  // State has been updated, eventEmitter might be available now
+  [self updateEventEmitterIfNeeded];
 }
 
 - (void)updateProps:(const Props::Shared &)props oldProps:(const Props::Shared &)oldProps
@@ -45,25 +65,50 @@ using namespace facebook::react;
   const auto &oldViewProps = *std::static_pointer_cast<const SandboxReactNativeViewProps>(_props);
   const auto &newViewProps = *std::static_pointer_cast<const SandboxReactNativeViewProps>(props);
 
-  bool shouldReload = false;
-
-  if (oldViewProps.componentName != newViewProps.componentName ||
-      oldViewProps.jsBundleSource != newViewProps.jsBundleSource ||
-      oldViewProps.initialProperties != newViewProps.initialProperties ||
-      oldViewProps.launchOptions != newViewProps.launchOptions ||
-      oldViewProps.allowedTurboModules != newViewProps.allowedTurboModules) {
-    shouldReload = true;
-  }
-
   [super updateProps:props oldProps:oldProps];
 
   if (self.reactNativeDelegate) {
+    if (oldViewProps.origin != newViewProps.origin) {
+      [self.reactNativeDelegate setOrigin:newViewProps.origin];
+    }
+
+    if (oldViewProps.jsBundleSource != newViewProps.jsBundleSource) {
+      [self.reactNativeDelegate setJsBundleSource:newViewProps.jsBundleSource];
+    }
+
+    if (oldViewProps.allowedTurboModules != newViewProps.allowedTurboModules) {
+      // Convert std::vector to std::set
+      std::set<std::string> allowedModules(
+          newViewProps.allowedTurboModules.begin(), newViewProps.allowedTurboModules.end());
+      [self.reactNativeDelegate setAllowedTurboModules:allowedModules];
+    }
+
+    if (oldViewProps.allowedOrigins != newViewProps.allowedOrigins) {
+      // Convert std::vector to std::set
+      std::set<std::string> allowedOrigins(newViewProps.allowedOrigins.begin(), newViewProps.allowedOrigins.end());
+      [self.reactNativeDelegate setAllowedOrigins:allowedOrigins];
+    }
+
     self.reactNativeDelegate.hasOnMessageHandler = newViewProps.hasOnMessageHandler;
     self.reactNativeDelegate.hasOnErrorHandler = newViewProps.hasOnErrorHandler;
+
+    // Always try to set the eventEmitter when props update
+    [self updateEventEmitterIfNeeded];
   }
 
-  if (shouldReload) {
+  if (oldViewProps.componentName != newViewProps.componentName ||
+      oldViewProps.initialProperties != newViewProps.initialProperties ||
+      oldViewProps.launchOptions != newViewProps.launchOptions) {
     [self scheduleReactViewLoad];
+  }
+}
+
+- (void)updateEventEmitterIfNeeded
+{
+  if (self.reactNativeDelegate && _eventEmitter) {
+    if (auto eventEmitter = std::static_pointer_cast<const SandboxReactNativeViewEventEmitter>(_eventEmitter)) {
+      self.reactNativeDelegate.eventEmitter = eventEmitter;
+    }
   }
 }
 
@@ -74,7 +119,8 @@ using namespace facebook::react;
 
 - (void)postMessage:(NSString *)message
 {
-  [self.reactNativeDelegate postMessage:message];
+  std::string messageStr = [message UTF8String];
+  [self.reactNativeDelegate postMessage:messageStr];
 }
 
 - (void)scheduleReactViewLoad
@@ -93,10 +139,10 @@ using namespace facebook::react;
 {
   const auto &props = *std::static_pointer_cast<const SandboxReactNativeViewProps>(_props);
 
-  NSString *componentName = RCTNSStringFromString(props.componentName);
+  NSString *moduleName = RCTNSStringFromString(props.componentName);
   NSString *jsBundleSource = RCTNSStringFromString(props.jsBundleSource);
 
-  if (componentName.length == 0 || jsBundleSource.length == 0) {
+  if (moduleName.length == 0 || jsBundleSource.length == 0 || !self.reactNativeDelegate) {
     return;
   }
 
@@ -111,29 +157,13 @@ using namespace facebook::react;
     launchOptions = (NSDictionary *)convertFollyDynamicToId(props.launchOptions);
   }
 
-  NSArray<NSString *> *allowedTurboModules = @[];
-  if (!props.allowedTurboModules.empty()) {
-    NSMutableArray *modules = [NSMutableArray new];
-    for (const auto &module : props.allowedTurboModules) {
-      [modules addObject:RCTNSStringFromString(module)];
-    }
-    allowedTurboModules = [modules copy];
+  // Use existing delegate (properties already updated in updateProps)
+  if (!self.reactNativeFactory) {
+    self.reactNativeFactory = [[RCTReactNativeFactory alloc] initWithDelegate:self.reactNativeDelegate];
   }
-
-  SandboxReactNativeDelegate *delegate = [[SandboxReactNativeDelegate alloc] initWithJSBundleSource:jsBundleSource];
-  delegate.allowedTurboModules = allowedTurboModules;
-
-  if (auto eventEmitter = std::static_pointer_cast<const SandboxReactNativeViewEventEmitter>(_eventEmitter)) {
-    delegate.eventEmitter = eventEmitter;
-  }
-
-  delegate.hasOnMessageHandler = props.hasOnMessageHandler;
-  delegate.hasOnErrorHandler = props.hasOnErrorHandler;
-
-  RCTReactNativeFactory *factory = [[RCTReactNativeFactory alloc] initWithDelegate:delegate];
-  UIView *rnView = [factory.rootViewFactory viewWithModuleName:componentName
-                                             initialProperties:initialProperties
-                                                 launchOptions:launchOptions];
+  UIView *rnView = [self.reactNativeFactory.rootViewFactory viewWithModuleName:moduleName
+                                                             initialProperties:initialProperties
+                                                                 launchOptions:launchOptions];
 
   [self.reactNativeRootView removeFromSuperview];
   self.reactNativeRootView = rnView;
@@ -141,17 +171,18 @@ using namespace facebook::react;
   rnView.frame = self.bounds;
   rnView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 
-  self.reactNativeDelegate = delegate;
-  self.reactNativeFactory = factory;
+  // Try to set eventEmitter after React Native view is loaded
+  [self updateEventEmitterIfNeeded];
 }
 
 - (void)prepareForRecycle
 {
   [super prepareForRecycle];
+
   [self.reactNativeRootView removeFromSuperview];
   self.reactNativeRootView = nil;
-  self.reactNativeDelegate = nil;
-  self.reactNativeFactory = nil;
+
+  // Keep the delegate for reuse - it holds configuration and is designed to be persistent
 }
 
 Class<RCTComponentViewProtocol> SandboxReactNativeViewCls(void)

@@ -38,6 +38,9 @@ export interface MessageEvent {
  * Extends ViewProps and defines all properties that can be passed to the native view.
  */
 export interface NativeProps extends ViewProps {
+  /** Optional unique origin identifier for the sandbox instance */
+  origin?: string
+
   /**
    * The name of the React Native component to load in the sandbox.
    * Must match with the registered component name from the JavaScript bundle
@@ -55,6 +58,9 @@ export interface NativeProps extends ViewProps {
 
   /** Array of TurboModule names allowed in the sandbox */
   allowedTurboModules?: readonly string[]
+
+  /** Array of sandbox origins that are allowed to send messages to this sandbox */
+  allowedOrigins?: readonly string[]
 
   /** Internal flag indicating if onMessage handler is provided */
   hasOnMessageHandler?: boolean

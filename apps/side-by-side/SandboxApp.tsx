@@ -11,8 +11,8 @@ import {
 } from 'react-native'
 
 declare global {
-  var postMessage: (message: object) => void
-  var setOnMessage: (handler: (payload: object) => void) => void
+  var postMessage: (message: any, targetOrigin?: string) => void
+  var setOnMessage: (handler: (payload: any) => void) => void
 }
 
 type AppProps = {

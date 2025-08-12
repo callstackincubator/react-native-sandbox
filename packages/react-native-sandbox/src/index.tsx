@@ -42,6 +42,7 @@ const SANDBOX_TURBOMODULES_WHITELIST = [
   'NativeAnimatedTurboModule',
   'KeyboardObserver',
   'I18nManager',
+  'FrameRateLogger',
 ]
 
 /**
@@ -52,11 +53,15 @@ type GenericProps = {
   [key: string]: any
 }
 
-/**
- * Props for the SandboxReactNativeView component.
- * Extends ViewProps to include all standard React Native View properties.
- */
-export type SandboxReactNativeViewProps = ViewProps & {
+let sandboxCounter = 0
+const generateSandboxId = (): string => {
+  return `sandbox:${++sandboxCounter}`
+}
+
+export interface SandboxReactNativeViewProps extends ViewProps {
+  /** Optional unique origin identifier for the sandbox instance */
+  origin?: string
+
   /**
    * The name of the React Native component to load in the sandbox.
    * This should match the component name registered in your JavaScript bundle.
@@ -74,7 +79,7 @@ export type SandboxReactNativeViewProps = ViewProps & {
    * Optional path or URL to the JavaScript bundle to load.
    * If not provided, the default bundle will be used.
    */
-  jsBundleSource: string
+  jsBundleSource?: string
 
   /**
    * Initial properties to pass to the sandboxed React Native app.
@@ -93,6 +98,13 @@ export type SandboxReactNativeViewProps = ViewProps & {
    * These will be merged with the default whitelist for enhanced functionality.
    */
   allowedTurboModules?: string[]
+
+  /**
+   * Array of sandbox origins that are allowed to send messages to this sandbox.
+   * If not provided or empty, no other sandboxes will be allowed to send messages.
+   * Re-registering with new allowedOrigins will override previous settings.
+   */
+  allowedOrigins?: string[]
 
   /**
    * Callback function called when the sandbox sends a message to the parent.
@@ -198,20 +210,25 @@ const SandboxReactNativeView = forwardRef<
 >(
   (
     {
-      onMessage,
-      onError,
+      origin,
+      jsBundleSource,
       allowedTurboModules,
       style,
       componentName,
       moduleName,
+      onMessage,
+      onError,
       ...rest
     },
     ref
   ) => {
     const nativeRef =
-      useRef<React.ElementRef<NativeSandboxReactNativeViewComponentType> | null>(
+      useRef<React.ComponentRef<NativeSandboxReactNativeViewComponentType> | null>(
         null
       )
+
+    // Use provided origin or assign a unique ID
+    const sandboxOrigin = useMemo(() => origin || generateSandboxId(), [origin])
 
     const postMessage = useCallback((message: any) => {
       if (nativeRef.current) {
@@ -255,12 +272,15 @@ const SandboxReactNativeView = forwardRef<
       []
     )
 
-    const _allowedTurboModules = [
-      ...new Set([
-        ...(allowedTurboModules ?? []),
-        ...SANDBOX_TURBOMODULES_WHITELIST,
-      ]),
-    ]
+    const _allowedTurboModules = useMemo(
+      () => [
+        ...new Set([
+          ...(allowedTurboModules ?? []),
+          ...SANDBOX_TURBOMODULES_WHITELIST,
+        ]),
+      ],
+      [allowedTurboModules]
+    )
 
     // Handle backward compatibility for moduleName -> componentName
     const resolvedComponentName = useMemo(() => {
@@ -286,12 +306,20 @@ const SandboxReactNativeView = forwardRef<
       return componentName
     }, [componentName, moduleName])
 
+    const _jsBundleSource = useMemo(() => {
+      if (jsBundleSource) {
+        return jsBundleSource
+      }
+      return 'index'
+    }, [jsBundleSource])
+
     return (
       <View style={style}>
         <NativeSandboxReactNativeView
-          // @ts-ignore
-          ref={nativeRef}
+          ref={nativeRef} // @ts-ignore
+          origin={sandboxOrigin}
           componentName={resolvedComponentName}
+          jsBundleSource={_jsBundleSource}
           hasOnMessageHandler={!!onMessage}
           hasOnErrorHandler={!!onError}
           onError={onError ? _onError : undefined}

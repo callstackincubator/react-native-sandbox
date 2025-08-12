@@ -6,12 +6,14 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "start": "react-native start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "jest": "echo 'No tests'"
   },
   "dependencies": {
+    "@callstack/react-native-sandbox": "workspace:*",
+    "@react-native/new-app-screen": "^0.80.2",
     "react": "19.1.0",
-    "react-native": "0.80.1",
-    "@callstack/react-native-sandbox": "workspace:*"
+    "react-native": "0.80.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
