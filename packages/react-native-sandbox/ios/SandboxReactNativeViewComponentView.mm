@@ -67,6 +67,9 @@ using namespace facebook::react;
 
   [super updateProps:props oldProps:oldProps];
 
+  // Track if bundle source changed - needs special handling
+  BOOL bundleSourceChanged = NO;
+
   if (self.reactNativeDelegate) {
     if (oldViewProps.origin != newViewProps.origin) {
       [self.reactNativeDelegate setOrigin:newViewProps.origin];
@@ -74,6 +77,7 @@ using namespace facebook::react;
 
     if (oldViewProps.jsBundleSource != newViewProps.jsBundleSource) {
       [self.reactNativeDelegate setJsBundleSource:newViewProps.jsBundleSource];
+      bundleSourceChanged = YES;
     }
 
     if (oldViewProps.allowedTurboModules != newViewProps.allowedTurboModules) {
@@ -96,9 +100,13 @@ using namespace facebook::react;
     [self updateEventEmitterIfNeeded];
   }
 
-  if (oldViewProps.componentName != newViewProps.componentName ||
-      oldViewProps.initialProperties != newViewProps.initialProperties ||
-      oldViewProps.launchOptions != newViewProps.launchOptions) {
+  // When bundle source changes, we must destroy the factory to force reload with new bundle
+  if (bundleSourceChanged) {
+    self.reactNativeFactory = nil;
+    [self scheduleReactViewLoad];
+  } else if (oldViewProps.componentName != newViewProps.componentName ||
+             oldViewProps.initialProperties != newViewProps.initialProperties ||
+             oldViewProps.launchOptions != newViewProps.launchOptions) {
     [self scheduleReactViewLoad];
   }
 }
