@@ -42,8 +42,11 @@ jobs:
         if: steps.asdf-cache.outputs.cache-hit != 'true'
         uses: asdf-vm/actions/install@v4
 
-      - name: Install Homebrew dependencies
-        run: brew bundle
+      - name: Install ktlint
+        run: |
+          curl -sSLO https://github.com/pinterest/ktlint/releases/latest/download/ktlint
+          chmod +x ktlint
+          sudo mv ktlint /usr/local/bin/
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
