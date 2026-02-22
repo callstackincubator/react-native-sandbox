@@ -16,7 +16,6 @@ export const MessagesList: React.FC<MessagesListProps> = ({
   const scrollRef = useRef<ScrollView>(null)
 
   useEffect(() => {
-    // Auto-scroll to bottom when new messages arrive
     if (messages.length > 0) {
       setTimeout(() => {
         scrollRef.current?.scrollToEnd({animated: true})
@@ -96,14 +95,14 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
   },
   emptyText: {
-    fontSize: typography.sizes.md + 1, // 13px
+    fontSize: typography.sizes.md + 1,
     color: colors.text.secondary,
     textAlign: 'center',
     fontStyle: 'italic',
   },
   messageBubble: {
     marginVertical: 3,
-    padding: spacing.sm + 2, // 10px
+    padding: spacing.sm + 2,
     borderRadius: 14,
     maxWidth: '80%',
   },
@@ -118,9 +117,9 @@ const styles = StyleSheet.create({
   },
   errorMessage: {
     alignSelf: 'flex-start',
-    backgroundColor: '#ffebee', // Light red background
+    backgroundColor: '#ffebee',
     borderWidth: 1,
-    borderColor: colors.error, // Red border
+    borderColor: colors.error,
   },
   errorIcon: {
     alignSelf: 'flex-start',
@@ -143,7 +142,7 @@ const styles = StyleSheet.create({
     color: colors.text.white,
   },
   errorMessageText: {
-    color: '#d32f2f', // Darker red for error text
+    color: '#d32f2f',
   },
   messageTime: {
     fontSize: typography.sizes.sm,
@@ -154,6 +153,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.8)',
   },
   errorMessageTime: {
-    color: colors.error, // Red for error time
+    color: colors.error,
   },
 })

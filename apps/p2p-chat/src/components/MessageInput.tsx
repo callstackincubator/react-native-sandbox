@@ -1,11 +1,12 @@
 import React from 'react'
-import {StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native'
+import {Pressable, StyleSheet, Text, TextInput, View} from 'react-native'
 
 import {buttonStyles, colors, spacing, typography} from '../styles/common'
 
 interface MessageInputProps {
   inputText: string
   selectedTarget: string
+  isFriend: boolean
   onInputChange: (text: string) => void
   onSendMessage: () => void
 }
@@ -13,10 +14,11 @@ interface MessageInputProps {
 export const MessageInput: React.FC<MessageInputProps> = ({
   inputText,
   selectedTarget,
+  isFriend,
   onInputChange,
   onSendMessage,
 }) => {
-  const canSend = inputText.trim() && selectedTarget.trim()
+  const canSend = inputText.trim() && selectedTarget.trim() && isFriend
 
   const handleSubmit = () => {
     if (canSend) {
@@ -24,23 +26,26 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
   }
 
+  const placeholder = !selectedTarget
+    ? 'Select a user above...'
+    : !isFriend
+      ? `Add ${selectedTarget} as friend first`
+      : `Message ${selectedTarget}...`
+
   return (
     <View style={styles.container}>
       <TextInput
-        style={styles.textInput}
+        style={[styles.textInput, !isFriend && styles.textInputDisabled]}
         value={inputText}
         onChangeText={onInputChange}
-        placeholder={
-          selectedTarget
-            ? `Message ${selectedTarget}...`
-            : 'Enter target above, then type message...'
-        }
+        placeholder={placeholder}
+        editable={isFriend}
         multiline
         maxLength={500}
         onSubmitEditing={handleSubmit}
         blurOnSubmit={false}
       />
-      <TouchableOpacity
+      <Pressable
         style={[
           buttonStyles.base,
           buttonStyles.primary,
@@ -50,7 +55,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         onPress={handleSubmit}
         disabled={!canSend}>
         <Text style={[buttonStyles.text, styles.sendButtonText]}>Send</Text>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   )
 }
@@ -75,10 +80,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     fontSize: typography.sizes.lg,
   },
+  textInputDisabled: {
+    backgroundColor: '#f5f5f5',
+    opacity: 0.6,
+  },
   sendButton: {
     borderRadius: 18,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm + 2, // 10px
+    paddingVertical: spacing.sm + 2,
   },
   sendButtonText: {
     fontSize: typography.sizes.lg,

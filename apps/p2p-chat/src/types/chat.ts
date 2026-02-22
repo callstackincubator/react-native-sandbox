@@ -11,11 +11,9 @@ export interface Message {
 export interface ChatAppProps {
   userId: string
   userName: string
-  targetOptions: string[] // Array of friend IDs who can receive messages
-  potentialFriends: {id: string; name: string}[] // Users who can be added as friends
-  pendingRequests: {id: string; from: string; to: string; timestamp: number}[] // Incoming friend requests
+  targetOptions: string[]
+  potentialFriends: {id: string; name: string}[]
   backgroundColor: string
-  friendshipTrigger?: number // Trigger prop to force re-renders
 }
 
 export interface MessageData {
@@ -34,7 +32,6 @@ export interface MessageData {
   friendName?: string
   reason?: string
   errorText?: string
-  message?: string
 }
 
 export interface GlobalCommunication {

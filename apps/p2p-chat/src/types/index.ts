@@ -4,9 +4,4 @@ export type {
   Message,
   MessageData,
 } from './chat'
-export type {
-  FriendAction,
-  FriendNotification,
-  FriendRequest,
-  PotentialFriend,
-} from './friends'
+export type {FriendAction, FriendRequest, PotentialFriend} from './friends'

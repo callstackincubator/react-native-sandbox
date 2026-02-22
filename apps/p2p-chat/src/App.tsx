@@ -21,18 +21,21 @@ const App = () => {
   } = useChatInstances()
 
   const sandboxRefs = useRef<Record<string, any>>({})
+  const chatInstancesRef = useRef(chatInstances)
+  chatInstancesRef.current = chatInstances
 
-  const messageHandler = new MessageHandler(
-    chatInstances,
-    friendshipManager,
-    sandboxRefs,
-    triggerFriendshipUpdate
-  )
+  const messageHandler = useRef(
+    new MessageHandler(
+      () => chatInstancesRef.current,
+      friendshipManager,
+      sandboxRefs,
+      triggerFriendshipUpdate
+    )
+  ).current
 
-  // Use the scroll color interpolation hook
   const {currentBackgroundColor, onScroll} = useScrollColorInterpolation({
     chatInstances,
-    scrollStep: screenWidth, // Now each slide takes full screen width
+    scrollStep: screenWidth,
     onIndexChange: setCurrentIndex,
   })
 
@@ -45,7 +48,6 @@ const App = () => {
       <StatusBar
         barStyle="light-content"
         backgroundColor={currentBackgroundColor}
-        translucent
       />
 
       <ChatCarousel

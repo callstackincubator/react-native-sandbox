@@ -1,8 +1,9 @@
-import {FriendRequest} from '../types'
-
 export class FriendshipManager {
-  private friendships = new Set<string>() // "alice-bob" format (sorted)
-  private pendingRequests = new Map<string, FriendRequest>()
+  private friendships = new Set<string>()
+  private pendingRequests = new Map<
+    string,
+    {from: string; to: string; timestamp: number}
+  >()
   private requestCounter = 0
 
   private createFriendshipKey(user1: string, user2: string): string {
@@ -11,15 +12,7 @@ export class FriendshipManager {
 
   sendFriendRequest(from: string, to: string): string {
     const requestId = `req_${++this.requestCounter}_${Date.now()}`
-    const request: FriendRequest = {
-      id: requestId,
-      from,
-      to,
-      timestamp: Date.now(),
-      status: 'pending',
-    }
-
-    this.pendingRequests.set(requestId, request)
+    this.pendingRequests.set(requestId, {from, to, timestamp: Date.now()})
     console.log(
       `[FriendshipManager] Friend request sent: ${from} → ${to} (${requestId})`
     )
@@ -29,14 +22,12 @@ export class FriendshipManager {
   respondToRequest(
     requestId: string,
     action: 'accept' | 'reject'
-  ): FriendRequest | null {
+  ): {from: string; to: string} | null {
     const request = this.pendingRequests.get(requestId)
     if (!request) {
       console.warn(`[FriendshipManager] Request ${requestId} not found`)
       return null
     }
-
-    request.status = action === 'accept' ? 'accepted' : 'rejected'
 
     if (action === 'accept') {
       const friendshipKey = this.createFriendshipKey(request.from, request.to)
@@ -58,12 +49,6 @@ export class FriendshipManager {
       if (user2 === userId) friends.push(user1)
     }
     return friends
-  }
-
-  getPendingRequestsFor(userId: string): FriendRequest[] {
-    return Array.from(this.pendingRequests.values()).filter(
-      req => req.to === userId && req.status === 'pending'
-    )
   }
 
   hasPendingRequestBetween(user1: string, user2: string): boolean {
