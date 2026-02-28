@@ -11,29 +11,24 @@ export const getChatHelpers = (
 
   const getPotentialFriends = (chatId: string) => {
     return chatInstances
-      .filter(chat => chat.id !== chatId) // Exclude self
-      .filter(chat => !friendshipManager.areFriends(chatId, chat.id)) // Exclude existing friends
+      .filter(chat => chat.id !== chatId)
+      .filter(chat => !friendshipManager.areFriends(chatId, chat.id))
       .filter(
         chat => !friendshipManager.hasPendingRequestBetween(chatId, chat.id)
-      ) // Exclude pending requests
+      )
       .map(chat => ({id: chat.id, name: chat.userName}))
-  }
-
-  const getPendingRequests = (chatId: string) => {
-    return friendshipManager.getPendingRequestsFor(chatId)
   }
 
   const getFriends = (chatId: string) => {
     return chatInstances
-      .filter(chat => chat.id !== chatId) // Exclude self
-      .filter(chat => friendshipManager.areFriends(chatId, chat.id)) // Only include friends
+      .filter(chat => chat.id !== chatId)
+      .filter(chat => friendshipManager.areFriends(chatId, chat.id))
       .map(chat => ({id: chat.id, name: chat.userName}))
   }
 
   return {
     getTargetOptions,
     getPotentialFriends,
-    getPendingRequests,
     getFriends,
   }
 }

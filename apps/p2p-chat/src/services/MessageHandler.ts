@@ -5,7 +5,7 @@ export class MessageHandler {
   private scrollToChat?: (chatId: string) => void
 
   constructor(
-    private chatInstances: ChatMeta[],
+    private getChatInstances: () => ChatMeta[],
     private friendshipManager: FriendshipManager,
     private sandboxRefs: React.MutableRefObject<Record<string, any>>,
     private triggerFriendshipUpdate: () => void
@@ -18,7 +18,6 @@ export class MessageHandler {
   handleChatError = (chatId: string) => (error: any) => {
     console.log(`[${chatId}] Error:`, error)
 
-    // Send error message to sandbox for display in chat history
     const errorMessage = {
       type: 'message_error',
       errorText: error.message || 'An error occurred',
@@ -29,8 +28,10 @@ export class MessageHandler {
     this.sendToSandbox(chatId, errorMessage)
   }
 
-  handleChatMessage = (chatId: string) => (data: any) => {
-    console.log(`[${chatId}] Received message from sandbox:`, data)
+  handleChatMessage = (chatId: string) => (rawData: any) => {
+    console.log(`[${chatId}] Received message from sandbox:`, rawData)
+
+    const data = typeof rawData === 'string' ? JSON.parse(rawData) : rawData
 
     if (!data.type) {
       console.warn(`[Host] Message from ${chatId} missing type:`, data)
@@ -38,28 +39,27 @@ export class MessageHandler {
     }
 
     switch (data.type) {
-      case 'make_friend':
-        this.handleMakeFriend(chatId, data)
+      case 'friend_request':
+        this.handleFriendRequest(chatId, data)
         break
       case 'friend_response':
         this.handleFriendResponse(chatId, data)
-        break
-      case 'chat_message':
-        this.handleForwardMessage(chatId, data)
         break
       default:
         console.log(`[Host] Unknown message type from ${chatId}:`, data.type)
     }
   }
 
-  private handleMakeFriend(chatId: string, data: any) {
+  private handleFriendRequest(chatId: string, data: any) {
     const {target} = data
     if (!target) {
-      console.warn(`[Host] make_friend message from ${chatId} missing target`)
+      console.warn(`[Host] friend_request from ${chatId} missing target`)
       return
     }
 
-    const targetInstance = this.chatInstances.find(inst => inst.id === target)
+    const targetInstance = this.getChatInstances().find(
+      inst => inst.id === target
+    )
     if (!targetInstance) {
       console.warn(
         `[Host] Target ${target} not found for friend request from ${chatId}`
@@ -81,25 +81,22 @@ export class MessageHandler {
 
     const requestId = this.friendshipManager.sendFriendRequest(chatId, target)
 
-    // Automatically scroll to target chat to make it easier to accept the invite
     if (this.scrollToChat) {
       setTimeout(() => {
         this.scrollToChat!(target)
-      }, 100) // Small delay for UX
+      }, 100)
     }
 
     setTimeout(() => {
-      const hostMessage = {
+      this.sendToSandbox(target, {
         type: 'friend_request',
         from: chatId,
         fromName:
-          this.chatInstances.find(inst => inst.id === chatId)?.userName ||
+          this.getChatInstances().find(inst => inst.id === chatId)?.userName ||
           chatId,
         requestId,
         timestamp: Date.now(),
-      }
-
-      this.sendToSandbox(target, hostMessage)
+      })
     }, 500)
   }
 
@@ -117,62 +114,16 @@ export class MessageHandler {
 
     this.triggerFriendshipUpdate()
 
-    if (action === 'accept') {
-      // Notify the original requester
-      const acceptMessage = {
-        type: 'friend_accepted',
-        friend: chatId,
-        friendName:
-          this.chatInstances.find(inst => inst.id === chatId)?.userName ||
-          chatId,
-        timestamp: Date.now(),
-      }
-      this.sendToSandbox(request.from, acceptMessage)
-
-      // Notify both parties about established friendship
-      const friendshipMessage = {
-        type: 'friendship_established',
-        friendName: '',
-        timestamp: Date.now(),
-      }
-
-      this.sendToSandbox(request.from, {
-        ...friendshipMessage,
-        friendName:
-          this.chatInstances.find(inst => inst.id === chatId)?.userName ||
-          chatId,
-      })
-
-      this.sendToSandbox(chatId, {
-        ...friendshipMessage,
-        friendName:
-          this.chatInstances.find(inst => inst.id === request.from)?.userName ||
-          request.from,
-      })
-    }
-  }
-
-  private handleForwardMessage(senderId: string, data: any) {
-    const {target, messageId, text, senderName, timestamp} = data
-
-    if (!target || !messageId || !text || !senderName) {
-      console.warn(
-        `[Host] chat_message from ${senderId} missing required fields`
-      )
-      return
-    }
-
-    const forwardedMessage = {
-      type: 'chat_message',
-      messageId,
-      text,
-      senderId,
-      senderName,
-      timestamp,
-    }
-
-    // Message will be blocked at native level if not allowed
-    this.sendToSandbox(target, forwardedMessage)
+    const instances = this.getChatInstances()
+    this.sendToSandbox(request.from, {
+      type: 'friend_response',
+      action,
+      friend: chatId,
+      friendName:
+        instances.find(inst => inst.id === chatId)?.userName || chatId,
+      requestId,
+      timestamp: Date.now(),
+    })
   }
 
   private sendToSandbox(targetId: string, message: any) {

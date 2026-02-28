@@ -2,7 +2,6 @@ import {useCallback, useEffect} from 'react'
 
 import {MessageData} from '../types'
 
-// Global function declarations for sandbox environment
 declare global {
   var setOnMessage: (callback: (data: any) => void) => void
   var postMessage: (message: any, targetOrigin?: string) => void
@@ -22,7 +21,6 @@ export const useCommunication = ({
   onConnectionEstablished,
 }: UseCommunicationProps) => {
   useEffect(() => {
-    // Set up message listener for P2P communication
     if (global.setOnMessage) {
       console.log(
         `[${userName}] global.setOnMessage is available, setting up listener`
@@ -50,12 +48,10 @@ export const useCommunication = ({
       )
     }
 
-    // Send initial connection message if callback provided
     if (onConnectionEstablished) {
       onConnectionEstablished()
     }
 
-    // Announce readiness
     console.log(
       `[${userName}] 📢 Sandbox initialization complete and ready to receive messages`
     )

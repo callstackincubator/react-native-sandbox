@@ -28,8 +28,12 @@
     "React-Sandbox.podspec"
   ],
   "scripts": {
-    "lint": "clang-format --dry-run --Werror ios/*.{h,mm,cpp} tests/*.{h,cpp}",
-    "format": "clang-format -i ios/*.{h,mm,cpp} tests/*.{h,cpp}",
+    "lint": "npm run lint:clang && npm run lint:kotlin",
+    "lint:clang": "clang-format --dry-run --Werror ios/*.{h,mm,cpp} android/src/main/jni/*.{h,cpp} tests/*.{h,cpp}",
+    "lint:kotlin": "ktlint 'android/src/main/java/**/*.kt'",
+    "format": "npm run format:clang && npm run format:kotlin",
+    "format:clang": "clang-format -i ios/*.{h,mm,cpp} android/src/main/jni/*.{h,cpp} tests/*.{h,cpp}",
+    "format:kotlin": "ktlint -F 'android/src/main/java/**/*.kt'",
     "typecheck": "tsc --noEmit",
     "prepare": "bob build",
     "ctest": "cmake -S tests -B tests/build && cmake --build tests/build && ctest --test-dir tests/build --output-on-failure --verbose"

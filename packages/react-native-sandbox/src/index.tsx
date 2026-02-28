@@ -40,9 +40,12 @@ const SANDBOX_TURBOMODULES_WHITELIST = [
   'ReactDevToolsRuntimeSettingsModule',
   'NativeReactNativeFeatureFlagsCxx',
   'NativeAnimatedTurboModule',
+  'NativeAnimatedModule',
   'KeyboardObserver',
   'I18nManager',
   'FrameRateLogger',
+  'StatusBarManager',
+  'FileReaderModule',
 ]
 
 /**

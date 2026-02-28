@@ -20,14 +20,15 @@ export const carouselStyles = StyleSheet.create({
     paddingHorizontal: SLIDE_MARGIN,
   },
   chatSlide: {
-    width: screenWidth, // Full screen width for proper paging
+    width: screenWidth,
     flex: 1,
-    paddingHorizontal: SLIDE_MARGIN, // Use padding instead of margin
-    alignItems: 'center', // Center the content
+    paddingHorizontal: SLIDE_MARGIN,
+    alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   chatContent: {
-    width: CHAT_WIDTH, // The actual chat content width
+    width: CHAT_WIDTH,
     flex: 1,
     backgroundColor: '#ffffff',
     borderRadius: 12,
@@ -89,19 +90,19 @@ export const carouselStyles = StyleSheet.create({
   },
   deleteButtonText: {
     color: '#ffffff',
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
-    margin: -10,
+    lineHeight: 18,
   },
   deleteButtonDisabled: {
     opacity: 0.5,
   },
   addChatCard: {
-    width: '45%', // Make it 45% of the slide width
-    height: '60%', // Make it 60% of the slide height
+    width: '45%',
+    height: '60%',
     backgroundColor: '#f8f9fa',
     borderRadius: 12,
-    padding: 20, // Reduced padding
+    padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -112,24 +113,24 @@ export const carouselStyles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#dee2e6',
     borderStyle: 'dashed',
-    alignSelf: 'center', // Center horizontally in the slide
+    alignSelf: 'center',
   },
   addChatContent: {
     alignItems: 'center',
   },
   addChatIcon: {
-    fontSize: 30, // Reduced from 40
+    fontSize: 30,
     color: '#6c757d',
-    marginBottom: 8, // Reduced margin
+    marginBottom: 8,
   },
   addChatIconDisabled: {
     opacity: 0.5,
   },
   addChatText: {
-    fontSize: 16, // Reduced from 18
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#6c757d',
-    marginBottom: 4, // Reduced margin
+    marginBottom: 4,
   },
   addChatTextDisabled: {
     opacity: 0.5,

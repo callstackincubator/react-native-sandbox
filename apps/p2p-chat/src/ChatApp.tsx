@@ -1,5 +1,5 @@
-import React, {useCallback, useState} from 'react'
-import {LogBox, StatusBar, View} from 'react-native'
+import React, {useCallback} from 'react'
+import {LogBox, View} from 'react-native'
 
 import {
   FriendRequestsList,
@@ -16,15 +16,12 @@ import {
 import {commonStyles} from './styles'
 import {ChatAppProps, MessageData} from './types'
 
-// Utility function to create subtle background from vibrant color
 const createSubtleBackground = (vibrantColor: string): string => {
-  // Convert hex to RGB
   const hex = vibrantColor.replace('#', '')
   const r = parseInt(hex.substr(0, 2), 16)
   const g = parseInt(hex.substr(2, 2), 16)
   const b = parseInt(hex.substr(4, 2), 16)
 
-  // Create a very light version (90% white + 10% color)
   const lightR = Math.round(255 * 0.9 + r * 0.1)
   const lightG = Math.round(255 * 0.9 + g * 0.1)
   const lightB = Math.round(255 * 0.9 + b * 0.1)
@@ -37,12 +34,23 @@ LogBox.ignoreAllLogs()
 const ChatApp: React.FC<ChatAppProps> = ({
   userId,
   userName,
-  targetOptions,
-  potentialFriends,
-  pendingRequests,
+  targetOptions: initialTargetOptions,
+  potentialFriends: initialPotentialFriends,
   backgroundColor,
 }) => {
-  const [, setIsConnected] = useState(false)
+  const {
+    pendingRequests,
+    targetOptions,
+    potentialFriends,
+    respondToFriendRequest,
+    handleFriendMessage,
+    sendFriendRequest,
+  } = useFriendRequests({
+    userName,
+    initialTargetOptions,
+    initialPotentialFriends,
+    onSendMessage: (msg: MessageData) => sendMessage(msg),
+  })
 
   const {sendMessage, sendConnectionMessage} = useCommunication({
     userName,
@@ -71,33 +79,17 @@ const ChatApp: React.FC<ChatAppProps> = ({
   } = useMessages({
     userId,
     userName,
-    onSendMessage: (message: MessageData) => {
-      const success = sendMessage(message)
-      if (success) {
-        setIsConnected(true)
-      }
-      return success
-    },
+    onSendMessage: (message: MessageData, targetOrigin?: string) =>
+      sendMessage(message, targetOrigin),
   })
-
-  const {respondToFriendRequest, handleFriendMessage, sendFriendRequest} =
-    useFriendRequests({
-      userName,
-      onSendMessage: sendMessage,
-    })
 
   function handleIncomingMessage(data: MessageData) {
     console.log(`[${userName}] Processing message type: ${data.type}`)
-
     handleMessageIncoming(data)
     handleFriendMessage(data)
-    if (
-      data.type === 'chat_message' ||
-      data.type === 'connection_established'
-    ) {
-      setIsConnected(true)
-    }
   }
+
+  const isSelectedTargetFriend = targetOptions.includes(selectedTarget)
 
   const handleSendMessage = useCallback(() => {
     sendChatMessage(selectedTarget)
@@ -121,8 +113,6 @@ const ChatApp: React.FC<ChatAppProps> = ({
 
   return (
     <View style={[commonStyles.container, {backgroundColor: subtleBackground}]}>
-      <StatusBar backgroundColor={backgroundColor} barStyle="light-content" />
-
       <FriendRequestsList
         pendingRequests={pendingRequests}
         onRespondToRequest={respondToFriendRequest}
@@ -141,6 +131,7 @@ const ChatApp: React.FC<ChatAppProps> = ({
       <MessageInput
         inputText={inputText}
         selectedTarget={selectedTarget}
+        isFriend={isSelectedTargetFriend}
         onInputChange={setInputText}
         onSendMessage={handleSendMessage}
       />

@@ -1,6 +1,7 @@
 import SandboxReactNativeView from '@callstack/react-native-sandbox'
-import React, {useCallback, useEffect, useRef} from 'react'
+import React, {useCallback, useEffect, useMemo, useRef} from 'react'
 import {
+  Alert,
   Dimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -15,9 +16,10 @@ import {FriendshipManager, MessageHandler} from '../services'
 import {carouselStyles} from '../styles'
 import {getChatHelpers} from '../utils/chatHelpers'
 
-// Individual Chat Instance Component
 interface ChatInstanceViewProps {
   chat: ChatMeta
+  index: number
+  currentIndex: number
   friendshipTrigger: number
   friendshipManager: FriendshipManager
   messageHandler: MessageHandler
@@ -26,85 +28,121 @@ interface ChatInstanceViewProps {
   onRemoveChatInstance: (chatId: string) => void
 }
 
-const ChatInstanceView: React.FC<ChatInstanceViewProps> = ({
-  chat,
-  friendshipTrigger,
-  friendshipManager,
-  messageHandler,
-  sandboxRefs,
-  chatInstances,
-  onRemoveChatInstance,
-}) => {
-  const {
-    getTargetOptions,
-    getPotentialFriends,
-    getPendingRequests,
-    getFriends,
-  } = getChatHelpers(chatInstances, friendshipManager)
+const ChatInstanceView: React.FC<ChatInstanceViewProps> = React.memo(
+  ({
+    chat,
+    index,
+    currentIndex,
+    friendshipTrigger,
+    friendshipManager,
+    messageHandler,
+    sandboxRefs,
+    chatInstances,
+    onRemoveChatInstance,
+  }) => {
+    const isVisible = index === currentIndex
+    const {getTargetOptions, getPotentialFriends, getFriends} = getChatHelpers(
+      chatInstances,
+      friendshipManager
+    )
 
-  // Get list of friend IDs for allowedOrigins
-  const allowedOrigins = getFriends(chat.id).map(friend => friend.id)
+    const allowedOrigins = getFriends(chat.id).map(friend => friend.id)
 
-  return (
-    <View key={chat.id} style={carouselStyles.chatSlide}>
-      <View style={carouselStyles.chatContent}>
-        <View style={carouselStyles.chatHeader}>
-          <View style={carouselStyles.chatHeaderContent}>
-            <Text style={carouselStyles.chatTitle}>{chat.id}</Text>
+    const initialProperties = useMemo(
+      () => ({
+        userId: chat.id,
+        userName: chat.userName,
+        targetOptions: getTargetOptions(chat.id),
+        potentialFriends: getPotentialFriends(chat.id),
+        backgroundColor: chat.backgroundColor,
+      }),
+      // Only recompute when the chat identity changes, NOT on friendship updates.
+      // Friendship updates are delivered via postMessage to avoid full sandbox reload.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [chat.id, chat.userName, chat.backgroundColor]
+    )
+
+    const onError = useMemo(
+      () => messageHandler.handleChatError(chat.userName),
+      [messageHandler, chat.userName]
+    )
+
+    const onMessage = useMemo(
+      () => messageHandler.handleChatMessage(chat.id),
+      [messageHandler, chat.id]
+    )
+
+    const refCallback = useCallback(
+      (ref: any) => {
+        if (ref) {
+          sandboxRefs.current[chat.id] = ref
+          console.log(
+            `[Host] Registered sandbox ref for ${chat.id}. Active refs:`,
+            Object.keys(sandboxRefs.current)
+          )
+        } else {
+          console.log(`[Host] Removing sandbox ref for ${chat.id}`)
+          delete sandboxRefs.current[chat.id]
+        }
+      },
+      [sandboxRefs, chat.id]
+    )
+
+    const handleRemove = useCallback(() => {
+      Alert.alert('Remove Chat', `Remove ${chat.userName} from the chat?`, [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => onRemoveChatInstance(chat.id),
+        },
+      ])
+    }, [onRemoveChatInstance, chat.id, chat.userName])
+
+    return (
+      <View key={chat.id} style={carouselStyles.chatSlide}>
+        <View style={carouselStyles.chatContent}>
+          <View style={carouselStyles.chatHeader}>
+            <View style={carouselStyles.chatHeaderContent}>
+              <Text style={carouselStyles.chatTitle}>{chat.id}</Text>
+            </View>
+
+            {isVisible && (
+              <TouchableOpacity
+                style={carouselStyles.deleteButton}
+                onPress={handleRemove}
+                disabled={chatInstances.length <= 1}>
+                <Text
+                  style={[
+                    carouselStyles.deleteButtonText,
+                    chatInstances.length <= 1 &&
+                      carouselStyles.deleteButtonDisabled,
+                  ]}>
+                  ×
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
-          <TouchableOpacity
-            style={carouselStyles.deleteButton}
-            onPress={() => onRemoveChatInstance(chat.id)}
-            disabled={chatInstances.length <= 1}>
-            <Text
-              style={[
-                carouselStyles.deleteButtonText,
-                chatInstances.length <= 1 &&
-                  carouselStyles.deleteButtonDisabled,
-              ]}>
-              ×
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={carouselStyles.chatContainer}>
-          <SandboxReactNativeView
-            ref={(ref: any) => {
-              if (ref) {
-                sandboxRefs.current[chat.id] = ref
-                console.log(
-                  `[Host] Registered sandbox ref for ${chat.id}. Active refs:`,
-                  Object.keys(sandboxRefs.current)
-                )
-              } else {
-                console.log(`[Host] Removing sandbox ref for ${chat.id}`)
-                delete sandboxRefs.current[chat.id]
-              }
-            }}
-            origin={chat.id}
-            componentName="ChatApp"
-            initialProperties={{
-              userId: chat.id,
-              userName: chat.userName,
-              targetOptions: getTargetOptions(chat.id),
-              potentialFriends: getPotentialFriends(chat.id),
-              pendingRequests: getPendingRequests(chat.id),
-              backgroundColor: chat.backgroundColor,
-              friendshipTrigger: friendshipTrigger,
-            }}
-            onError={messageHandler.handleChatError(chat.userName)}
-            onMessage={messageHandler.handleChatMessage(chat.id)}
-            allowedOrigins={allowedOrigins}
-            style={carouselStyles.sandbox}
-          />
+          <View style={carouselStyles.chatContainer}>
+            <SandboxReactNativeView
+              ref={refCallback}
+              origin={chat.id}
+              componentName="ChatApp"
+              initialProperties={initialProperties}
+              onError={onError}
+              onMessage={onMessage}
+              allowedOrigins={allowedOrigins}
+              style={carouselStyles.sandbox}
+            />
+          </View>
         </View>
       </View>
-    </View>
-  )
-}
+    )
+  }
+)
+ChatInstanceView.displayName = 'ChatInstanceView'
 
-// Add Chat Component
 interface AddChatViewProps {
   chatInstances: ChatMeta[]
   onAddChatInstance: () => void
@@ -171,14 +209,12 @@ export const ChatCarousel: React.FC<ChatCarouselProps> = ({
 }) => {
   const scrollViewRef = useRef<ScrollView>(null)
 
-  // Function to scroll to specific chat
   const scrollToChat = useCallback(
     (targetChatId: string) => {
       const targetIndex = chatInstances.findIndex(
         chat => chat.id === targetChatId
       )
       if (targetIndex !== -1 && scrollViewRef.current) {
-        // Each slide now takes full screen width for proper paging
         const {width: screenWidth} = Dimensions.get('window')
         const scrollX = targetIndex * screenWidth
 
@@ -192,7 +228,6 @@ export const ChatCarousel: React.FC<ChatCarouselProps> = ({
     [chatInstances]
   )
 
-  // Expose scroll function to messageHandler
   useEffect(() => {
     if (
       messageHandler &&
@@ -215,10 +250,12 @@ export const ChatCarousel: React.FC<ChatCarouselProps> = ({
           decelerationRate="fast"
           bounces={false}
           style={carouselStyles.carousel}>
-          {chatInstances.map(chat => (
+          {chatInstances.map((chat, idx) => (
             <ChatInstanceView
               key={chat.id}
               chat={chat}
+              index={idx}
+              currentIndex={currentIndex}
               friendshipTrigger={friendshipTrigger}
               friendshipManager={friendshipManager}
               messageHandler={messageHandler}

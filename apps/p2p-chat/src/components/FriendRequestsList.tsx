@@ -1,5 +1,5 @@
 import React from 'react'
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native'
+import {Pressable, StyleSheet, Text, View} from 'react-native'
 
 import {
   buttonStyles,
@@ -32,7 +32,7 @@ export const FriendRequestsList: React.FC<FriendRequestsListProps> = ({
             {request.from} wants to be friends
           </Text>
           <View style={styles.buttonContainer}>
-            <TouchableOpacity
+            <Pressable
               style={[
                 buttonStyles.base,
                 buttonStyles.success,
@@ -40,8 +40,8 @@ export const FriendRequestsList: React.FC<FriendRequestsListProps> = ({
               ]}
               onPress={() => onRespondToRequest(request.id, 'accept')}>
               <Text style={[buttonStyles.text, styles.buttonText]}>Accept</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               style={[
                 buttonStyles.base,
                 buttonStyles.error,
@@ -49,7 +49,7 @@ export const FriendRequestsList: React.FC<FriendRequestsListProps> = ({
               ]}
               onPress={() => onRespondToRequest(request.id, 'reject')}>
               <Text style={[buttonStyles.text, styles.buttonText]}>Reject</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       ))}
@@ -74,16 +74,16 @@ const styles = StyleSheet.create({
     ...commonStyles.row,
     justifyContent: 'space-between',
     backgroundColor: '#f0f0f0',
-    padding: spacing.sm + 2, // 10px
+    padding: spacing.sm + 2,
     ...commonStyles.rounded,
     marginBottom: spacing.sm,
     ...commonStyles.border,
   },
   friendRequestText: {
     flex: 1,
-    fontSize: typography.sizes.md + 1, // 13px
+    fontSize: typography.sizes.md + 1,
     color: colors.text.primary,
-    marginRight: spacing.sm + 2, // 10px
+    marginRight: spacing.sm + 2,
   },
   buttonContainer: {
     flexDirection: 'row',
