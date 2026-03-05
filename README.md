@@ -147,6 +147,7 @@ Full examples:
 - [`apps/recursive`](./apps/recursive/README.md): An example application with few nested sandbox instances.
 - [`apps/p2p-chat`](./apps/p2p-counter/README.md): Direct sandbox-to-sandbox chat demo.
 - [`apps/p2p-counter`](./apps/p2p-counter/README.md): Direct sandbox-to-sandbox communication demo.
+- [`apps/fs-experiment`](./apps/fs-experiment/README.md): File system & storage isolation with TurboModule substitutions.
 
 ## 📚 API Reference
 
@@ -168,9 +169,15 @@ We're actively working on expanding the capabilities of `react-native-sandbox`. 
   - Resource usage limits and monitoring
   - Sandbox capability restrictions
   - Unresponsiveness detection 
-- [ ] **Storage Isolation** - Secure data partitioning
-  - Per-sandbox AsyncStorage isolation
-  - Secure file system access controls
+- [x] **TurboModule Substitutions** - Replace native module implementations per sandbox
+  - Configurable via `turboModuleSubstitutions` prop (JS/TS only)
+  - Sandbox-aware modules receive origin context for per-instance scoping
+  - Supports both TurboModules (new arch) and legacy bridge modules
+- [x] **Storage & File System Isolation** - Secure data partitioning
+  - Per-sandbox AsyncStorage isolation via scoped storage directories
+  - Sandboxed file system access (react-native-fs, react-native-file-access) with path jailing
+  - All directory constants overridden to sandbox-scoped paths
+  - Network/system operations blocked in sandboxed FS modules
 - [ ] **Developer Tools** - Enhanced debugging and development experience
 
 Contributions and feedback on these roadmap items are welcome! Please check our [issues](https://github.com/callstackincubator/react-native-sandbox/issues) for detailed discussions on each feature.
@@ -185,9 +192,24 @@ A primary security concern when running multiple React Native instances is the p
 - **Data Leakage:** One sandbox could use a shared TurboModule to store data, which could then be read by another sandbox or the host. This breaks the isolation model.
 - **Unintended Side-Effects:** A sandbox could call a method on a shared module that changes its state, affecting the behavior of the host or other sandboxes in unpredictable ways.
 
-To address this, `react-native-sandbox` allows you to provide a **whitelist of allowed TurboModules** for each sandbox instance via the `allowedTurboModules` prop. Only the modules specified in this list will be accessible from within the sandbox, significantly reducing the attack surface. It is critical to only whitelist modules that are stateless or are explicitly designed to be shared safely.
+To address this, `react-native-sandbox` provides two mechanisms:
 
-**Default Whitelist:** By default, only `NativeMicrotasksCxx` is whitelisted. Modules like `NativePerformanceCxx`, `PlatformConstants`, `DevSettings`, `LogBox`, and other third-party modules are *not* whitelisted.
+- **TurboModule Allowlisting** — Use the `allowedTurboModules` prop to control which native modules the sandbox can access. Only modules in this list are resolved; all others return a stub that rejects with a clear error.
+
+- **TurboModule Substitutions** — Use the `turboModuleSubstitutions` prop to transparently replace a module with a sandbox-aware alternative. For example, when sandbox JS requests `RNCAsyncStorage`, the host can resolve different  implementation like `SandboxedAsyncStorage` instead — an implementation that scopes storage to the sandbox's origin. Substituted modules that conform to `RCTSandboxAwareModule` (ObjC) or `ISandboxAwareModule` (C++) receive the sandbox context (origin, requested name, resolved name) after instantiation.
+
+```tsx
+<SandboxReactNativeView
+  allowedTurboModules={['RNFSManager', 'FileAccess', 'RNCAsyncStorage']}
+  turboModuleSubstitutions={{
+    RNFSManager: 'SandboxedRNFSManager',
+    FileAccess: 'SandboxedFileAccess',
+    RNCAsyncStorage: 'SandboxedAsyncStorage',
+  }}
+/>
+```
+
+**Default Allowlist:** A baseline set of essential React Native modules is allowed by default (e.g., `EventDispatcher`, `AppState`, `Appearance`, `Networking`, `DeviceInfo`, `KeyboardObserver`, and others required for basic rendering and dev tooling). See the [full list in source](https://github.com/callstackincubator/react-native-sandbox/blob/main/packages/react-native-sandbox/src/index.tsx). Third-party modules and storage/FS modules are *not* included — they must be explicitly added via `allowedTurboModules` or provided through `turboModuleSubstitutions`.
 
 ### Performance
 
@@ -195,7 +217,11 @@ To address this, `react-native-sandbox` allows you to provide a **whitelist of a
 
 ### File System & Storage
 
-- **Persistent Storage Conflicts:** Standard APIs like `AsyncStorage` may not be instance-aware, potentially allowing a sandbox to read or overwrite data stored by the host or other sandboxes. Any storage mechanism must be properly partitioned to ensure data isolation.
+- **Persistent Storage Conflicts:** Standard APIs like `AsyncStorage` are not instance-aware by default, potentially allowing a sandbox to read or overwrite data stored by the host or other sandboxes. Use `turboModuleSubstitutions` to replace these modules with sandbox-aware implementations that scope data per origin.
+- **File System Path Jailing:** Sandboxed file system modules (`SandboxedRNFSManager`, `SandboxedFileAccess`) override directory constants and validate all path arguments, ensuring file operations are confined to a per-origin sandbox directory. Paths outside the sandbox root are rejected with `EPERM`.
+- **Network Operations Blocked:** Sandboxed FS modules block download/upload/fetch operations to prevent data exfiltration.
+
+See the [`apps/fs-experiment`](./apps/fs-experiment/) example for a working demonstration.
 
 ### Platform-Specific Considerations
 

@@ -94,6 +94,18 @@ using namespace facebook::react;
       [self.reactNativeDelegate setAllowedOrigins:allowedOrigins];
     }
 
+    if (oldViewProps.turboModuleSubstitutions != newViewProps.turboModuleSubstitutions) {
+      std::map<std::string, std::string> subs;
+      if (newViewProps.turboModuleSubstitutions.isObject()) {
+        for (const auto &pair : newViewProps.turboModuleSubstitutions.items()) {
+          if (pair.first.isString() && pair.second.isString()) {
+            subs[pair.first.getString()] = pair.second.getString();
+          }
+        }
+      }
+      [self.reactNativeDelegate setTurboModuleSubstitutions:subs];
+    }
+
     self.reactNativeDelegate.hasOnMessageHandler = newViewProps.hasOnMessageHandler;
     self.reactNativeDelegate.hasOnErrorHandler = newViewProps.hasOnErrorHandler;
 
@@ -101,7 +113,14 @@ using namespace facebook::react;
     [self updateEventEmitterIfNeeded];
   }
 
-  if (oldViewProps.componentName != newViewProps.componentName ||
+  BOOL turboModuleConfigChanged = oldViewProps.allowedTurboModules != newViewProps.allowedTurboModules ||
+      oldViewProps.turboModuleSubstitutions != newViewProps.turboModuleSubstitutions;
+
+  if (turboModuleConfigChanged) {
+    self.reactNativeFactory = nil;
+  }
+
+  if (turboModuleConfigChanged || oldViewProps.componentName != newViewProps.componentName ||
       oldViewProps.initialProperties != newViewProps.initialProperties ||
       oldViewProps.launchOptions != newViewProps.launchOptions) {
     [self scheduleReactViewLoad];
@@ -162,7 +181,6 @@ using namespace facebook::react;
     launchOptions = (NSDictionary *)convertFollyDynamicToId(props.launchOptions);
   }
 
-  // Use existing delegate (properties already updated in updateProps)
   if (!self.reactNativeFactory) {
     self.reactNativeFactory = [[RCTReactNativeFactory alloc] initWithDelegate:self.reactNativeDelegate];
   }

@@ -14,15 +14,19 @@
 #include <memory>
 #include <mutex>
 
+#import <React/RCTBridge+Private.h>
 #import <React/RCTBridge.h>
 #import <React/RCTBundleURLProvider.h>
 #import <React/RCTFollyConvert.h>
 #import <ReactAppDependencyProvider/RCTAppDependencyProvider.h>
+#import <ReactCommon/RCTInteropTurboModule.h>
 #import <ReactCommon/RCTTurboModule.h>
 
 #import <objc/runtime.h>
 
 #include <fmt/format.h>
+#include "ISandboxAwareModule.h"
+#import "RCTSandboxAwareModule.h"
 #include "SandboxDelegateWrapper.h"
 #include "SandboxRegistry.h"
 #import "StubTurboModuleCxx.h"
@@ -30,6 +34,30 @@
 namespace jsi = facebook::jsi;
 namespace TurboModuleConvertUtils = facebook::react::TurboModuleConvertUtils;
 using namespace facebook::react;
+
+class SandboxNativeMethodCallInvoker : public NativeMethodCallInvoker {
+  dispatch_queue_t methodQueue_;
+
+ public:
+  explicit SandboxNativeMethodCallInvoker(dispatch_queue_t methodQueue) : methodQueue_(methodQueue) {}
+
+  void invokeAsync(const std::string &, std::function<void()> &&work) noexcept override
+  {
+    if (methodQueue_ == RCTJSThread) {
+      work();
+      return;
+    }
+    __block auto retainedWork = std::move(work);
+    dispatch_async(methodQueue_, ^{
+      retainedWork();
+    });
+  }
+
+  void invokeSync(const std::string &, std::function<void()> &&work) override
+  {
+    work();
+  }
+};
 
 static void stubJsiFunction(jsi::Runtime &runtime, jsi::Object &object, const char *name)
 {
@@ -56,8 +84,10 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
   std::shared_ptr<jsi::Function> _onMessageSandbox;
   std::set<std::string> _allowedTurboModules;
   std::set<std::string> _allowedOrigins;
+  std::map<std::string, std::string> _turboModuleSubstitutions;
   std::string _origin;
   std::string _jsBundleSource;
+  NSMutableDictionary<NSString *, id<RCTBridgeModule>> *_substitutedModuleInstances;
 }
 
 - (void)cleanupResources;
@@ -80,6 +110,7 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
   if (self = [super init]) {
     _hasOnMessageHandler = NO;
     _hasOnErrorHandler = NO;
+    _substitutedModuleInstances = [NSMutableDictionary new];
     self.dependencyProvider = [[RCTAppDependencyProvider alloc] init];
   }
   return self;
@@ -91,6 +122,8 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
   _rctInstance = nil;
   _allowedTurboModules.clear();
   _allowedOrigins.clear();
+  _turboModuleSubstitutions.clear();
+  [_substitutedModuleInstances removeAllObjects];
 }
 
 #pragma mark - C++ Property Getters
@@ -158,6 +191,16 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 - (void)setAllowedTurboModules:(std::set<std::string>)allowedTurboModules
 {
   _allowedTurboModules = allowedTurboModules;
+}
+
+- (std::map<std::string, std::string>)turboModuleSubstitutions
+{
+  return _turboModuleSubstitutions;
+}
+
+- (void)setTurboModuleSubstitutions:(std::map<std::string, std::string>)turboModuleSubstitutions
+{
+  _turboModuleSubstitutions = turboModuleSubstitutions;
 }
 
 - (void)dealloc
@@ -288,22 +331,251 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
   }];
 }
 
+/**
+ * RCTTurboModuleManagerDelegate resolution order (called by RCTTurboModuleManager):
+ *
+ *  PRIORITY 1 — getTurboModule:jsInvoker:
+ *    Called first. Returns a fully constructed C++ TurboModule (shared_ptr).
+ *    If non-null, resolution stops here — nothing else is called.
+ *    This is the primary path for C++ TurboModules and our ObjC substitution fallback.
+ *
+ *  PRIORITY 2 — getModuleClassFromName:
+ *    Called if getTurboModule returned nullptr. Provides the ObjC class for a module name.
+ *    The TurboModuleManager then calls getModuleInstanceFromClass: with this class.
+ *
+ *  PRIORITY 3 — getModuleInstanceFromClass:
+ *    Called with the class from step 2 (or the auto-registered class).
+ *    Creates and returns an ObjC module instance. The TurboModuleManager then wraps it
+ *    in an ObjCInteropTurboModule internally and sets up its methodQueue via KVC.
+ *    NOTE: This path goes through RCTInstance as a weak delegate intermediary, which
+ *    can become nil — causing a second unconfigured instance. That's why we prefer
+ *    handling ObjC substitutions in getTurboModule:jsInvoker: (priority 1) instead.
+ *
+ *  PRIORITY 4 — getModuleProvider:
+ *    Legacy/alternative path. Called by some internal flows to get a module instance
+ *    by name string. Similar role to getModuleInstanceFromClass but name-based.
+ */
+
 #pragma mark - RCTTurboModuleManagerDelegate
 
-- (id<RCTModuleProvider>)getModuleProvider:(const char *)name
-{
-  return _allowedTurboModules.contains(name) ? [super getModuleProvider:name] : nullptr;
-}
-
+// PRIORITY 1
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:(const std::string &)name
                                                       jsInvoker:(std::shared_ptr<facebook::react::CallInvoker>)jsInvoker
 {
+  auto it = _turboModuleSubstitutions.find(name);
+  if (it != _turboModuleSubstitutions.end()) {
+    const std::string &resolvedName = it->second;
+
+    // Try C++ TurboModule first (e.g. codegen-generated spec)
+    auto cxxModule = [super getTurboModule:resolvedName jsInvoker:jsInvoker];
+    if (cxxModule) {
+      if (auto sandboxAware = std::dynamic_pointer_cast<facebook::react::ISandboxAwareModule>(cxxModule)) {
+        sandboxAware->configureSandbox({
+            .origin = _origin,
+            .requestedModuleName = name,
+            .resolvedModuleName = resolvedName,
+        });
+      }
+      return cxxModule;
+    }
+
+    return [self _createObjCTurboModuleForSubstitution:name resolvedName:resolvedName jsInvoker:jsInvoker];
+  }
+
   if (_allowedTurboModules.contains(name)) {
     return [super getTurboModule:name jsInvoker:jsInvoker];
-  } else {
-    // Return C++ stub instead of nullptr
-    return std::make_shared<facebook::react::StubTurboModuleCxx>(name, jsInvoker);
   }
+
+  return std::make_shared<facebook::react::StubTurboModuleCxx>(name, jsInvoker);
+}
+
+// PRIORITY 2
+- (Class)getModuleClassFromName:(const char *)name
+{
+  std::string nameStr(name);
+
+  auto it = _turboModuleSubstitutions.find(nameStr);
+  if (it != _turboModuleSubstitutions.end()) {
+    NSString *resolvedName = [NSString stringWithUTF8String:it->second.c_str()];
+    for (Class moduleClass in RCTGetModuleClasses()) {
+      if ([[moduleClass moduleName] isEqualToString:resolvedName]) {
+        return moduleClass;
+      }
+    }
+  }
+
+  return nullptr;
+}
+
+// PRIORITY 3
+- (id<RCTTurboModule>)getModuleInstanceFromClass:(Class)moduleClass
+{
+  NSString *moduleName = [moduleClass moduleName];
+  if (!moduleName) {
+    return nullptr;
+  }
+
+  id<RCTBridgeModule> cached = _substitutedModuleInstances[moduleName];
+  if (cached) {
+    return (id<RCTTurboModule>)cached;
+  }
+
+  std::string moduleNameStr = [moduleName UTF8String];
+  bool isSubstitutionTarget = false;
+  std::string requestedName;
+
+  for (auto &pair : _turboModuleSubstitutions) {
+    if (pair.second == moduleNameStr) {
+      isSubstitutionTarget = true;
+      requestedName = pair.first;
+      break;
+    }
+  }
+
+  if (!isSubstitutionTarget) {
+    return nullptr;
+  }
+
+  id<RCTBridgeModule> module = [moduleClass new];
+
+  if ([(id)module conformsToProtocol:@protocol(RCTSandboxAwareModule)]) {
+    NSString *originNS = [NSString stringWithUTF8String:_origin.c_str()];
+    NSString *requestedNameNS = [NSString stringWithUTF8String:requestedName.c_str()];
+    [(id<RCTSandboxAwareModule>)module configureSandboxWithOrigin:originNS
+                                                    requestedName:requestedNameNS
+                                                     resolvedName:moduleName];
+  }
+
+  _substitutedModuleInstances[moduleName] = module;
+  return (id<RCTTurboModule>)module;
+}
+
+// PRIORITY 4
+- (id<RCTModuleProvider>)getModuleProvider:(const char *)name
+{
+  std::string nameStr(name);
+
+  auto it = _turboModuleSubstitutions.find(nameStr);
+  if (it != _turboModuleSubstitutions.end()) {
+    NSString *resolvedName = [NSString stringWithUTF8String:it->second.c_str()];
+
+    id<RCTBridgeModule> cached = _substitutedModuleInstances[resolvedName];
+    if (cached) {
+      return (id<RCTModuleProvider>)cached;
+    }
+
+    // Try the dependency provider first (for Codegen TurboModules)
+    id<RCTModuleProvider> provider = [super getModuleProvider:it->second.c_str()];
+
+    if (!provider) {
+      for (Class moduleClass in RCTGetModuleClasses()) {
+        if ([[moduleClass moduleName] isEqualToString:resolvedName]) {
+          provider = [moduleClass new];
+          break;
+        }
+      }
+    }
+
+    if (!provider) {
+      return nullptr;
+    }
+
+    if ([(id)provider conformsToProtocol:@protocol(RCTSandboxAwareModule)]) {
+      NSString *originNS = [NSString stringWithUTF8String:_origin.c_str()];
+      NSString *requestedNameNS = [NSString stringWithUTF8String:nameStr.c_str()];
+      [(id<RCTSandboxAwareModule>)provider configureSandboxWithOrigin:originNS
+                                                        requestedName:requestedNameNS
+                                                         resolvedName:resolvedName];
+    }
+
+    if ([(id)provider conformsToProtocol:@protocol(RCTBridgeModule)]) {
+      _substitutedModuleInstances[resolvedName] = (id<RCTBridgeModule>)provider;
+    }
+
+    return provider;
+  }
+
+  return _allowedTurboModules.contains(nameStr) ? [super getModuleProvider:name] : nullptr;
+}
+
+- (std::shared_ptr<facebook::react::TurboModule>)
+    _createObjCTurboModuleForSubstitution:(const std::string &)requestedName
+                             resolvedName:(const std::string &)resolvedName
+                                jsInvoker:(std::shared_ptr<facebook::react::CallInvoker>)jsInvoker
+{
+  NSString *resolvedNameNS = [NSString stringWithUTF8String:resolvedName.c_str()];
+
+  id<RCTBridgeModule> cached = _substitutedModuleInstances[resolvedNameNS];
+  if (cached && [(id)cached conformsToProtocol:@protocol(RCTTurboModule)]) {
+    return [self _wrapObjCModule:cached moduleName:requestedName jsInvoker:jsInvoker];
+  }
+
+  Class moduleClass = nil;
+  for (Class cls in RCTGetModuleClasses()) {
+    if ([[cls moduleName] isEqualToString:resolvedNameNS]) {
+      moduleClass = cls;
+      break;
+    }
+  }
+
+  if (!moduleClass) {
+    return nullptr;
+  }
+
+  id<RCTBridgeModule> instance = [moduleClass new];
+
+  if ([(id)instance conformsToProtocol:@protocol(RCTSandboxAwareModule)]) {
+    NSString *originNS = [NSString stringWithUTF8String:_origin.c_str()];
+    NSString *requestedNameNS = [NSString stringWithUTF8String:requestedName.c_str()];
+    [(id<RCTSandboxAwareModule>)instance configureSandboxWithOrigin:originNS
+                                                      requestedName:requestedNameNS
+                                                       resolvedName:resolvedNameNS];
+  }
+
+  _substitutedModuleInstances[resolvedNameNS] = instance;
+
+  if (![(id)instance conformsToProtocol:@protocol(RCTTurboModule)]) {
+    return nullptr;
+  }
+
+  return [self _wrapObjCModule:instance moduleName:requestedName jsInvoker:jsInvoker];
+}
+
+- (std::shared_ptr<facebook::react::TurboModule>)_wrapObjCModule:(id<RCTBridgeModule>)instance
+                                                      moduleName:(const std::string &)moduleName
+                                                       jsInvoker:
+                                                           (std::shared_ptr<facebook::react::CallInvoker>)jsInvoker
+{
+  dispatch_queue_t methodQueue = nil;
+  BOOL hasMethodQueueGetter = [instance respondsToSelector:@selector(methodQueue)];
+  if (hasMethodQueueGetter) {
+    methodQueue = [instance methodQueue];
+  }
+
+  if (!methodQueue) {
+    NSString *label = [NSString stringWithFormat:@"com.sandbox.%s", moduleName.c_str()];
+    methodQueue = dispatch_queue_create(label.UTF8String, DISPATCH_QUEUE_SERIAL);
+
+    if (hasMethodQueueGetter) {
+      @try {
+        [(id)instance setValue:methodQueue forKey:@"methodQueue"];
+      } @catch (NSException *exception) {
+        RCTLogError(@"[Sandbox] Failed to set methodQueue on module '%s': %@", moduleName.c_str(), exception.reason);
+      }
+    }
+  }
+
+  auto nativeInvoker = std::make_shared<SandboxNativeMethodCallInvoker>(methodQueue);
+
+  facebook::react::ObjCTurboModule::InitParams params = {
+      .moduleName = moduleName,
+      .instance = instance,
+      .jsInvoker = jsInvoker,
+      .nativeMethodCallInvoker = nativeInvoker,
+      .isSyncModule = methodQueue == RCTJSThread,
+      .shouldVoidMethodsExecuteSync = false,
+  };
+  return [(id<RCTTurboModule>)instance getTurboModule:params];
 }
 
 - (jsi::Function)createPostMessageFunction:(jsi::Runtime &)runtime

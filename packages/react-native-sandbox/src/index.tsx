@@ -100,6 +100,15 @@ export interface SandboxReactNativeViewProps extends ViewProps {
   allowedTurboModules?: string[]
 
   /**
+   * Map of TurboModule substitutions for this sandbox instance.
+   * Keys are the module names that sandbox JS code requests,
+   * values are the actual native module names to resolve instead.
+   * Substituted modules are implicitly allowed and don't need to be
+   * listed in allowedTurboModules.
+   */
+  turboModuleSubstitutions?: Record<string, string>
+
+  /**
    * Array of sandbox origins that are allowed to send messages to this sandbox.
    * If not provided or empty, no other sandboxes will be allowed to send messages.
    * Re-registering with new allowedOrigins will override previous settings.
