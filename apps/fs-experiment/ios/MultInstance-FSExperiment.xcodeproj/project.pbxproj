@@ -8,10 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		16A9D245FE0364DDA6A37BB5 /* SandboxedRNCAsyncStorage.mm in Sources */ = {isa = PBXBuildFile; fileRef = 73D74517051F649BF3AF385E /* SandboxedRNCAsyncStorage.mm */; };
 		43DD6316E596C4F3419573F4 /* libPods-MultInstance-FSExperiment.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 6BD4A3E0B4C109F8DD0FAE9D /* libPods-MultInstance-FSExperiment.a */; };
 		575209B0052EDA94007D9B65 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		A1B2C3D4E5F60001DEADBEEF /* SandboxedRNFSManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60002DEADBEEF /* SandboxedRNFSManager.mm */; };
+		A1B2C3D4E5F60003DEADBEEF /* SandboxedFileAccess.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60004DEADBEEF /* SandboxedFileAccess.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,8 +26,14 @@
 		4144D1AD685F86583FAB67C6 /* Pods-MultInstance-FSExperiment.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MultInstance-FSExperiment.release.xcconfig"; path = "Target Support Files/Pods-MultInstance-FSExperiment/Pods-MultInstance-FSExperiment.release.xcconfig"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-MultInstance-FSExperiment.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MultInstance-FSExperiment.release.xcconfig"; path = "Target Support Files/Pods-MultInstance-FSExperiment/Pods-MultInstance-FSExperiment.release.xcconfig"; sourceTree = "<group>"; };
 		6BD4A3E0B4C109F8DD0FAE9D /* libPods-MultInstance-FSExperiment.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MultInstance-FSExperiment.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		73D74517051F649BF3AF385E /* SandboxedRNCAsyncStorage.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = SandboxedRNCAsyncStorage.mm; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = "MultInstance-FSExperiment/LaunchScreen.storyboard"; sourceTree = "<group>"; };
+		A1B2C3D4E5F60002DEADBEEF /* SandboxedRNFSManager.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = SandboxedRNFSManager.mm; sourceTree = "<group>"; };
+		A1B2C3D4E5F60004DEADBEEF /* SandboxedFileAccess.mm */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.cpp.objcpp; path = SandboxedFileAccess.mm; sourceTree = "<group>"; };
+		A1B2C3D4E5F60005DEADBEEF /* SandboxedRNFSManager.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = SandboxedRNFSManager.h; sourceTree = "<group>"; };
+		A1B2C3D4E5F60006DEADBEEF /* SandboxedFileAccess.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = SandboxedFileAccess.h; sourceTree = "<group>"; };
+		B8F0D39C18571332952E64A6 /* SandboxedRNCAsyncStorage.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = SandboxedRNCAsyncStorage.h; sourceTree = "<group>"; };
 		E4C18DFA4C4A23A5EFB8579E /* Pods-MultInstance-FSExperiment.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MultInstance-FSExperiment.debug.xcconfig"; path = "Target Support Files/Pods-MultInstance-FSExperiment/Pods-MultInstance-FSExperiment.debug.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
@@ -49,6 +58,12 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
+				B8F0D39C18571332952E64A6 /* SandboxedRNCAsyncStorage.h */,
+				73D74517051F649BF3AF385E /* SandboxedRNCAsyncStorage.mm */,
+				A1B2C3D4E5F60005DEADBEEF /* SandboxedRNFSManager.h */,
+				A1B2C3D4E5F60002DEADBEEF /* SandboxedRNFSManager.mm */,
+				A1B2C3D4E5F60006DEADBEEF /* SandboxedFileAccess.h */,
+				A1B2C3D4E5F60004DEADBEEF /* SandboxedFileAccess.mm */,
 			);
 			name = "MultInstance-FSExperiment";
 			sourceTree = "<group>";
@@ -251,6 +266,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
+				16A9D245FE0364DDA6A37BB5 /* SandboxedRNCAsyncStorage.mm in Sources */,
+				A1B2C3D4E5F60001DEADBEEF /* SandboxedRNFSManager.mm in Sources */,
+				A1B2C3D4E5F60003DEADBEEF /* SandboxedFileAccess.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

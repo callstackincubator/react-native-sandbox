@@ -2019,7 +2019,7 @@ PODS:
     - React-timing
     - React-utils
     - SocketRocket
-  - React-Sandbox (0.4.0):
+  - React-Sandbox (0.4.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2181,6 +2181,35 @@ PODS:
     - SocketRocket
     - Yoga
     - ZIPFoundation
+  - RNCAsyncStorage (2.2.0):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Yoga
   - RNFS (2.20.0):
     - React-Core
   - SocketRocket (0.7.1)
@@ -2262,6 +2291,7 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios`)
   - ReactCommon/turbomodule/core (from `../../../node_modules/react-native/ReactCommon`)
   - ReactNativeFileAccess (from `../../../node_modules/react-native-file-access`)
+  - "RNCAsyncStorage (from `../../../node_modules/@react-native-async-storage/async-storage`)"
   - RNFS (from `../../../node_modules/react-native-fs`)
   - SocketRocket (~> 0.7.1)
   - Yoga (from `../../../node_modules/react-native/ReactCommon/yoga`)
@@ -2419,6 +2449,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/react-native/ReactCommon"
   ReactNativeFileAccess:
     :path: "../../../node_modules/react-native-file-access"
+  RNCAsyncStorage:
+    :path: "../../../node_modules/@react-native-async-storage/async-storage"
   RNFS:
     :path: "../../../node_modules/react-native-fs"
   Yoga:
@@ -2491,13 +2523,14 @@ SPEC CHECKSUMS:
   React-runtimeexecutor: 17c70842d5e611130cb66f91e247bc4a609c3508
   React-RuntimeHermes: 3c88e6e1ea7ea0899dcffc77c10d61ea46688cfd
   React-runtimescheduler: 024500621c7c93d65371498abb4ee26d34f5d47d
-  React-Sandbox: e3cf3c955559ed9f0bf014b29dce1e94600cd790
+  React-Sandbox: 9c091813e335735668c62b2d3dbeb1456f93d8a5
   React-timing: c3c923df2b86194e1682e01167717481232f1dc7
   React-utils: 9154a037543147e1c24098f1a48fc8472602c092
   ReactAppDependencyProvider: afd905e84ee36e1678016ae04d7370c75ed539be
   ReactCodegen: 06bf9ae2e01a2416250cf5e44e4a06b1c9ea201b
   ReactCommon: 17fd88849a174bf9ce45461912291aca711410fc
   ReactNativeFileAccess: f63160ff4e203afa99e04d9215c2ab946748b9e0
+  RNCAsyncStorage: 1f04c8d56558e533277beda29187f571cf7eecb2
   RNFS: 89de7d7f4c0f6bafa05343c578f61118c8282ed8
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: daa1e4de4b971b977b23bc842aaa3e135324f1f3

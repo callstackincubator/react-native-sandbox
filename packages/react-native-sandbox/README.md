@@ -53,6 +53,7 @@ import SandboxReactNativeView from '@callstack/react-native-sandbox';
 | `initialProperties` | `object` | :white_large_square: | `{}` | Initial props for the sandboxed app |
 | `launchOptions` | `object` | :white_large_square: | `{}` | Launch configuration options |
 | `allowedTurboModules` | `string[]` | :white_large_square: | [check here](https://github.com/callstackincubator/react-native-sandbox/blob/main/packages/react-native-sandbox/src/index.tsx#L18) | Additional TurboModules to allow |
+| `turboModuleSubstitutions` | `Record<string, string>` | :white_large_square: | `undefined` | Map of module name substitutions (requested → resolved). Substituted modules are implicitly allowed. |
 | `onMessage` | `function` | :white_large_square: | `undefined` | Callback for messages from sandbox |
 | `onError` | `function` | :white_large_square: | `undefined` | Callback for sandbox errors |
 | `style` | `ViewStyle` | :white_large_square: | `undefined` | Container styling |
@@ -98,6 +99,27 @@ Use `allowedTurboModules` to control which native modules the sandbox can access
 **Default allowed modules** include essential React Native TurboModules like `EventDispatcher`, `AppState`, `Networking`, etc. See the [source code](https://github.com/callstackincubator/react-native-sandbox/blob/main/packages/react-native-sandbox/src/index.tsx) for the complete list.
 
 > Note: This filtering works with both legacy native modules and new TurboModules, ensuring compatibility across React Native versions.
+
+#### TurboModule Substitutions
+
+Use `turboModuleSubstitutions` to transparently replace a module with a sandbox-aware implementation. When sandbox JS requests a module by name, the substitution map redirects it to a different native module:
+
+```tsx
+<SandboxReactNativeView
+  allowedTurboModules={['RNFSManager', 'FileAccess', 'RNCAsyncStorage']}
+  turboModuleSubstitutions={{
+    RNFSManager: 'SandboxedRNFSManager',
+    FileAccess: 'SandboxedFileAccess',
+    RNCAsyncStorage: 'SandboxedAsyncStorage',
+  }}
+/>
+```
+
+Substituted modules are **implicitly allowed** and don't need to be listed in `allowedTurboModules`. If the resolved module conforms to `RCTSandboxAwareModule` (ObjC) or `ISandboxAwareModule` (C++), it receives sandbox context (origin, requested name, resolved name) after instantiation — enabling per-origin data scoping.
+
+Changing `turboModuleSubstitutions` at runtime triggers a full re-instantiation of the sandbox's React Native runtime, ensuring TurboModules are re-resolved with the new configuration.
+
+See the [`apps/fs-experiment`](https://github.com/callstackincubator/react-native-sandbox/tree/main/apps/fs-experiment) example for a working demonstration.
 
 #### Message Origin Control
 
