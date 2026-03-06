@@ -1,4 +1,3 @@
-#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <chrono>
@@ -10,7 +9,7 @@
 
 #include "MockSandboxDelegate.h"
 
-using namespace facebook::react;
+using namespace rnsandbox;
 using ::testing::_;
 using ::testing::Return;
 using ::testing::StrictMock;
@@ -82,23 +81,66 @@ TEST_F(SandboxRegistryTest, EmptyAllowedOrigins) {
   EXPECT_FALSE(registry.isPermittedFrom("test-origin", "any-origin"));
 }
 
-TEST_F(SandboxRegistryTest, OverwriteExistingSandbox) {
+TEST_F(SandboxRegistryTest, MultipleDelegatesSameOrigin) {
   auto& registry = SandboxRegistry::getInstance();
-  auto mockDelegate1 = std::make_shared<StrictMock<MockSandboxDelegate>>();
-  auto mockDelegate2 = std::make_shared<StrictMock<MockSandboxDelegate>>();
+  auto delegate1 = std::make_shared<StrictMock<MockSandboxDelegate>>();
+  auto delegate2 = std::make_shared<StrictMock<MockSandboxDelegate>>();
 
-  std::set<std::string> allowedOrigins1 = {"allowed1"};
-  std::set<std::string> allowedOrigins2 = {"allowed2"};
+  std::set<std::string> allowedOrigins = {"other"};
+  registry.registerSandbox("shared", delegate1, allowedOrigins);
+  registry.registerSandbox("shared", delegate2, allowedOrigins);
 
-  registry.registerSandbox("test-origin", mockDelegate1, allowedOrigins1);
+  // find returns the first
+  EXPECT_EQ(registry.find("shared"), delegate1);
 
-  registry.registerSandbox("test-origin", mockDelegate2, allowedOrigins2);
+  // findAll returns both
+  auto all = registry.findAll("shared");
+  EXPECT_EQ(all.size(), 2u);
+  EXPECT_EQ(all[0], delegate1);
+  EXPECT_EQ(all[1], delegate2);
+}
 
-  auto found = registry.find("test-origin");
-  EXPECT_EQ(found, mockDelegate2);
+TEST_F(SandboxRegistryTest, UnregisterDelegateRemovesOnlyThatDelegate) {
+  auto& registry = SandboxRegistry::getInstance();
+  auto delegate1 = std::make_shared<StrictMock<MockSandboxDelegate>>();
+  auto delegate2 = std::make_shared<StrictMock<MockSandboxDelegate>>();
 
-  EXPECT_FALSE(registry.isPermittedFrom("allowed2", "test-origin"));
-  EXPECT_FALSE(registry.isPermittedFrom("allowed1", "test-origin"));
+  std::set<std::string> allowedOrigins = {"other"};
+  registry.registerSandbox("shared", delegate1, allowedOrigins);
+  registry.registerSandbox("shared", delegate2, allowedOrigins);
+
+  registry.unregisterDelegate("shared", delegate1);
+
+  auto all = registry.findAll("shared");
+  EXPECT_EQ(all.size(), 1u);
+  EXPECT_EQ(all[0], delegate2);
+  EXPECT_EQ(registry.find("shared"), delegate2);
+}
+
+TEST_F(SandboxRegistryTest, UnregisterDelegateLastCleansUpOrigin) {
+  auto& registry = SandboxRegistry::getInstance();
+  auto delegate = std::make_shared<StrictMock<MockSandboxDelegate>>();
+
+  std::set<std::string> allowedOrigins = {"other"};
+  registry.registerSandbox("solo", delegate, allowedOrigins);
+
+  registry.unregisterDelegate("solo", delegate);
+
+  EXPECT_EQ(registry.find("solo"), nullptr);
+  EXPECT_TRUE(registry.findAll("solo").empty());
+  EXPECT_FALSE(registry.isPermittedFrom("solo", "other"));
+}
+
+TEST_F(SandboxRegistryTest, DuplicateRegistrationIgnored) {
+  auto& registry = SandboxRegistry::getInstance();
+  auto delegate = std::make_shared<StrictMock<MockSandboxDelegate>>();
+
+  std::set<std::string> allowedOrigins;
+  registry.registerSandbox("dup", delegate, allowedOrigins);
+  registry.registerSandbox("dup", delegate, allowedOrigins);
+
+  auto all = registry.findAll("dup");
+  EXPECT_EQ(all.size(), 1u);
 }
 
 TEST_F(SandboxRegistryTest, EmptyOriginHandling) {
@@ -167,7 +209,7 @@ TEST_F(SandboxRegistryTest, ThreadSafety) {
             EXPECT_TRUE(registry.isPermittedFrom(origin, "other_sandbox"));
             EXPECT_FALSE(registry.isPermittedFrom(origin, "blocked_sandbox"));
 
-            registry.unregister(origin);
+            registry.unregisterDelegate(origin, mockDelegate);
 
             auto notFound = registry.find(origin);
             EXPECT_EQ(notFound, nullptr);

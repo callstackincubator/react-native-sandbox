@@ -1,8 +1,7 @@
 #include "SandboxDelegateWrapper.h"
 #import "SandboxReactNativeDelegate.h"
 
-namespace facebook {
-namespace react {
+namespace rnsandbox {
 
 SandboxDelegateWrapper::SandboxDelegateWrapper(SandboxReactNativeDelegate *delegate) : delegate_(delegate)
 {
@@ -47,5 +46,4 @@ void SandboxDelegateWrapper::setAllowedTurboModules(const std::set<std::string> 
   [delegate_ setAllowedTurboModules:modules];
 }
 
-} // namespace react
-} // namespace facebook
+} // namespace rnsandbox
