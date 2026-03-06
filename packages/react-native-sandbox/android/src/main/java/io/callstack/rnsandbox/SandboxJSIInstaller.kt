@@ -44,4 +44,13 @@ object SandboxJSIInstaller {
      */
     @JvmStatic
     external fun nativeDestroy(stateHandle: Long)
+
+    /**
+     * Installs the error handler into the JS runtime. Must be called on the
+     * JS thread after the bundle has loaded (when ErrorUtils is available).
+     *
+     * @param stateHandle Handle returned by nativeInstall
+     */
+    @JvmStatic
+    external fun nativeInstallErrorHandler(stateHandle: Long)
 }
