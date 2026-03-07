@@ -7,6 +7,13 @@
 
 This is the **developer documentation** for installing and using `@callstack/react-native-sandbox` in your React Native application.
 
+## Requirements
+
+- **React Native >= 0.78**
+- **New Architecture** (Fabric) enabled
+
+This library uses `RCTReactNativeFactory`, C++ TurboModules, and Fabric component APIs that are only available starting from React Native 0.78. It does not include an Old Architecture / Bridge fallback.
+
 ## 📦 Installation
 
 ### npm/yarn
