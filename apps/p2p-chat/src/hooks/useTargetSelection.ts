@@ -13,29 +13,20 @@ export const useTargetSelection = ({
 }: UseTargetSelectionProps) => {
   const [selectedTarget, setSelectedTarget] = useState<string>('')
 
-  // Create a list of all possible targets (friends + potential friends)
   const allPossibleTargets = useMemo(
-    () => [
-      ...targetOptions, // Current friends
-      ...potentialFriends.map(pf => pf.id), // Potential friends
-    ],
+    () => [...targetOptions, ...potentialFriends.map(pf => pf.id)],
     [targetOptions, potentialFriends]
   )
 
   useEffect(() => {
-    // Update selected target if current one is no longer available
     if (
       allPossibleTargets.length > 0 &&
       !allPossibleTargets.includes(selectedTarget)
     ) {
       setSelectedTarget(allPossibleTargets[0])
-    } else if (allPossibleTargets.length === 0 && selectedTarget) {
-      // Keep the selected target even if no options available
-      // This allows users to manually type or remember target IDs
     }
   }, [targetOptions, potentialFriends, selectedTarget, allPossibleTargets])
 
-  // Initialize with first available target
   useEffect(() => {
     if (!selectedTarget && allPossibleTargets.length > 0) {
       setSelectedTarget(allPossibleTargets[0])

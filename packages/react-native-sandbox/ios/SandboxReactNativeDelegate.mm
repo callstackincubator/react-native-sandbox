@@ -123,7 +123,7 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
   // Unregister old origin if it exists
   if (!_origin.empty()) {
-    auto &registry = SandboxRegistry::getInstance();
+    auto &registry = rnsandbox::SandboxRegistry::getInstance();
     registry.unregister(_origin);
   }
 
@@ -132,8 +132,8 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
   // Register new origin if it's not empty
   if (!_origin.empty()) {
-    auto &registry = SandboxRegistry::getInstance();
-    auto wrapper = std::make_shared<SandboxDelegateWrapper>(self);
+    auto &registry = rnsandbox::SandboxRegistry::getInstance();
+    auto wrapper = std::make_shared<rnsandbox::SandboxDelegateWrapper>(self);
     registry.registerSandbox(_origin, wrapper, _allowedOrigins);
   }
 }
@@ -149,8 +149,8 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
   // Re-register with new allowedOrigins if origin is set
   if (!_origin.empty()) {
-    auto &registry = SandboxRegistry::getInstance();
-    auto wrapper = std::make_shared<SandboxDelegateWrapper>(self);
+    auto &registry = rnsandbox::SandboxRegistry::getInstance();
+    auto wrapper = std::make_shared<rnsandbox::SandboxDelegateWrapper>(self);
     registry.registerSandbox(_origin, wrapper, _allowedOrigins);
   }
 }
@@ -163,7 +163,7 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 - (void)dealloc
 {
   if (!_origin.empty()) {
-    auto &registry = SandboxRegistry::getInstance();
+    auto &registry = rnsandbox::SandboxRegistry::getInstance();
     registry.unregister(_origin);
   } else {
     [self cleanupResources];
@@ -238,7 +238,7 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
 - (bool)routeMessage:(const std::string &)message toSandbox:(const std::string &)targetId
 {
-  auto &registry = SandboxRegistry::getInstance();
+  auto &registry = rnsandbox::SandboxRegistry::getInstance();
   auto target = registry.find(targetId);
   if (!target) {
     return false;
@@ -302,7 +302,7 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
     return [super getTurboModule:name jsInvoker:jsInvoker];
   } else {
     // Return C++ stub instead of nullptr
-    return std::make_shared<facebook::react::StubTurboModuleCxx>(name, jsInvoker);
+    return std::make_shared<rnsandbox::StubTurboModuleCxx>(name, jsInvoker);
   }
 }
 

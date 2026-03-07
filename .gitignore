@@ -43,6 +43,9 @@ project.xcworkspace
 .settings
 local.properties
 android.iml
+apps/*/android/app/src/main/assets/
+apps/*/android/app/src/main/res/drawable-*/
+apps/*/android/app/src/main/res/raw/
 
 # Cocoapods
 #
@@ -54,6 +57,9 @@ vendor/
 # node.js
 #
 node_modules/
+node_modules
+**/node_modules/
+**/node_modules
 npm-debug.log
 yarn-debug.log
 yarn-error.log

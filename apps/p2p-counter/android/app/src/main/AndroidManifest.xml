@@ -4,7 +4,6 @@
 
     <application
       android:name=".MainApplication"
-      android:label="P2P Counter"
       android:label="@string/app_name"
       android:icon="@mipmap/ic_launcher"
       android:roundIcon="@mipmap/ic_launcher_round"

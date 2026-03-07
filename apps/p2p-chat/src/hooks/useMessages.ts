@@ -5,7 +5,7 @@ import {Message, MessageData} from '../types'
 interface UseMessagesProps {
   userId: string
   userName: string
-  onSendMessage: (message: MessageData) => boolean
+  onSendMessage: (message: MessageData, targetOrigin?: string) => boolean
 }
 
 export const useMessages = ({
@@ -27,7 +27,6 @@ export const useMessages = ({
       const messageId = `${userId}_${Date.now()}`
       const timestamp = Date.now()
 
-      // Add to local messages
       const newMessage: Message = {
         id: messageId,
         text: inputText.trim(),
@@ -38,19 +37,19 @@ export const useMessages = ({
 
       addMessage(newMessage)
 
-      // Send P2P message to selected target sandbox via host
-      const success = onSendMessage({
-        type: 'chat_message',
-        messageId,
-        text: inputText.trim(),
-        senderId: userId,
-        senderName: userName,
-        timestamp,
-        target: target.trim(),
-      })
+      const success = onSendMessage(
+        {
+          type: 'chat_message',
+          messageId,
+          text: inputText.trim(),
+          senderId: userId,
+          senderName: userName,
+          timestamp,
+        },
+        target.trim()
+      )
 
       if (!success) {
-        // Add a local error message
         const errorMessage: Message = {
           id: `error_${Date.now()}`,
           text: `Failed to send message: Communication error`,

@@ -2,9 +2,8 @@ import {Dimensions} from 'react-native'
 
 const {width: screenWidth} = Dimensions.get('window')
 
-// Carousel slide dimensions
-export const CHAT_WIDTH = screenWidth - 32 // Account for container margins
-export const SLIDE_MARGIN = 8 // Horizontal margin between slides
+export const CHAT_WIDTH = screenWidth - 32
+export const SLIDE_MARGIN = 8
 
 export const USER_THEMES = [
   {name: 'Alice', color: '#667eea'},
@@ -16,7 +15,6 @@ export const USER_THEMES = [
 ] as const
 
 export const MAX_CHAT_INSTANCES = USER_THEMES.length
-export const MIN_CHAT_INSTANCES = 1
 
 export interface ChatMeta {
   id: string

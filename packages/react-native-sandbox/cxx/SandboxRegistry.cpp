@@ -1,23 +1,8 @@
 #include "SandboxRegistry.h"
-#include <fmt/format.h>
+#include <algorithm>
 #include <iostream>
 
-namespace facebook {
-namespace react {
-
-/**
- * Implementation of the thread-safe C++ SandboxRegistry.
- *
- * This class provides a singleton registry for managing sandbox delegates
- * across multiple React Native instances. It uses std::recursive_mutex for
- * thread safety and std::map for efficient lookups.
- *
- * Key features:
- * - Thread-safe operations with recursive mutex
- * - Efficient O(log n) lookups using std::map
- * - Automatic cleanup of unregistered sandboxes
- * - Support for permission-based communication
- */
+namespace rnsandbox {
 
 SandboxRegistry& SandboxRegistry::getInstance() {
   static SandboxRegistry instance;
@@ -34,16 +19,40 @@ void SandboxRegistry::registerSandbox(
 
   std::lock_guard<std::recursive_mutex> lock(registryMutex_);
 
-  if (sandboxRegistry_.find(origin) != sandboxRegistry_.end()) {
-    std::cerr
-        << fmt::format(
-               "[SandboxRegistry] Warning: Overwriting existing sandbox with origin: {}",
-               origin)
-        << std::endl;
+  auto& delegates = sandboxRegistry_[origin];
+  // Avoid duplicate registration of the same delegate
+  for (const auto& d : delegates) {
+    if (d == delegate) {
+      return;
+    }
+  }
+  delegates.push_back(delegate);
+  allowedOrigins_[origin] = allowedOrigins;
+}
+
+void SandboxRegistry::unregisterDelegate(
+    const std::string& origin,
+    const std::shared_ptr<ISandboxDelegate>& delegate) {
+  if (origin.empty() || !delegate) {
+    return;
   }
 
-  sandboxRegistry_[origin] = delegate;
-  allowedOrigins_[origin] = allowedOrigins;
+  std::lock_guard<std::recursive_mutex> lock(registryMutex_);
+
+  auto it = sandboxRegistry_.find(origin);
+  if (it == sandboxRegistry_.end()) {
+    return;
+  }
+
+  auto& delegates = it->second;
+  delegates.erase(
+      std::remove(delegates.begin(), delegates.end(), delegate),
+      delegates.end());
+
+  if (delegates.empty()) {
+    sandboxRegistry_.erase(it);
+    allowedOrigins_.erase(origin);
+  }
 }
 
 void SandboxRegistry::unregister(const std::string& origin) {
@@ -52,16 +61,8 @@ void SandboxRegistry::unregister(const std::string& origin) {
   }
 
   std::lock_guard<std::recursive_mutex> lock(registryMutex_);
-
-  auto registryIt = sandboxRegistry_.find(origin);
-  if (registryIt != sandboxRegistry_.end()) {
-    sandboxRegistry_.erase(registryIt);
-  }
-
-  auto originsIt = allowedOrigins_.find(origin);
-  if (originsIt != allowedOrigins_.end()) {
-    allowedOrigins_.erase(originsIt);
-  }
+  sandboxRegistry_.erase(origin);
+  allowedOrigins_.erase(origin);
 }
 
 std::shared_ptr<ISandboxDelegate> SandboxRegistry::find(
@@ -73,11 +74,27 @@ std::shared_ptr<ISandboxDelegate> SandboxRegistry::find(
   std::lock_guard<std::recursive_mutex> lock(registryMutex_);
 
   auto it = sandboxRegistry_.find(origin);
+  if (it != sandboxRegistry_.end() && !it->second.empty()) {
+    return it->second.front();
+  }
+
+  return nullptr;
+}
+
+std::vector<std::shared_ptr<ISandboxDelegate>> SandboxRegistry::findAll(
+    const std::string& origin) {
+  if (origin.empty()) {
+    return {};
+  }
+
+  std::lock_guard<std::recursive_mutex> lock(registryMutex_);
+
+  auto it = sandboxRegistry_.find(origin);
   if (it != sandboxRegistry_.end()) {
     return it->second;
   }
 
-  return nullptr;
+  return {};
 }
 
 bool SandboxRegistry::isPermittedFrom(
@@ -103,5 +120,4 @@ void SandboxRegistry::reset() {
   allowedOrigins_.clear();
 }
 
-} // namespace react
-} // namespace facebook
+} // namespace rnsandbox
