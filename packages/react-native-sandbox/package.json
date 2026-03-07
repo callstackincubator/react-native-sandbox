@@ -23,16 +23,17 @@
   "files": [
     "src",
     "ios",
+    "cxx",
     "android",
     "specs",
     "React-Sandbox.podspec"
   ],
   "scripts": {
     "lint": "npm run lint:clang && npm run lint:kotlin",
-    "lint:clang": "clang-format --dry-run --Werror ios/*.{h,mm,cpp} android/src/main/jni/*.{h,cpp} tests/*.{h,cpp}",
+    "lint:clang": "clang-format --dry-run --Werror ios/*.{h,mm} cxx/*.{h,cpp} android/src/main/jni/*.{h,cpp} tests/*.{h,cpp}",
     "lint:kotlin": "ktlint 'android/src/main/java/**/*.kt'",
     "format": "npm run format:clang && npm run format:kotlin",
-    "format:clang": "clang-format -i ios/*.{h,mm,cpp} android/src/main/jni/*.{h,cpp} tests/*.{h,cpp}",
+    "format:clang": "clang-format -i ios/*.{h,mm} cxx/*.{h,cpp} android/src/main/jni/*.{h,cpp} tests/*.{h,cpp}",
     "format:kotlin": "ktlint -F 'android/src/main/java/**/*.kt'",
     "typecheck": "tsc --noEmit",
     "prepare": "bob build",

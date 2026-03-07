@@ -1,4 +1,6 @@
+#include "ISandboxDelegate.h"
 #include "SandboxBindingsInstaller.h"
+#include "SandboxRegistry.h"
 
 #include <android/log.h>
 #include <fbjni/fbjni.h>
@@ -23,10 +25,67 @@ struct SandboxJSIState {
   std::shared_ptr<jsi::Function> onMessageCallback;
   std::vector<std::string> pendingMessages;
   std::mutex mutex;
+  jobject delegateRef = nullptr;
+  std::string origin;
+  std::shared_ptr<rnsandbox::ISandboxDelegate> registryDelegate;
 };
 
 static std::mutex gRegistryMutex;
 static std::unordered_map<jlong, std::shared_ptr<SandboxJSIState>> gStates;
+
+/**
+ * ISandboxDelegate that dispatches postMessage through the Kotlin delegate
+ * via JNI. The Kotlin postMessage uses runOnJSQueueThread to safely access
+ * the JSI runtime on the correct thread.
+ */
+class JNISandboxDelegate : public rnsandbox::ISandboxDelegate {
+ public:
+  JNISandboxDelegate(jobject globalDelegateRef)
+      : globalDelegateRef_(globalDelegateRef) {}
+
+  void postMessage(const std::string& message) override {
+    JNIEnv* env = getJNIEnv();
+    if (!env || !globalDelegateRef_)
+      return;
+    jclass cls = env->GetObjectClass(globalDelegateRef_);
+    jmethodID mid =
+        env->GetMethodID(cls, "postMessage", "(Ljava/lang/String;)V");
+    jstring jMsg = env->NewStringUTF(message.c_str());
+    env->CallVoidMethod(globalDelegateRef_, mid, jMsg);
+    env->DeleteLocalRef(jMsg);
+    env->DeleteLocalRef(cls);
+  }
+
+  bool routeMessage(const std::string& message, const std::string& targetId)
+      override {
+    auto& registry = rnsandbox::SandboxRegistry::getInstance();
+    auto targets = registry.findAll(targetId);
+    if (targets.empty())
+      return false;
+    for (auto& target : targets) {
+      target->postMessage(message);
+    }
+    return true;
+  }
+
+  void setOrigin(const std::string&) override {}
+  void setAllowedOrigins(const std::set<std::string>&) override {}
+  void setAllowedTurboModules(const std::set<std::string>&) override {}
+
+ private:
+  jobject globalDelegateRef_;
+
+  static JNIEnv* getJNIEnv() {
+    JNIEnv* env = nullptr;
+    if (gJavaVM) {
+      gJavaVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+      if (!env) {
+        gJavaVM->AttachCurrentThread(&env, nullptr);
+      }
+    }
+    return env;
+  }
+};
 
 static JNIEnv* getJNIEnv() {
   JNIEnv* env = nullptr;
@@ -158,6 +217,7 @@ jlong installSandboxJSIBindings(
   }
 
   jobject globalDelegateRef = env->NewGlobalRef(delegateRef);
+  state->delegateRef = globalDelegateRef;
 
   auto postMessageFn = jsi::Function::createFromHostFunction(
       runtime,
@@ -194,17 +254,17 @@ jlong installSandboxJSIBindings(
                 rt, "postMessage: targetOrigin must be a string");
           }
           std::string targetOrigin = args[1].getString(rt).utf8(rt);
-          jclass cls = jniEnv->GetObjectClass(globalDelegateRef);
-          jmethodID mid = jniEnv->GetMethodID(
-              cls,
-              "routeMessageFromJS",
-              "(Ljava/lang/String;Ljava/lang/String;)Z");
-          jstring jMsg = jniEnv->NewStringUTF(messageJson.c_str());
-          jstring jTarget = jniEnv->NewStringUTF(targetOrigin.c_str());
-          jniEnv->CallBooleanMethod(globalDelegateRef, mid, jMsg, jTarget);
-          jniEnv->DeleteLocalRef(jMsg);
-          jniEnv->DeleteLocalRef(jTarget);
-          jniEnv->DeleteLocalRef(cls);
+
+          // Fan out to all delegates registered for the target origin
+          auto& registry = rnsandbox::SandboxRegistry::getInstance();
+          auto targets = registry.findAll(targetOrigin);
+          if (!targets.empty()) {
+            for (auto& target : targets) {
+              target->postMessage(messageJson);
+            }
+          } else {
+            LOGW("postMessage: target '%s' not found", targetOrigin.c_str());
+          }
         } else {
           jclass cls = jniEnv->GetObjectClass(globalDelegateRef);
           jmethodID mid = jniEnv->GetMethodID(
@@ -301,6 +361,33 @@ jlong installSandboxJSIBindings(
     LOGW("Failed to setup error handler: %s", e.what());
   }
 
+  // Register in C++ SandboxRegistry if origin is set
+  {
+    JNIEnv* jniEnv = getJNIEnv();
+    if (jniEnv) {
+      jclass cls = jniEnv->GetObjectClass(globalDelegateRef);
+      jfieldID originField =
+          jniEnv->GetFieldID(cls, "origin", "Ljava/lang/String;");
+      auto jOrigin =
+          (jstring)jniEnv->GetObjectField(globalDelegateRef, originField);
+      jniEnv->DeleteLocalRef(cls);
+      if (jOrigin) {
+        const char* originChars = jniEnv->GetStringUTFChars(jOrigin, nullptr);
+        std::string origin(originChars);
+        jniEnv->ReleaseStringUTFChars(jOrigin, originChars);
+        jniEnv->DeleteLocalRef(jOrigin);
+        if (!origin.empty()) {
+          state->origin = origin;
+          auto delegate =
+              std::make_shared<JNISandboxDelegate>(globalDelegateRef);
+          state->registryDelegate = delegate;
+          rnsandbox::SandboxRegistry::getInstance().registerSandbox(
+              origin, delegate, std::set<std::string>());
+        }
+      }
+    }
+  }
+
   return stateHandle;
 }
 
@@ -376,6 +463,31 @@ Java_io_callstack_rnsandbox_SandboxJSIInstaller_nativePostMessage(
 }
 
 JNIEXPORT void JNICALL
+Java_io_callstack_rnsandbox_SandboxJSIInstaller_nativeInstallErrorHandler(
+    JNIEnv*,
+    jclass,
+    jlong stateHandle) {
+  std::shared_ptr<SandboxJSIState> state;
+  {
+    std::lock_guard<std::mutex> lock(gRegistryMutex);
+    auto it = gStates.find(stateHandle);
+    if (it == gStates.end())
+      return;
+    state = it->second;
+  }
+
+  std::lock_guard<std::mutex> lock(state->mutex);
+  if (!state->runtime || !state->delegateRef)
+    return;
+
+  try {
+    setupErrorHandler(*state->runtime, state->delegateRef);
+  } catch (const std::exception& e) {
+    LOGW("Failed to setup error handler post-bundle: %s", e.what());
+  }
+}
+
+JNIEXPORT void JNICALL
 Java_io_callstack_rnsandbox_SandboxJSIInstaller_nativeDestroy(
     JNIEnv*,
     jclass,
@@ -383,11 +495,20 @@ Java_io_callstack_rnsandbox_SandboxJSIInstaller_nativeDestroy(
   std::lock_guard<std::mutex> lock(gRegistryMutex);
   auto it = gStates.find(stateHandle);
   if (it != gStates.end()) {
+    std::string origin;
+    std::shared_ptr<rnsandbox::ISandboxDelegate> delegate;
     {
       std::lock_guard<std::mutex> stateLock(it->second->mutex);
+      origin = it->second->origin;
+      delegate = it->second->registryDelegate;
       it->second->onMessageCallback.reset();
       it->second->pendingMessages.clear();
       it->second->runtime = nullptr;
+      it->second->registryDelegate.reset();
+    }
+    if (!origin.empty() && delegate) {
+      rnsandbox::SandboxRegistry::getInstance().unregisterDelegate(
+          origin, delegate);
     }
     gStates.erase(it);
   }

@@ -33,29 +33,21 @@ class SandboxReactNativeDelegate(
 ) {
     companion object {
         private const val TAG = "SandboxRNDelegate"
+
+        private val sharedHosts = mutableMapOf<String, SharedReactHost>()
+
+        private data class SharedReactHost(
+            val reactHost: ReactHostImpl,
+            val sandboxContext: Context,
+            var refCount: Int,
+        )
     }
 
-    var origin: String = ""
-        set(value) {
-            if (field == value) return
-            if (field.isNotEmpty()) {
-                SandboxRegistry.unregister(field)
-            }
-            field = value
-            if (value.isNotEmpty()) {
-                SandboxRegistry.register(value, this, allowedOrigins)
-            }
-        }
+    @JvmField var origin: String = ""
 
     var jsBundleSource: String = ""
     var allowedTurboModules: Set<String> = emptySet()
     var allowedOrigins: Set<String> = emptySet()
-        set(value) {
-            field = value
-            if (origin.isNotEmpty()) {
-                SandboxRegistry.register(origin, this, value)
-            }
-        }
 
     @JvmField var hasOnMessageHandler: Boolean = false
 
@@ -66,6 +58,7 @@ class SandboxReactNativeDelegate(
     private var reactSurface: ReactSurface? = null
     private var jsiStateHandle: Long = 0
     private var sandboxReactContext: ReactContext? = null
+    private var ownsReactHost = false
 
     @OptIn(UnstableReactNativeAPI::class)
     fun loadReactNativeView(
@@ -79,42 +72,63 @@ class SandboxReactNativeDelegate(
 
         val capturedBundleSource = jsBundleSource
         val capturedAllowedModules = allowedTurboModules
-        val sandboxId = System.identityHashCode(this).toString(16)
-        val sandboxContext = SandboxContextWrapper(context, sandboxId)
 
         try {
-            val packages: List<ReactPackage> =
-                listOf(
-                    FilteredReactPackage(MainReactPackage(), capturedAllowedModules),
-                )
+            val shared = if (origin.isNotEmpty()) sharedHosts[origin] else null
 
-            val bundleLoader = createBundleLoader(capturedBundleSource) ?: return null
+            val host: ReactHostImpl
+            val sandboxContext: Context
 
-            val tmmDelegateBuilder = DefaultTurboModuleManagerDelegate.Builder()
+            if (shared != null) {
+                host = shared.reactHost
+                sandboxContext = shared.sandboxContext
+                shared.refCount++
+                ownsReactHost = false
+                Log.d(TAG, "Reusing shared ReactHost for origin '$origin' (refCount=${shared.refCount})")
+            } else {
+                val sandboxId = System.identityHashCode(this).toString(16)
+                sandboxContext = SandboxContextWrapper(context, sandboxId)
 
-            val bindingsInstaller = SandboxBindingsInstaller.create(this)
+                val packages: List<ReactPackage> =
+                    listOf(
+                        FilteredReactPackage(MainReactPackage(), capturedAllowedModules),
+                    )
 
-            val hostDelegate =
-                DefaultReactHostDelegate(
-                    jsMainModulePath = capturedBundleSource,
-                    jsBundleLoader = bundleLoader,
-                    reactPackages = packages,
-                    jsRuntimeFactory = HermesInstance(),
-                    turboModuleManagerDelegateBuilder = tmmDelegateBuilder,
-                    bindingsInstaller = bindingsInstaller,
-                )
+                val bundleLoader = createBundleLoader(capturedBundleSource) ?: return null
 
-            val componentFactory = ComponentFactory()
-            DefaultComponentsRegistry.register(componentFactory)
+                val tmmDelegateBuilder = DefaultTurboModuleManagerDelegate.Builder()
 
-            val host =
-                ReactHostImpl(
-                    sandboxContext,
-                    hostDelegate,
-                    componentFactory,
-                    true,
-                    true,
-                )
+                val bindingsInstaller = SandboxBindingsInstaller.create(this)
+
+                val hostDelegate =
+                    DefaultReactHostDelegate(
+                        jsMainModulePath = capturedBundleSource,
+                        jsBundleLoader = bundleLoader,
+                        reactPackages = packages,
+                        jsRuntimeFactory = HermesInstance(),
+                        turboModuleManagerDelegateBuilder = tmmDelegateBuilder,
+                        bindingsInstaller = bindingsInstaller,
+                    )
+
+                val componentFactory = ComponentFactory()
+                DefaultComponentsRegistry.register(componentFactory)
+
+                host =
+                    ReactHostImpl(
+                        sandboxContext,
+                        hostDelegate,
+                        componentFactory,
+                        true,
+                        true,
+                    )
+
+                ownsReactHost = true
+
+                if (origin.isNotEmpty()) {
+                    sharedHosts[origin] = SharedReactHost(host, sandboxContext, refCount = 1)
+                    Log.d(TAG, "Created shared ReactHost for origin '$origin'")
+                }
+            }
 
             reactHost = host
 
@@ -122,6 +136,11 @@ class SandboxReactNativeDelegate(
                 object : ReactInstanceEventListener {
                     override fun onReactContextInitialized(reactContext: ReactContext) {
                         sandboxReactContext = reactContext
+                        if (jsiStateHandle != 0L) {
+                            reactContext.runOnJSQueueThread {
+                                SandboxJSIInstaller.nativeInstallErrorHandler(jsiStateHandle)
+                            }
+                        }
                     }
                 },
             )
@@ -240,7 +259,8 @@ class SandboxReactNativeDelegate(
             return false
         }
 
-        return routeMessage(messageJson, targetOrigin)
+        // Routing handled entirely in C++ SandboxRegistry (see SandboxJSIInstaller.cpp)
+        return false
     }
 
     @Suppress("unused")
@@ -259,28 +279,6 @@ class SandboxReactNativeDelegate(
                 Log.e(TAG, "Error emitting onError: ${e.message}", e)
             }
         }
-    }
-
-    fun routeMessage(
-        message: String,
-        targetId: String,
-    ): Boolean {
-        val target = SandboxRegistry.find(targetId)
-        Log.d(TAG, "routeMessage from '$origin' to '$targetId': target found=${target != null}")
-        if (target == null) return false
-
-        if (!SandboxRegistry.isPermittedFrom(origin, targetId)) {
-            Log.w(TAG, "routeMessage DENIED: '$origin' -> '$targetId'")
-            sandboxView?.emitOnError(
-                "AccessDeniedError",
-                "Access denied: Sandbox '$origin' is not permitted to send messages to '$targetId'",
-            )
-            return false
-        }
-
-        Log.d(TAG, "routeMessage PERMITTED: '$origin' -> '$targetId', delivering...")
-        target.postMessage(message)
-        return true
     }
 
     private fun getActivity(): Activity? {
@@ -305,17 +303,28 @@ class SandboxReactNativeDelegate(
         }
         reactSurface = null
 
-        reactHost?.let {
-            it.onHostDestroy()
-            it.destroy("sandbox cleanup", null)
+        val host = reactHost
+        if (host != null) {
+            if (origin.isNotEmpty()) {
+                val shared = sharedHosts[origin]
+                if (shared != null && shared.reactHost === host) {
+                    shared.refCount--
+                    if (shared.refCount <= 0) {
+                        sharedHosts.remove(origin)
+                        host.onHostDestroy()
+                        host.destroy("sandbox cleanup", null)
+                    }
+                }
+            } else if (ownsReactHost) {
+                host.onHostDestroy()
+                host.destroy("sandbox cleanup", null)
+            }
         }
         reactHost = null
+        ownsReactHost = false
     }
 
     fun destroy() {
-        if (origin.isNotEmpty()) {
-            SandboxRegistry.unregister(origin)
-        }
         cleanup()
     }
 
