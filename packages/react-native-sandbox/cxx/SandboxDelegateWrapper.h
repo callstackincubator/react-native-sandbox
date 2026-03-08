@@ -12,8 +12,7 @@
 typedef struct objc_object SandboxReactNativeDelegate;
 #endif
 
-namespace facebook {
-namespace react {
+namespace rnsandbox {
 
 /**
  * C++ wrapper for SandboxReactNativeDelegate that implements ISandboxDelegate.
@@ -46,5 +45,4 @@ class SandboxDelegateWrapper : public ISandboxDelegate {
   SandboxReactNativeDelegate* delegate_;
 };
 
-} // namespace react
-} // namespace facebook
+} // namespace rnsandbox

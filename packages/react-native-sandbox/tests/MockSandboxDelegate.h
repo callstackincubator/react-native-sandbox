@@ -6,8 +6,7 @@
 
 #include <ISandboxDelegate.h>
 
-namespace facebook {
-namespace react {
+namespace rnsandbox {
 
 class MockSandboxDelegate : public ISandboxDelegate {
  public:
@@ -30,5 +29,4 @@ class MockSandboxDelegate : public ISandboxDelegate {
       (override));
 };
 
-} // namespace react
-} // namespace facebook
+} // namespace rnsandbox

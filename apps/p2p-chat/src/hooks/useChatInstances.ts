@@ -19,7 +19,6 @@ export const useChatInstances = () => {
       return
     }
 
-    // Find the next available preset user
     const usedNames = new Set(chatInstances.map(chat => chat.userName))
     const availableUser = USER_THEMES.find(user => !usedNames.has(user.name))
 
@@ -46,9 +45,6 @@ export const useChatInstances = () => {
 
       setChatInstances(prev => prev.filter(chat => chat.id !== chatId))
       console.log(`[Host] Removed chat instance: ${chatId}`)
-
-      // Trigger friendship updates since instances changed
-      setFriendshipTrigger(prev => prev + 1)
     },
     [chatInstances.length]
   )

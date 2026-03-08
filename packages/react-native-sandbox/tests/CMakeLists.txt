@@ -10,11 +10,11 @@ endif()
 
 set(CPP_TEST_SOURCES
     SandboxRegistryTest.cpp
-    ../ios/SandboxRegistry.cpp
+    ../cxx/SandboxRegistry.cpp
 )
 
 set(INCLUDE_DIRS
-    ${CMAKE_CURRENT_SOURCE_DIR}/../ios
+    ${CMAKE_CURRENT_SOURCE_DIR}/../cxx
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
@@ -28,13 +28,6 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-FetchContent_Declare(
-    fmt
-    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-    GIT_TAG 10.1.1
-)
-FetchContent_MakeAvailable(fmt)
-
 set(TEST_EXECUTABLE_NAME SandboxRegistryCppTests)
 
 add_executable(${TEST_EXECUTABLE_NAME} ${CPP_TEST_SOURCES})
@@ -45,7 +38,6 @@ target_link_libraries(${TEST_EXECUTABLE_NAME}
     gtest_main 
     gmock 
     gmock_main
-    fmt::fmt
 )
 
 target_compile_options(${TEST_EXECUTABLE_NAME} PRIVATE
