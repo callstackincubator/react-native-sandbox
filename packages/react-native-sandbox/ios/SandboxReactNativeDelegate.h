@@ -11,6 +11,7 @@
 #import <React/RCTComponent.h>
 #import <react/renderer/components/RNSandboxSpec/EventEmitters.h>
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -43,6 +44,18 @@ NS_ASSUME_NONNULL_BEGIN
  * Only sandboxes with origins in this list can send messages to this sandbox.
  */
 @property (nonatomic, readwrite) std::set<std::string> allowedOrigins;
+
+/**
+ * Sets the TurboModule substitution map for this sandbox instance.
+ * Keys are module names that sandbox JS code requests, values are the actual
+ * native module names to resolve instead. Substituted modules are implicitly allowed.
+ *
+ * Example: {"RNCAsyncStorage": "SandboxedAsyncStorage"} means when sandbox JS
+ * requests RNCAsyncStorage, the delegate resolves SandboxedAsyncStorage instead
+ * and configures it with the sandbox context (origin, etc.) if it implements
+ * ISandboxAwareModule.
+ */
+@property (nonatomic, readwrite) std::map<std::string, std::string> turboModuleSubstitutions;
 
 /**
  * Initializes the delegate.

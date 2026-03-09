@@ -59,6 +59,13 @@ export interface NativeProps extends ViewProps {
   /** Array of TurboModule names allowed in the sandbox */
   allowedTurboModules?: readonly string[]
 
+  /**
+   * Map of TurboModule substitutions for this sandbox.
+   * Keys are module names that sandbox JS requests, values are the actual
+   * native module names to resolve instead. Substituted modules are implicitly allowed.
+   */
+  turboModuleSubstitutions?: CodegenTypes.UnsafeMixed
+
   /** Array of sandbox origins that are allowed to send messages to this sandbox */
   allowedOrigins?: readonly string[]
 
