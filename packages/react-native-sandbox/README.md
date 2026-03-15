@@ -24,13 +24,9 @@ npm install @callstack/react-native-sandbox
 yarn add @callstack/react-native-sandbox
 ```
 
-### iOS Setup
+### Setup
 
 The package uses **autolinking** and supports the **React Native New Architecture** - no manual configuration required.
-
-### Android Setup
-
-> 🚧 **Under Construction** - Android support is currently in development. Stay tuned for updates!
 
 ## 🎯 Basic Usage
 
