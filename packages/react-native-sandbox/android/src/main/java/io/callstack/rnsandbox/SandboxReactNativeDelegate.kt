@@ -59,6 +59,7 @@ class SandboxReactNativeDelegate(
     private var jsiStateHandle: Long = 0
     private var sandboxReactContext: ReactContext? = null
     private var ownsReactHost = false
+    private var instanceEventListener: ReactInstanceEventListener? = null
 
     @OptIn(UnstableReactNativeAPI::class)
     fun loadReactNativeView(
@@ -86,8 +87,7 @@ class SandboxReactNativeDelegate(
                 ownsReactHost = false
                 Log.d(TAG, "Reusing shared ReactHost for origin '$origin' (refCount=${shared.refCount})")
             } else {
-                val sandboxId = System.identityHashCode(this).toString(16)
-                sandboxContext = SandboxContextWrapper(context, sandboxId)
+                sandboxContext = SandboxContextWrapper(context, origin)
 
                 val packages: List<ReactPackage> =
                     listOf(
@@ -132,7 +132,7 @@ class SandboxReactNativeDelegate(
 
             reactHost = host
 
-            host.addReactInstanceEventListener(
+            val listener =
                 object : ReactInstanceEventListener {
                     override fun onReactContextInitialized(reactContext: ReactContext) {
                         sandboxReactContext = reactContext
@@ -142,8 +142,9 @@ class SandboxReactNativeDelegate(
                             }
                         }
                     }
-                },
-            )
+                }
+            instanceEventListener = listener
+            host.addReactInstanceEventListener(listener)
 
             val surface = host.createSurface(sandboxContext, componentName, initialProperties)
             reactSurface = surface
@@ -304,6 +305,10 @@ class SandboxReactNativeDelegate(
         reactSurface = null
 
         val host = reactHost
+        instanceEventListener?.let { listener ->
+            host?.removeReactInstanceEventListener(listener)
+        }
+        instanceEventListener = null
         if (host != null) {
             if (origin.isNotEmpty()) {
                 val shared = sharedHosts[origin]

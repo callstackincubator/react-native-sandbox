@@ -34,15 +34,15 @@ facebook::jsi::Function StubTurboModuleCxx::createStubFunction(
       runtime,
       facebook::jsi::PropNameID::forAscii(runtime, methodName.c_str()),
       0,
-      [this, methodName](
-          facebook::jsi::Runtime& rt,
-          const facebook::jsi::Value& thisVal,
-          const facebook::jsi::Value* args,
-          size_t count) -> facebook::jsi::Value {
+      [moduleName = moduleName_, methodName](
+          facebook::jsi::Runtime&,
+          const facebook::jsi::Value&,
+          const facebook::jsi::Value*,
+          size_t) -> facebook::jsi::Value {
         SANDBOX_LOG_WARN(
             "[StubTurboModuleCxx] Method call '%s' blocked on module '%s'.",
             methodName.c_str(),
-            this->moduleName_.c_str());
+            moduleName.c_str());
         return facebook::jsi::Value::undefined();
       });
 }

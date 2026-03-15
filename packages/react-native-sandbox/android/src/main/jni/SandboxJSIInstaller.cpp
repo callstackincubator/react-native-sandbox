@@ -33,17 +33,46 @@ struct SandboxJSIState {
 static std::mutex gRegistryMutex;
 static std::unordered_map<jlong, std::shared_ptr<SandboxJSIState>> gStates;
 
+static JNIEnv* getJNIEnv() {
+  JNIEnv* env = nullptr;
+  if (gJavaVM) {
+    gJavaVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+    if (!env) {
+      gJavaVM->AttachCurrentThread(&env, nullptr);
+    }
+  }
+  return env;
+}
+
 /**
  * ISandboxDelegate that dispatches postMessage through the Kotlin delegate
  * via JNI. The Kotlin postMessage uses runOnJSQueueThread to safely access
  * the JSI runtime on the correct thread.
+ *
+ * Holds its own JNI global reference which must be released via invalidate().
  */
 class JNISandboxDelegate : public rnsandbox::ISandboxDelegate {
  public:
-  JNISandboxDelegate(jobject globalDelegateRef)
-      : globalDelegateRef_(globalDelegateRef) {}
+  explicit JNISandboxDelegate(JNIEnv* env, jobject delegateRef)
+      : globalDelegateRef_(env->NewGlobalRef(delegateRef)) {}
+
+  ~JNISandboxDelegate() override {
+    invalidate();
+  }
+
+  void invalidate() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (globalDelegateRef_) {
+      JNIEnv* env = getJNIEnv();
+      if (env) {
+        env->DeleteGlobalRef(globalDelegateRef_);
+      }
+      globalDelegateRef_ = nullptr;
+    }
+  }
 
   void postMessage(const std::string& message) override {
+    std::lock_guard<std::mutex> lock(mutex_);
     JNIEnv* env = getJNIEnv();
     if (!env || !globalDelegateRef_)
       return;
@@ -74,29 +103,8 @@ class JNISandboxDelegate : public rnsandbox::ISandboxDelegate {
 
  private:
   jobject globalDelegateRef_;
-
-  static JNIEnv* getJNIEnv() {
-    JNIEnv* env = nullptr;
-    if (gJavaVM) {
-      gJavaVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
-      if (!env) {
-        gJavaVM->AttachCurrentThread(&env, nullptr);
-      }
-    }
-    return env;
-  }
+  std::mutex mutex_;
 };
-
-static JNIEnv* getJNIEnv() {
-  JNIEnv* env = nullptr;
-  if (gJavaVM) {
-    gJavaVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
-    if (!env) {
-      gJavaVM->AttachCurrentThread(&env, nullptr);
-    }
-  }
-  return env;
-}
 
 static std::string safeGetStringProperty(
     jsi::Runtime& rt,
@@ -124,7 +132,7 @@ stubJsiFunction(jsi::Runtime& runtime, jsi::Object& object, const char* name) {
 
 static void setupErrorHandler(
     jsi::Runtime& runtime,
-    jobject globalDelegateRef) {
+    std::weak_ptr<SandboxJSIState> stateWeak) {
   jsi::Object global = runtime.global();
   jsi::Value errorUtilsVal = global.getProperty(runtime, "ErrorUtils");
   if (!errorUtilsVal.isObject())
@@ -142,7 +150,7 @@ static void setupErrorHandler(
       runtime,
       jsi::PropNameID::forAscii(runtime, "sandboxGlobalErrorHandler"),
       2,
-      [globalDelegateRef, originalHandler = std::move(originalHandler)](
+      [stateWeak, originalHandler = std::move(originalHandler)](
           jsi::Runtime& rt,
           const jsi::Value&,
           const jsi::Value* args,
@@ -150,15 +158,19 @@ static void setupErrorHandler(
         if (count < 2)
           return jsi::Value::undefined();
 
+        auto state = stateWeak.lock();
+        if (!state || !state->delegateRef)
+          return jsi::Value::undefined();
+
         JNIEnv* jniEnv = getJNIEnv();
         if (!jniEnv)
           return jsi::Value::undefined();
 
-        jclass cls = jniEnv->GetObjectClass(globalDelegateRef);
+        jclass cls = jniEnv->GetObjectClass(state->delegateRef);
         jfieldID hasHandlerField =
             jniEnv->GetFieldID(cls, "hasOnErrorHandler", "Z");
         jboolean hasHandler =
-            jniEnv->GetBooleanField(globalDelegateRef, hasHandlerField);
+            jniEnv->GetBooleanField(state->delegateRef, hasHandlerField);
 
         if (hasHandler) {
           const jsi::Object& error = args[0].asObject(rt);
@@ -175,7 +187,7 @@ static void setupErrorHandler(
           jstring jMsg = jniEnv->NewStringUTF(message.c_str());
           jstring jStack = jniEnv->NewStringUTF(stack.c_str());
           jniEnv->CallVoidMethod(
-              globalDelegateRef,
+              state->delegateRef,
               emitMethod,
               jName,
               jMsg,
@@ -223,7 +235,7 @@ jlong installSandboxJSIBindings(
       runtime,
       jsi::PropNameID::forAscii(runtime, "postMessage"),
       2,
-      [globalDelegateRef](
+      [stateWeak = std::weak_ptr<SandboxJSIState>(state)](
           jsi::Runtime& rt,
           const jsi::Value&,
           const jsi::Value* args,
@@ -237,6 +249,10 @@ jlong installSandboxJSIBindings(
           throw jsi::JSError(
               rt, "postMessage: first argument must be an object");
         }
+
+        auto statePtr = stateWeak.lock();
+        if (!statePtr || !statePtr->delegateRef)
+          return jsi::Value::undefined();
 
         jsi::Object jsonObj = rt.global().getPropertyAsObject(rt, "JSON");
         jsi::Function stringify =
@@ -255,7 +271,6 @@ jlong installSandboxJSIBindings(
           }
           std::string targetOrigin = args[1].getString(rt).utf8(rt);
 
-          // Fan out to all delegates registered for the target origin
           auto& registry = rnsandbox::SandboxRegistry::getInstance();
           auto targets = registry.findAll(targetOrigin);
           if (!targets.empty()) {
@@ -266,11 +281,11 @@ jlong installSandboxJSIBindings(
             LOGW("postMessage: target '%s' not found", targetOrigin.c_str());
           }
         } else {
-          jclass cls = jniEnv->GetObjectClass(globalDelegateRef);
+          jclass cls = jniEnv->GetObjectClass(statePtr->delegateRef);
           jmethodID mid = jniEnv->GetMethodID(
               cls, "emitOnMessageFromJS", "(Ljava/lang/String;)V");
           jstring jMsg = jniEnv->NewStringUTF(messageJson.c_str());
-          jniEnv->CallVoidMethod(globalDelegateRef, mid, jMsg);
+          jniEnv->CallVoidMethod(statePtr->delegateRef, mid, jMsg);
           jniEnv->DeleteLocalRef(jMsg);
           jniEnv->DeleteLocalRef(cls);
         }
@@ -356,7 +371,7 @@ jlong installSandboxJSIBindings(
       makePropDesc(std::move(setOnMessageFn)));
 
   try {
-    setupErrorHandler(runtime, globalDelegateRef);
+    setupErrorHandler(runtime, std::weak_ptr<SandboxJSIState>(state));
   } catch (const std::exception& e) {
     LOGW("Failed to setup error handler: %s", e.what());
   }
@@ -379,7 +394,7 @@ jlong installSandboxJSIBindings(
         if (!origin.empty()) {
           state->origin = origin;
           auto delegate =
-              std::make_shared<JNISandboxDelegate>(globalDelegateRef);
+              std::make_shared<JNISandboxDelegate>(jniEnv, globalDelegateRef);
           state->registryDelegate = delegate;
           rnsandbox::SandboxRegistry::getInstance().registerSandbox(
               origin, delegate, std::set<std::string>());
@@ -481,7 +496,7 @@ Java_io_callstack_rnsandbox_SandboxJSIInstaller_nativeInstallErrorHandler(
     return;
 
   try {
-    setupErrorHandler(*state->runtime, state->delegateRef);
+    setupErrorHandler(*state->runtime, std::weak_ptr<SandboxJSIState>(state));
   } catch (const std::exception& e) {
     LOGW("Failed to setup error handler post-bundle: %s", e.what());
   }
@@ -497,18 +512,27 @@ Java_io_callstack_rnsandbox_SandboxJSIInstaller_nativeDestroy(
   if (it != gStates.end()) {
     std::string origin;
     std::shared_ptr<rnsandbox::ISandboxDelegate> delegate;
+    jobject delegateRef = nullptr;
     {
       std::lock_guard<std::mutex> stateLock(it->second->mutex);
       origin = it->second->origin;
       delegate = it->second->registryDelegate;
+      delegateRef = it->second->delegateRef;
       it->second->onMessageCallback.reset();
       it->second->pendingMessages.clear();
       it->second->runtime = nullptr;
       it->second->registryDelegate.reset();
+      it->second->delegateRef = nullptr;
     }
     if (!origin.empty() && delegate) {
       rnsandbox::SandboxRegistry::getInstance().unregisterDelegate(
           origin, delegate);
+    }
+    if (delegateRef) {
+      JNIEnv* env = getJNIEnv();
+      if (env) {
+        env->DeleteGlobalRef(delegateRef);
+      }
     }
     gStates.erase(it);
   }
