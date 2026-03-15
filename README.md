@@ -13,6 +13,7 @@
 [![check](https://img.shields.io/github/actions/workflow/status/callstackincubator/react-native-sandbox/check.yml?style=for-the-badge)](https://github.com/callstackincubator/react-native-sandbox/actions/workflows/check.yml)
 [![platform: iOS](https://img.shields.io/badge/platform-iOS-blue.svg?style=for-the-badge)](https://img.shields.io/badge/platform-iOS-blue.svg)
 [![platform: Android](https://img.shields.io/badge/platform-android-green.svg?style=for-the-badge)](https://img.shields.io/badge/platform-android-green.svg)
+[![react-native >= 0.78](https://img.shields.io/badge/react--native-%3E%3D%200.78-61dafb.svg?style=for-the-badge&logo=react)](https://reactnative.dev/)
 
 </div>
 

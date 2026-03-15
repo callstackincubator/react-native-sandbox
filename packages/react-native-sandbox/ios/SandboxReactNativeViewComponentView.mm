@@ -9,6 +9,7 @@
 #import <React/RCTConversions.h>
 #import <React/RCTFabricComponentsPlugins.h>
 #import <React/RCTFollyConvert.h>
+#import <ReactCommon/RCTHost+Internal.h>
 #import <ReactCommon/RCTHost.h>
 
 #import "SandboxReactNativeDelegate.h"
@@ -74,6 +75,10 @@ using namespace facebook::react;
 
     if (oldViewProps.jsBundleSource != newViewProps.jsBundleSource) {
       [self.reactNativeDelegate setJsBundleSource:newViewProps.jsBundleSource];
+      RCTHost *host = self.reactNativeFactory.rootViewFactory.reactHost;
+      if (host) {
+        [host reload];
+      }
     }
 
     if (oldViewProps.allowedTurboModules != newViewProps.allowedTurboModules) {
