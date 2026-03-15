@@ -4,6 +4,7 @@
 # Core development tools
 brew "clang-format"
 brew "ccache"
+brew "ktlint"
 
 # Additional useful tools for React Native development
 brew "node"

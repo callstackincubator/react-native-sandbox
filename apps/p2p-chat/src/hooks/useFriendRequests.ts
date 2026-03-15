@@ -1,30 +1,43 @@
 import {useCallback, useState} from 'react'
 
-import {FriendAction, MessageData} from '../types'
+import {
+  FriendAction,
+  FriendRequest,
+  MessageData,
+  PotentialFriend,
+} from '../types'
 
 interface UseFriendRequestsProps {
   userName: string
+  initialTargetOptions: string[]
+  initialPotentialFriends: PotentialFriend[]
   onSendMessage: (message: MessageData) => boolean
 }
 
 export const useFriendRequests = ({
   userName,
+  initialTargetOptions,
+  initialPotentialFriends,
   onSendMessage,
 }: UseFriendRequestsProps) => {
-  const [friendNotifications, setFriendNotifications] = useState<string[]>([])
+  const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([])
+  const [targetOptions, setTargetOptions] =
+    useState<string[]>(initialTargetOptions)
+  const [potentialFriends, setPotentialFriends] = useState<PotentialFriend[]>(
+    initialPotentialFriends
+  )
 
-  const clearNotification = useCallback((index: number) => {
-    setFriendNotifications(prev => prev.filter((_, i) => i !== index))
-  }, [])
-
-  const addNotification = useCallback((notification: string) => {
-    setFriendNotifications(prev => [...prev, notification])
+  const addFriend = useCallback((friendId: string) => {
+    setTargetOptions(prev =>
+      prev.includes(friendId) ? prev : [...prev, friendId]
+    )
+    setPotentialFriends(prev => prev.filter(pf => pf.id !== friendId))
   }, [])
 
   const sendFriendRequest = useCallback(
     (targetId: string) => {
       const success = onSendMessage({
-        type: 'make_friend',
+        type: 'friend_request',
         target: targetId,
         timestamp: Date.now(),
       })
@@ -44,6 +57,8 @@ export const useFriendRequests = ({
         `[${userName}] Responding to friend request ${requestId}: ${action}`
       )
 
+      const request = pendingRequests.find(r => r.id === requestId)
+
       const success = onSendMessage({
         type: 'friend_response',
         requestId,
@@ -52,54 +67,65 @@ export const useFriendRequests = ({
       })
 
       if (success) {
-        console.log(`[${userName}] Friend response sent to host`)
+        setPendingRequests(prev => prev.filter(r => r.id !== requestId))
+
+        if (action === 'accept' && request) {
+          addFriend(request.fromId)
+          console.log(`[${userName}] Now friends with ${request.from}`)
+        }
       }
     },
-    [userName, onSendMessage]
+    [userName, onSendMessage, pendingRequests, addFriend]
   )
 
   const handleFriendMessage = useCallback(
     (data: MessageData) => {
       switch (data.type) {
         case 'friend_request': {
-          if (data.fromName) {
+          if (data.requestId && data.from) {
             console.log(
-              `[${userName}] 🚨 PROCESSING FRIEND REQUEST from ${data.fromName} (${data.from})`
+              `[${userName}] Received friend request from ${data.fromName ?? data.from}`
             )
-            addNotification(`Friend request from ${data.fromName}`)
-            console.log(`[${userName}] Friend request notification added`)
+            setPendingRequests(prev => {
+              if (prev.some(r => r.id === data.requestId)) return prev
+              return [
+                ...prev,
+                {
+                  id: data.requestId!,
+                  fromId: data.from!,
+                  from: data.fromName ?? data.from!,
+                  to: userName,
+                  timestamp: data.timestamp,
+                },
+              ]
+            })
           }
           break
         }
 
-        case 'friend_accepted': {
-          if (data.friendName) {
+        case 'friend_response': {
+          const friendId = data.friend
+          if (friendId && data.action === 'accept') {
             console.log(
-              `[${userName}] Friend request accepted by ${data.friendName}`
+              `[${userName}] Friend request accepted by ${data.friendName ?? friendId}`
             )
-            addNotification(`${data.friendName} accepted your friend request!`)
-          }
-          break
-        }
-
-        case 'friendship_established': {
-          if (data.friendName) {
+            addFriend(friendId)
+          } else if (data.action === 'reject') {
             console.log(
-              `[${userName}] Friendship established with ${data.friendName}`
+              `[${userName}] Friend request rejected by ${data.friendName ?? data.friend}`
             )
-            addNotification(`You are now friends with ${data.friendName}!`)
           }
           break
         }
       }
     },
-    [userName, addNotification]
+    [userName, addFriend]
   )
 
   return {
-    friendNotifications,
-    clearNotification,
-    addNotification,
+    pendingRequests,
+    targetOptions,
+    potentialFriends,
     sendFriendRequest,
     respondToFriendRequest,
     handleFriendMessage,

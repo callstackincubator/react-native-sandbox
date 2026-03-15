@@ -1,11 +1,5 @@
 import React from 'react'
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import {Pressable, ScrollView, StyleSheet, Text, View} from 'react-native'
 
 import {colors, commonStyles, spacing, typography} from '../styles'
 import {PotentialFriend} from '../types'
@@ -26,16 +20,14 @@ export const TargetSelector: React.FC<TargetSelectorProps> = ({
   onSendFriendRequest,
 }) => {
   const allPossibleTargets = [
-    ...targetOptions, // Current friends
-    ...potentialFriends.map(pf => pf.id), // Potential friends
+    ...targetOptions,
+    ...potentialFriends.map(pf => pf.id),
   ]
 
   const handleTargetPress = (target: string) => {
     if (targetOptions.includes(target)) {
-      // This is a friend - select for messaging
       onTargetSelect(target)
     } else {
-      // This is a potential friend - send friend request
       onSendFriendRequest(target)
     }
   }
@@ -50,18 +42,20 @@ export const TargetSelector: React.FC<TargetSelectorProps> = ({
               const isFriend = targetOptions.includes(target)
               const isSelected = selectedTarget === target
               return (
-                <TouchableOpacity
+                <Pressable
                   key={target}
                   style={[
                     styles.targetButton,
-                    isSelected && styles.selectedTargetButton,
+                    isFriend && styles.friendButton,
+                    isFriend && isSelected && styles.selectedFriendButton,
                     !isFriend && styles.potentialFriendButton,
                   ]}
                   onPress={() => handleTargetPress(target)}>
                   <Text
                     style={[
                       styles.targetButtonText,
-                      isSelected && styles.selectedTargetButtonText,
+                      isFriend && styles.friendButtonText,
+                      isFriend && isSelected && styles.selectedFriendButtonText,
                       !isFriend && styles.potentialFriendButtonText,
                     ]}>
                     {isFriend ? '👫' : '👥'} {target}
@@ -69,7 +63,7 @@ export const TargetSelector: React.FC<TargetSelectorProps> = ({
                       <Text style={styles.actionHint}> (tap to add)</Text>
                     )}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               )
             })}
           </ScrollView>
@@ -106,17 +100,24 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
     ...commonStyles.border,
   },
-  selectedTargetButton: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+  friendButton: {
+    backgroundColor: 'rgba(76, 175, 80, 0.12)',
+    borderColor: 'rgba(76, 175, 80, 0.4)',
+  },
+  selectedFriendButton: {
+    backgroundColor: 'rgba(76, 175, 80, 0.25)',
+    borderColor: '#4caf50',
   },
   targetButtonText: {
     fontSize: typography.sizes.md,
     fontWeight: typography.weights.medium,
     color: colors.text.primary,
   },
-  selectedTargetButtonText: {
-    color: colors.text.white,
+  friendButtonText: {
+    color: '#2e7d32',
+  },
+  selectedFriendButtonText: {
+    color: '#1b5e20',
     fontWeight: typography.weights.semibold,
   },
   potentialFriendButton: {

@@ -4,8 +4,7 @@
 #include <set>
 #include <string>
 
-namespace facebook {
-namespace react {
+namespace rnsandbox {
 
 /**
  * Interface for sandbox delegates that provides a clean abstraction
@@ -57,5 +56,4 @@ class ISandboxDelegate {
   virtual void setAllowedTurboModules(const std::set<std::string>& modules) = 0;
 };
 
-} // namespace react
-} // namespace facebook
+} // namespace rnsandbox

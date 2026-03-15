@@ -12,8 +12,8 @@
 [![npm downloads](https://img.shields.io/npm/dm/@callstack/react-native-sandbox.svg?style=for-the-badge)](https://www.npmjs.org/package/@callstack/react-native-sandbox)
 [![check](https://img.shields.io/github/actions/workflow/status/callstackincubator/react-native-sandbox/check.yml?style=for-the-badge)](https://github.com/callstackincubator/react-native-sandbox/actions/workflows/check.yml)
 [![platform: iOS](https://img.shields.io/badge/platform-iOS-blue.svg?style=for-the-badge)](https://img.shields.io/badge/platform-iOS-blue.svg)
+[![platform: Android](https://img.shields.io/badge/platform-android-green.svg?style=for-the-badge)](https://img.shields.io/badge/platform-android-green.svg)
 [![react-native >= 0.78](https://img.shields.io/badge/react--native-%3E%3D%200.78-61dafb.svg?style=for-the-badge&logo=react)](https://reactnative.dev/)
-
 
 </div>
 
@@ -158,7 +158,7 @@ For comprehensive API documentation, installation instructions, and advanced usa
 
 We're actively working on expanding the capabilities of `react-native-sandbox`. Here's what's planned:
 
-- [ ] **Android Support** - Full cross-platform compatibility
+- [x] **Android Support** - Full cross-platform compatibility
 - [x] **Inter-Sandbox Communication** - [Secure direct communication between sandbox instances](packages/react-native-sandbox/README.md#p2p-communication-between-sandboxes)
 - [ ] **[RE.Pack](https://github.com/callstack/repack) Integration** - Advanced bundling and module federation
   - Hot-reloading for sandbox instances in development

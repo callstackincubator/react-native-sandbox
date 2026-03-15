@@ -18,11 +18,11 @@ Pod::Spec.new do |s|
   s.authors      = { "Alex Babrykovich" => "aliaksandr.babrykovich@callstack.com" }
   s.platforms    = { :ios => "12.4" }
   s.source       = { :git => "https://github.com/callstackincubator/react-native-sandbox.git", :tag => "#{s.version}" }
-  s.source_files = "ios/**/*.{h,m,mm,cpp,swift}"
+  s.source_files = ["ios/**/*.{h,m,mm,cpp,swift}", "cxx/**/*.{h,cpp}"]
   install_modules_dependencies(s)
   s.dependency "fmt"
   s.pod_target_xcconfig    = {
-    "HEADER_SEARCH_PATHS" => header_search_paths,
+    "HEADER_SEARCH_PATHS" => header_search_paths + ["\"$(PODS_TARGET_SRCROOT)/cxx\""],
     # "OTHER_CPLUSPLUSFLAGS" => "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1",
     "CLANG_CXX_LANGUAGE_STANDARD" => "c++17"
   }
