@@ -1,6 +1,7 @@
 import SandboxReactNativeView from '@callstack/react-native-sandbox'
 import React, {useState} from 'react'
 import {
+  Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -13,12 +14,15 @@ import {
 
 import FileOpsUI from './FileOpsUI'
 
-const ALL_TURBO_MODULES = ['RNFSManager', 'FileAccess', 'PlatformLocalStorage']
+const ASYNC_STORAGE_MODULE =
+  Platform.OS === 'ios' ? 'PlatformLocalStorage' : 'RNCAsyncStorage'
+
+const ALL_TURBO_MODULES = ['RNFSManager', 'FileAccess', ASYNC_STORAGE_MODULE]
 
 const SANDBOXED_SUBSTITUTIONS: Record<string, string> = {
   RNFSManager: 'SandboxedRNFSManager',
   FileAccess: 'SandboxedFileAccess',
-  PlatformLocalStorage: 'SandboxedAsyncStorage',
+  [ASYNC_STORAGE_MODULE]: 'SandboxedAsyncStorage',
 }
 
 function App(): React.JSX.Element {

@@ -35,6 +35,33 @@ class SandboxReactNativeDelegate(
         private const val TAG = "SandboxRNDelegate"
 
         private val sharedHosts = mutableMapOf<String, SharedReactHost>()
+        private val registeredSubstitutionPackages = mutableListOf<ReactPackage>()
+        private val registeredHostPackages = mutableListOf<ReactPackage>()
+
+        /**
+         * Register ReactPackage instances that provide substitution modules.
+         * Call this from your Application.onCreate() before any sandbox views load.
+         */
+        @JvmStatic
+        fun registerSubstitutionPackages(vararg packages: ReactPackage) {
+            registeredSubstitutionPackages.addAll(packages)
+        }
+
+        /**
+         * Register the host app's autolinked ReactPackage instances so that
+         * allowed (non-substituted) third-party modules can be resolved inside
+         * the sandbox. Without this, only modules from MainReactPackage (RN
+         * built-ins) are available.
+         *
+         * Typically called from Application.onCreate():
+         * ```
+         * SandboxReactNativeDelegate.registerHostPackages(PackageList(this).packages)
+         * ```
+         */
+        @JvmStatic
+        fun registerHostPackages(packages: List<ReactPackage>) {
+            registeredHostPackages.addAll(packages)
+        }
 
         private data class SharedReactHost(
             val reactHost: ReactHostImpl,
@@ -47,6 +74,7 @@ class SandboxReactNativeDelegate(
 
     var jsBundleSource: String = ""
     var allowedTurboModules: Set<String> = emptySet()
+    var turboModuleSubstitutions: Map<String, String> = emptyMap()
     var allowedOrigins: Set<String> = emptySet()
 
     @JvmField var hasOnMessageHandler: Boolean = false
@@ -89,9 +117,21 @@ class SandboxReactNativeDelegate(
             } else {
                 sandboxContext = SandboxContextWrapper(context, origin)
 
+                val capturedSubstitutions = turboModuleSubstitutions.toMap()
+                val capturedSubstitutionPackages = registeredSubstitutionPackages.toList()
+                val capturedHostPackages = registeredHostPackages.toList()
+                val capturedOrigin = origin
+
                 val packages: List<ReactPackage> =
                     listOf(
-                        FilteredReactPackage(MainReactPackage(), capturedAllowedModules),
+                        FilteredReactPackage(
+                            MainReactPackage(),
+                            capturedHostPackages,
+                            capturedAllowedModules,
+                            capturedSubstitutions,
+                            capturedSubstitutionPackages,
+                            capturedOrigin,
+                        ),
                     )
 
                 val bundleLoader = createBundleLoader(capturedBundleSource) ?: return null
@@ -197,7 +237,7 @@ class SandboxReactNativeDelegate(
             Log.d(TAG, "Reloaded sandbox '$origin' with new bundle source via reflection")
             return true
         } catch (e: Exception) {
-            Log.w(TAG, "Reflection-based bundle reload failed, falling back to full rebuild: ${e.message}")
+            Log.d(TAG, "Reflection-based bundle reload failed, falling back to full rebuild: ${e.message}")
             return false
         }
     }
@@ -346,23 +386,90 @@ class SandboxReactNativeDelegate(
 
     private class FilteredReactPackage(
         private val delegate: MainReactPackage,
+        private val hostPackages: List<ReactPackage>,
         private val allowedModules: Set<String>,
+        private val substitutions: Map<String, String>,
+        private val substitutionPackages: List<ReactPackage>,
+        private val origin: String,
     ) : BaseReactPackage() {
+        private val substitutedInstances = java.util.concurrent.ConcurrentHashMap<String, NativeModule>()
+
+        private val effectiveAllowed: Set<String> by lazy {
+            allowedModules + substitutions.keys
+        }
+
         override fun getModule(
             name: String,
             reactContext: ReactApplicationContext,
         ): NativeModule? {
-            if (!allowedModules.contains(name)) {
-                Log.w(TAG, "Blocked module '$name' — not in allowedTurboModules")
+            val resolvedName = substitutions[name]
+            if (resolvedName != null) {
+                substitutedInstances[name]?.let { return it }
+
+                for (pkg in substitutionPackages) {
+                    val module =
+                        if (pkg is BaseReactPackage) {
+                            pkg.getModule(resolvedName, reactContext)
+                        } else {
+                            pkg.createNativeModules(reactContext).firstOrNull { it.name == resolvedName }
+                        }
+                    if (module != null) {
+                        if (module is SandboxAwareModule) {
+                            module.configureSandbox(origin, name, resolvedName)
+                        }
+                        substitutedInstances[name] = module
+                        Log.d(TAG, "Substituted '$name' -> '$resolvedName' (${module.javaClass.simpleName})")
+                        return module
+                    }
+                }
+                Log.w(TAG, "Substitution target '$resolvedName' not found in any package for '$name'")
                 return null
             }
-            return delegate.getModule(name, reactContext)
+
+            if (!effectiveAllowed.contains(name)) {
+                return null
+            }
+
+            delegate.getModule(name, reactContext)?.let { return it }
+
+            for (pkg in hostPackages) {
+                val module =
+                    if (pkg is BaseReactPackage) {
+                        pkg.getModule(name, reactContext)
+                    } else {
+                        pkg.createNativeModules(reactContext).firstOrNull { it.name == name }
+                    }
+                if (module != null) return module
+            }
+            return null
         }
 
         override fun getReactModuleInfoProvider(): ReactModuleInfoProvider {
             val delegateProvider = delegate.getReactModuleInfoProvider()
+            val hostProviders =
+                hostPackages.mapNotNull {
+                    (it as? BaseReactPackage)?.getReactModuleInfoProvider()
+                }
+            val substitutionProviders =
+                substitutionPackages.mapNotNull {
+                    (it as? BaseReactPackage)?.getReactModuleInfoProvider()
+                }
             return ReactModuleInfoProvider {
-                delegateProvider.getReactModuleInfos().filterKeys { allowedModules.contains(it) }
+                val infos =
+                    delegateProvider
+                        .getReactModuleInfos()
+                        .filterKeys { effectiveAllowed.contains(it) }
+                        .toMutableMap()
+                for (provider in hostProviders) {
+                    infos.putAll(provider.getReactModuleInfos().filterKeys { effectiveAllowed.contains(it) })
+                }
+                for ((requestedName, resolvedName) in substitutions) {
+                    for (provider in substitutionProviders) {
+                        val subInfos = provider.getReactModuleInfos()
+                        subInfos[resolvedName]?.let { infos[requestedName] = it }
+                    }
+                }
+                infos
             }
         }
 

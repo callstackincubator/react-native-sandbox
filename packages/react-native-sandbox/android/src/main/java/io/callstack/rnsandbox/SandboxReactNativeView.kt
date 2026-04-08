@@ -27,6 +27,36 @@ class SandboxReactNativeView(
         }
     }
 
+    /**
+     * Fabric manages our dimensions but not our children's (they come from a
+     * separate ReactHost).  Force children to fill the space Fabric gave us.
+     */
+    override fun onLayout(
+        changed: Boolean,
+        left: Int,
+        top: Int,
+        right: Int,
+        bottom: Int,
+    ) {
+        super.onLayout(changed, left, top, right, bottom)
+        val w = right - left
+        val h = bottom - top
+        for (i in 0 until childCount) {
+            getChildAt(i).layout(0, 0, w, h)
+        }
+    }
+
+    override fun requestLayout() {
+        super.requestLayout()
+        post {
+            measure(
+                MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY),
+            )
+            layout(left, top, right, bottom)
+        }
+    }
+
     fun emitOnMessage(data: WritableMap) {
         val reactContext = context as? ReactContext ?: return
         val surfaceId = UIManagerHelper.getSurfaceId(reactContext)

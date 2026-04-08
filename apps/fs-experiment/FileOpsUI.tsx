@@ -12,7 +12,16 @@ import {
   View,
 } from 'react-native'
 import {Dirs, FileSystem} from 'react-native-file-access'
-import RNFS from 'react-native-fs'
+
+// react-native-fs doesn't support TurboModules. Its top-level code accesses
+// NativeModules.RNFSManager constants synchronously, throwing if null.
+// Wrap require() so the app still works when RNFS isn't available.
+let RNFS: any
+try {
+  RNFS = require('react-native-fs').default ?? require('react-native-fs')
+} catch {
+  RNFS = {DocumentDirectoryPath: Dirs.DocumentDir}
+}
 
 const MODULES = [
   {key: 'rnfs', label: 'RNFS'},

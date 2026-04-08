@@ -112,7 +112,35 @@ class SandboxReactNativeViewManager :
                 it.getString(i)?.let { name -> modules.add(name) }
             }
         }
-        view.delegate?.allowedTurboModules = modules
+        val delegate = view.delegate ?: return
+        if (delegate.allowedTurboModules == modules) return
+        delegate.allowedTurboModules = modules
+        if (view.childCount > 0) {
+            scheduleLoad(view)
+        }
+    }
+
+    @ReactProp(name = "turboModuleSubstitutions")
+    override fun setTurboModuleSubstitutions(
+        view: SandboxReactNativeView,
+        value: Dynamic,
+    ) {
+        val subs = mutableMapOf<String, String>()
+        if (!value.isNull && value.type == ReadableType.Map) {
+            val map = value.asMap() ?: return
+            val it = map.keySetIterator()
+            while (it.hasNextKey()) {
+                val key = it.nextKey()
+                val v = map.getString(key)
+                if (v != null) subs[key] = v
+            }
+        }
+        val delegate = view.delegate ?: return
+        if (delegate.turboModuleSubstitutions == subs) return
+        delegate.turboModuleSubstitutions = subs
+        if (view.childCount > 0) {
+            scheduleLoad(view)
+        }
     }
 
     @ReactProp(name = "allowedOrigins")
@@ -202,6 +230,7 @@ class SandboxReactNativeViewManager :
                 FrameLayout.LayoutParams.MATCH_PARENT,
             ),
         )
+        view.requestLayout()
     }
 
     private fun dynamicToBundle(dynamic: Dynamic): Bundle? {
