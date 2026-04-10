@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import React, {useId, useState} from 'react'
+import React, {useEffect, useId, useState} from 'react'
 import {
   InputAccessoryView,
   Keyboard,
@@ -13,18 +13,24 @@ import {
 } from 'react-native'
 import {Dirs, FileSystem} from 'react-native-file-access'
 
-// react-native-fs doesn't support TurboModules. Its top-level code accesses
-// NativeModules.RNFSManager constants synchronously, throwing if null.
-// Wrap require() so the app still works when RNFS isn't available.
+// react-native-fs (v2) relies on the legacy NativeModules bridge.
+// On Android NativeModules.RNFSManager is null under the New Architecture so
+// RNFS is only available on iOS (where RN's bridge interop layer keeps it working).
+// See https://github.com/itinance/react-native-fs/issues/1221
 let RNFS: any
-try {
-  RNFS = require('react-native-fs').default ?? require('react-native-fs')
-} catch {
-  RNFS = {DocumentDirectoryPath: Dirs.DocumentDir}
+let rnfsLoadError: string | null = null
+if (Platform.OS === 'ios') {
+  try {
+    const mod = require('react-native-fs')
+    RNFS = mod.default ?? mod
+  } catch (e) {
+    rnfsLoadError = (e as Error).message
+    RNFS = {DocumentDirectoryPath: Dirs.DocumentDir}
+  }
 }
 
 const MODULES = [
-  {key: 'rnfs', label: 'RNFS'},
+  ...(Platform.OS === 'ios' ? ([{key: 'rnfs', label: 'RNFS'}] as const) : []),
   {key: 'file-access', label: 'file-access'},
   {key: 'async-storage', label: 'async-storage'},
 ] as const
@@ -32,15 +38,32 @@ type Module = (typeof MODULES)[number]['key']
 
 interface FileOpsUIProps {
   accentColor?: string
+  initialModule?: Module
+  initialTarget?: string
+  initialContent?: string
+  onStatusChange?: (status: string) => void
+  testIDPrefix?: string
 }
 
-export default function FileOpsUI({accentColor}: FileOpsUIProps) {
+export default function FileOpsUI({
+  accentColor,
+  initialModule = 'file-access',
+  initialTarget = 'secret',
+  initialContent = '',
+  onStatusChange,
+  testIDPrefix = '',
+}: FileOpsUIProps) {
   const isDarkMode = useColorScheme() === 'dark'
-  const [module, setModule] = useState<Module>('rnfs')
-  const [target, setTarget] = useState('secret')
-  const [text, setText] = useState('')
+  const [module, setModule] = useState<Module>(initialModule)
+  const [target, setTarget] = useState(initialTarget)
+  const [text, setText] = useState(initialContent)
   const [status, setStatus] = useState('Ready')
   const accessoryId = useId()
+  const tid = (id: string) => (testIDPrefix ? `${testIDPrefix}-${id}` : id)
+
+  useEffect(() => {
+    onStatusChange?.(status)
+  }, [status, onStatusChange])
 
   const theme = {
     bg: isDarkMode ? '#000' : '#fff',
@@ -60,7 +83,7 @@ export default function FileOpsUI({accentColor}: FileOpsUIProps) {
   const getPath = () => {
     switch (module) {
       case 'rnfs':
-        return `${RNFS.DocumentDirectoryPath}/${target}`
+        return `${RNFS?.DocumentDirectoryPath ?? Dirs.DocumentDir}/${target}`
       case 'file-access':
         return `${Dirs.DocumentDir}/${target}`
       default:
@@ -70,6 +93,10 @@ export default function FileOpsUI({accentColor}: FileOpsUIProps) {
 
   const onWrite = async () => {
     try {
+      if (module === 'rnfs' && rnfsLoadError) {
+        setStatus(`RNFS unavailable: ${rnfsLoadError}`)
+        return
+      }
       setStatus('Writing...')
       switch (module) {
         case 'rnfs':
@@ -90,6 +117,10 @@ export default function FileOpsUI({accentColor}: FileOpsUIProps) {
 
   const onRead = async () => {
     try {
+      if (module === 'rnfs' && rnfsLoadError) {
+        setStatus(`RNFS unavailable: ${rnfsLoadError}`)
+        return
+      }
       setStatus('Reading...')
       let content: string
       switch (module) {
@@ -132,6 +163,7 @@ export default function FileOpsUI({accentColor}: FileOpsUIProps) {
           return (
             <TouchableOpacity
               key={m.key}
+              testID={tid(`seg-${m.key}`)}
               style={[
                 styles.segItem,
                 active && [
@@ -155,6 +187,7 @@ export default function FileOpsUI({accentColor}: FileOpsUIProps) {
       </View>
 
       <TextInput
+        testID={tid('target-input')}
         style={[
           styles.targetInput,
           {
@@ -175,6 +208,7 @@ export default function FileOpsUI({accentColor}: FileOpsUIProps) {
       />
 
       <TextInput
+        testID={tid('content-input')}
         style={[
           styles.contentInput,
           {
@@ -194,18 +228,33 @@ export default function FileOpsUI({accentColor}: FileOpsUIProps) {
 
       <View style={styles.buttonRow}>
         <TouchableOpacity
+          testID={tid('clear-btn')}
+          style={[styles.btn, {backgroundColor: theme.border}]}
+          onPress={() => {
+            setText('')
+            setStatus('Ready')
+          }}>
+          <Text style={styles.btnText}>Clear</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          testID={tid('write-btn')}
           style={[styles.btn, {backgroundColor: theme.accent}]}
           onPress={onWrite}>
           <Text style={styles.btnText}>Write</Text>
         </TouchableOpacity>
         <TouchableOpacity
+          testID={tid('read-btn')}
           style={[styles.btn, {backgroundColor: theme.green}]}
           onPress={onRead}>
           <Text style={styles.btnText}>Read</Text>
         </TouchableOpacity>
       </View>
 
-      <Text style={[styles.status, {color: statusColor()}]} numberOfLines={2}>
+      <Text
+        testID={tid('status-text')}
+        accessibilityLabel={status}
+        style={[styles.status, {color: statusColor()}]}
+        numberOfLines={2}>
         {status}
       </Text>
       <Text style={[styles.path, {color: theme.textSec}]}>{displayPath}</Text>

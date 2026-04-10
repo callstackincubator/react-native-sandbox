@@ -2,6 +2,7 @@ import SandboxReactNativeView from '@callstack/react-native-sandbox'
 import React, {useState} from 'react'
 import {
   Platform,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -14,15 +15,26 @@ import {
 
 import FileOpsUI from './FileOpsUI'
 
-const ASYNC_STORAGE_MODULE =
-  Platform.OS === 'ios' ? 'PlatformLocalStorage' : 'RNCAsyncStorage'
+// iOS async-storage exposes two module names: the legacy bridge name
+// (PlatformLocalStorage) and the TurboModule spec name (RNC_AsyncSQLiteDBStorage).
+// Both must be allowed so the sandbox can access the real module when
+// substitution is OFF, and so the substitution mapping works when ON.
+const ASYNC_STORAGE_MODULES =
+  Platform.OS === 'ios'
+    ? ['RNC_AsyncSQLiteDBStorage', 'PlatformLocalStorage', 'RNCAsyncStorage']
+    : ['RNCAsyncStorage']
 
-const ALL_TURBO_MODULES = ['RNFSManager', 'FileAccess', ASYNC_STORAGE_MODULE]
+const ALL_TURBO_MODULES =
+  Platform.OS === 'ios'
+    ? ['RNFSManager', 'FileAccess', ...ASYNC_STORAGE_MODULES]
+    : ['FileAccess', ...ASYNC_STORAGE_MODULES]
 
 const SANDBOXED_SUBSTITUTIONS: Record<string, string> = {
-  RNFSManager: 'SandboxedRNFSManager',
+  ...(Platform.OS === 'ios' && {RNFSManager: 'SandboxedRNFSManager'}),
   FileAccess: 'SandboxedFileAccess',
-  [ASYNC_STORAGE_MODULE]: 'SandboxedAsyncStorage',
+  ...Object.fromEntries(
+    ASYNC_STORAGE_MODULES.map(m => [m, 'SandboxedAsyncStorage'])
+  ),
 }
 
 function App(): React.JSX.Element {
@@ -64,7 +76,7 @@ function App(): React.JSX.Element {
             </View>
           </View>
 
-          <FileOpsUI accentColor={theme.blue} />
+          <FileOpsUI accentColor={theme.blue} testIDPrefix="host" />
         </View>
 
         {/* ===== SANDBOX ===== */}
@@ -80,7 +92,13 @@ function App(): React.JSX.Element {
           </View>
 
           <View style={styles.switchBar}>
-            <View style={styles.switchRow}>
+            <Pressable
+              testID="substitution-switch"
+              accessibilityLabel={
+                useSubstitution ? 'substitution-on' : 'substitution-off'
+              }
+              style={styles.switchRow}
+              onPress={() => setUseSubstitution(v => !v)}>
               <Text style={[styles.switchLabel, {color: theme.text}]}>
                 Module substitution{' '}
                 <Text style={{color: theme.textSec, fontSize: 12}}>
@@ -92,7 +110,7 @@ function App(): React.JSX.Element {
                 onValueChange={setUseSubstitution}
                 trackColor={{false: theme.border, true: theme.green}}
               />
-            </View>
+            </Pressable>
           </View>
 
           <SandboxReactNativeView

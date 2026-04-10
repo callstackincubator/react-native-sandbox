@@ -20,7 +20,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     let viewController = UIViewController()
     viewController.view = reactNativeFactory.rootViewFactory.view(
-      withModuleName: "App",
+      withModuleName: "MultInstance-FSExperiment",
       initialProperties: [:],
       launchOptions: launchOptions
     )

@@ -18,7 +18,6 @@ class SandboxedModulesPackage : BaseReactPackage() {
 
     override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
         return when (name) {
-            SandboxedRNFSManager.MODULE_NAME -> SandboxedRNFSManager(reactContext)
             SandboxedFileAccess.MODULE_NAME -> SandboxedFileAccess(reactContext)
             SandboxedAsyncStorage.MODULE_NAME -> SandboxedAsyncStorage(reactContext)
             else -> null
@@ -28,11 +27,6 @@ class SandboxedModulesPackage : BaseReactPackage() {
     override fun getReactModuleInfoProvider(): ReactModuleInfoProvider {
         return ReactModuleInfoProvider {
             mapOf(
-                SandboxedRNFSManager.MODULE_NAME to ReactModuleInfo(
-                    SandboxedRNFSManager.MODULE_NAME,
-                    SandboxedRNFSManager.MODULE_NAME,
-                    false, false, false, false, false,
-                ),
                 SandboxedFileAccess.MODULE_NAME to ReactModuleInfo(
                     SandboxedFileAccess.MODULE_NAME,
                     SandboxedFileAccess.MODULE_NAME,

@@ -4,29 +4,41 @@
   "private": true,
   "scripts": {
     "android": "react-native run-android",
-    "ios": "react-native run-ios", 
+    "ios": "react-native run-ios",
     "start": "react-native start",
     "bundle:sandbox": "npx react-native bundle --platform ios --dev false --entry-file sandbox.js --bundle-output ios/sandbox.jsbundle --assets-dest ios/",
     "typecheck": "tsc --noEmit",
-    "jest": "echo 'No tests'"
+    "jest": "echo 'No tests'",
+    "harness": "react-native-harness --harnessRunner ios && react-native-harness --harnessRunner android",
+    "harness:ios": "react-native-harness --harnessRunner ios",
+    "harness:android": "react-native-harness --harnessRunner android"
   },
   "dependencies": {
-    "react": "19.1.0",
-    "react-native": "0.80.1",
     "@callstack/react-native-sandbox": "workspace:*",
     "@react-native-async-storage/async-storage": "^2.1.2",
-    "react-native-fs": "^2.20.0",
-    "react-native-file-access": "^3.1.1"
+    "@react-native/assets-registry": "0.82.1",
+    "@react-native/js-polyfills": "0.82.1",
+    "@react-native/normalize-colors": "0.82.1",
+    "@react-native/virtualized-lists": "0.82.1",
+    "event-target-shim": "^6.0.2",
+    "react": "19.1.1",
+    "react-native": "0.82.1",
+    "react-native-file-access": "^3.1.1",
+    "react-native-fs": "^2.20.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",
     "@babel/runtime": "^7.25.0",
-    "@react-native/babel-preset": "0.80.1",
-    "@react-native/eslint-config": "0.80.1",
-    "@react-native/metro-config": "0.80.1",
-    "@react-native/typescript-config": "0.80.1",
-    "react-test-renderer": "19.1.0"
+    "@react-native-harness/platform-android": "^1.0.0",
+    "@react-native-harness/platform-apple": "^1.0.0",
+    "@react-native-harness/ui": "^1.0.0",
+    "@react-native/babel-preset": "0.82.1",
+    "@react-native/eslint-config": "0.82.1",
+    "@react-native/metro-config": "0.82.1",
+    "@react-native/typescript-config": "0.82.1",
+    "react-native-harness": "^1.0.0",
+    "react-test-renderer": "19.1.1"
   },
   "engines": {
     "node": ">=18"
