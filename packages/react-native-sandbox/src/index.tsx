@@ -16,6 +16,7 @@ import NativeSandboxReactNativeView, {
 } from '../specs/NativeSandboxReactNativeView'
 
 const SANDBOX_TURBOMODULES_WHITELIST = [
+  'NativeDOMCxx',
   'NativeMicrotasksCxx',
   'NativePerformanceCxx',
   'RedBox',
