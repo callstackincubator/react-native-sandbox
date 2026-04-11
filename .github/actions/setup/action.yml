@@ -1,0 +1,36 @@
+name: Setup environment
+description: Install asdf tools and run bun install (repo must already be checked out)
+
+inputs:
+  java-version:
+    description: 'JDK version to install (skipped if empty)'
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Install asdf
+      uses: asdf-vm/actions/setup@v4
+
+    - name: Tools cache
+      id: asdf-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.asdf/
+        key: ${{ runner.os }}-${{ hashFiles('**/.tool-versions') }}
+
+    - name: Install tools from .tool-versions
+      if: steps.asdf-cache.outputs.cache-hit != 'true'
+      uses: asdf-vm/actions/install@v4
+
+    - name: Set up JDK
+      if: inputs.java-version != ''
+      uses: actions/setup-java@v4
+      with:
+        distribution: zulu
+        java-version: ${{ inputs.java-version }}
+
+    - name: Install dependencies
+      shell: bash
+      run: bun install --frozen-lockfile

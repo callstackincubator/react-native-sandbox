@@ -1,14 +1,10 @@
-# File System Access Example
+# File System & Storage Isolation
 
 ![Platform: iOS](https://img.shields.io/badge/platform-iOS-blue.svg)
 
-This example demonstrates how to enable file system access in multi-instance environments by whitelisting the necessary native modules. The application shows how sandboxed React Native instances can be configured to access file system APIs when explicitly allowed.
+This example demonstrates **TurboModule substitutions** — transparently replacing native module implementations inside a sandbox with scoped, per-origin alternatives. The app uses a split-screen layout where the host and sandbox run the same UI, but the sandbox can swap `react-native-fs` (iOS only), `react-native-file-access`, and `@react-native-async-storage/async-storage` for sandboxed implementations that jail file paths and scope storage per origin.
 
-The experiment uses two popular React Native file system libraries:
-- **react-native-fs** - Traditional file system operations
-- **react-native-file-access** - Alternative file system API
-
-The host application creates multiple sandbox instances and demonstrates how to whitelist these modules to enable controlled file system access across instances while maintaining security boundaries.
+> **Note:** `react-native-fs` (v2) relies on the legacy `NativeModules` bridge and does not support TurboModules / New Architecture. On **Android** `NativeModules.RNFSManager` is `null` so RNFS is **disabled** there. On **iOS** it still works thanks to RN's bridge interop layer. See [itinance/react-native-fs#1221](https://github.com/itinance/react-native-fs/issues/1221).
 
 ## Screenshot
 

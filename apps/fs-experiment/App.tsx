@@ -2,222 +2,131 @@ import SandboxReactNativeView from '@callstack/react-native-sandbox'
 import React, {useState} from 'react'
 import {
   Platform,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
+  Switch,
   Text,
-  TextInput,
-  TouchableOpacity,
   useColorScheme,
   View,
 } from 'react-native'
-// File system imports
-import RNFS from 'react-native-fs'
 
-const SHARED_FILE_PATH = `${RNFS.DocumentDirectoryPath}/shared_test_file.txt`
+import FileOpsUI from './FileOpsUI'
+
+// iOS async-storage exposes two module names: the legacy bridge name
+// (PlatformLocalStorage) and the TurboModule spec name (RNC_AsyncSQLiteDBStorage).
+// Both must be allowed so the sandbox can access the real module when
+// substitution is OFF, and so the substitution mapping works when ON.
+const ASYNC_STORAGE_MODULES =
+  Platform.OS === 'ios'
+    ? ['RNC_AsyncSQLiteDBStorage', 'PlatformLocalStorage', 'RNCAsyncStorage']
+    : ['RNCAsyncStorage']
+
+const ALL_TURBO_MODULES =
+  Platform.OS === 'ios'
+    ? ['RNFSManager', 'FileAccess', ...ASYNC_STORAGE_MODULES]
+    : ['FileAccess', ...ASYNC_STORAGE_MODULES]
+
+const SANDBOXED_SUBSTITUTIONS: Record<string, string> = {
+  ...(Platform.OS === 'ios' && {RNFSManager: 'SandboxedRNFSManager'}),
+  FileAccess: 'SandboxedFileAccess',
+  ...Object.fromEntries(
+    ASYNC_STORAGE_MODULES.map(m => [m, 'SandboxedAsyncStorage'])
+  ),
+}
 
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark'
-  const [textContent, setTextContent] = useState<string>('')
-  const [status, setStatus] = useState<string>('Ready')
+  const [useSubstitution, setUseSubstitution] = useState(false)
 
   const theme = {
-    background: isDarkMode ? '#000000' : '#ffffff',
+    bg: isDarkMode ? '#000' : '#fff',
     surface: isDarkMode ? '#1c1c1e' : '#f2f2f7',
-    primary: isDarkMode ? '#007aff' : '#007aff',
-    secondary: isDarkMode ? '#34c759' : '#34c759',
-    text: isDarkMode ? '#ffffff' : '#000000',
-    textSecondary: isDarkMode ? '#8e8e93' : '#3c3c43',
-    border: isDarkMode ? '#38383a' : '#c6c6c8',
-    success: '#34c759',
-    error: '#ff3b30',
-  }
-
-  const writeFile = async () => {
-    try {
-      setStatus('Writing file...')
-      await RNFS.writeFile(SHARED_FILE_PATH, textContent, 'utf8')
-      setStatus(`Successfully wrote: "${textContent}"`)
-    } catch (error) {
-      setStatus(`Write error: ${(error as Error).message}`)
-    }
-  }
-
-  const readFile = async () => {
-    try {
-      setStatus('Reading file...')
-      const content = await RNFS.readFile(SHARED_FILE_PATH, 'utf8')
-      setTextContent(content)
-      setStatus(`Successfully read: "${content}"`)
-    } catch (error) {
-      setStatus(`Read error: ${(error as Error).message}`)
-    }
-  }
-
-  const getStatusStyle = () => {
-    if (status.includes('error')) {
-      return {color: theme.error}
-    }
-    if (status.includes('Successfully')) {
-      return {color: theme.success}
-    }
-    return {color: theme.textSecondary}
+    text: isDarkMode ? '#fff' : '#000',
+    textSec: isDarkMode ? '#8e8e93' : '#6c6c70',
+    border: isDarkMode ? '#38383a' : '#d1d1d6',
+    blue: '#007aff',
+    green: '#34c759',
+    orange: '#ff9500',
   }
 
   return (
-    <SafeAreaView
-      style={[styles.container, {backgroundColor: theme.background}]}>
+    <SafeAreaView style={[styles.root, {backgroundColor: theme.bg}]}>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={theme.background}
+        backgroundColor={theme.bg}
       />
+
       <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={{backgroundColor: theme.background}}
-        showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={[styles.header, {backgroundColor: theme.surface}]}>
-          <Text style={[styles.headerTitle, {color: theme.text}]}>
-            File System Sandbox Demo
-          </Text>
-          <Text style={[styles.headerSubtitle, {color: theme.textSecondary}]}>
-            Multi-instance file system access testing
-          </Text>
+        style={{flex: 1}}
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets>
+        {/* ===== HOST ===== */}
+        <View style={[styles.section, {borderBottomColor: theme.border}]}>
+          <View
+            style={[styles.sectionHeader, {backgroundColor: theme.surface}]}>
+            <Text style={[styles.sectionTitle, {color: theme.text}]}>
+              Host App
+            </Text>
+            <View style={[styles.badge, {backgroundColor: theme.blue}]}>
+              <Text style={styles.badgeText}>HOST</Text>
+            </View>
+          </View>
+
+          <FileOpsUI accentColor={theme.blue} testIDPrefix="host" />
         </View>
 
-        <View style={styles.content}>
-          {/* Host Application Section */}
+        {/* ===== SANDBOX ===== */}
+        <View style={styles.section}>
           <View
-            style={[
-              styles.card,
-              {backgroundColor: theme.surface, borderColor: theme.border},
-            ]}>
-            <View style={styles.cardHeader}>
-              <Text style={[styles.cardTitle, {color: theme.text}]}>
-                Host Application
-              </Text>
-              <View style={[styles.badge, {backgroundColor: theme.primary}]}>
-                <Text style={styles.badgeText}>Primary</Text>
-              </View>
-            </View>
-
-            <TextInput
-              style={[
-                styles.textInput,
-                {
-                  color: theme.text,
-                  backgroundColor: theme.background,
-                  borderColor: theme.border,
-                },
-              ]}
-              value={textContent}
-              onChangeText={setTextContent}
-              placeholder="Enter text to write to file..."
-              placeholderTextColor={theme.textSecondary}
-              multiline
-            />
-
-            <View style={styles.buttonGroup}>
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  styles.primaryButton,
-                  {backgroundColor: theme.primary},
-                ]}
-                onPress={writeFile}>
-                <Text style={styles.buttonText}>Write File</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  styles.secondaryButton,
-                  {backgroundColor: theme.secondary},
-                ]}
-                onPress={readFile}>
-                <Text style={styles.buttonText}>Read File</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View
-              style={[
-                styles.statusContainer,
-                {backgroundColor: theme.background},
-              ]}>
-              <Text style={[styles.statusLabel, {color: theme.textSecondary}]}>
-                Status:
-              </Text>
-              <Text style={[styles.statusText, getStatusStyle()]}>
-                {status}
-              </Text>
-            </View>
-
-            <Text style={[styles.pathText, {color: theme.textSecondary}]}>
-              {SHARED_FILE_PATH}
+            style={[styles.sectionHeader, {backgroundColor: theme.surface}]}>
+            <Text style={[styles.sectionTitle, {color: theme.text}]}>
+              Sandbox
             </Text>
+            <View style={[styles.badge, {backgroundColor: theme.orange}]}>
+              <Text style={styles.badgeText}>SANDBOXED</Text>
+            </View>
           </View>
 
-          {/* Sandbox Sections */}
-          <View
-            style={[
-              styles.card,
-              {backgroundColor: theme.surface, borderColor: theme.border},
-            ]}>
-            <View style={styles.cardHeader}>
-              <Text style={[styles.cardTitle, {color: theme.text}]}>
-                Sandbox: react-native-fs
+          <View style={styles.switchBar}>
+            <Pressable
+              testID="substitution-switch"
+              accessibilityLabel={
+                useSubstitution ? 'substitution-on' : 'substitution-off'
+              }
+              style={styles.switchRow}
+              onPress={() => setUseSubstitution(v => !v)}>
+              <Text style={[styles.switchLabel, {color: theme.text}]}>
+                Module substitution{' '}
+                <Text style={{color: theme.textSec, fontSize: 12}}>
+                  {useSubstitution ? '(safe)' : '(off)'}
+                </Text>
               </Text>
-              <View style={[styles.badge, styles.sandboxBadge]}>
-                <Text style={styles.badgeText}>Sandbox</Text>
-              </View>
-            </View>
-            <SandboxReactNativeView
-              style={[
-                styles.sandbox,
-                {backgroundColor: theme.background, borderColor: theme.border},
-              ]}
-              componentName={'AppFS'} // componentName from sandbox-fs.js
-              jsBundleSource="sandbox-fs" // bundle name for query from metro
-              allowedTurboModules={['RNFSManager', 'FileReaderModule']}
-              onMessage={message => {
-                console.log('Host received message from sandbox:', message)
-              }}
-              onError={error => {
-                console.log('Host received error from sandbox:', error)
-              }}
-            />
+              <Switch
+                value={useSubstitution}
+                onValueChange={setUseSubstitution}
+                trackColor={{false: theme.border, true: theme.green}}
+              />
+            </Pressable>
           </View>
 
-          <View
-            style={[
-              styles.card,
-              {backgroundColor: theme.surface, borderColor: theme.border},
-            ]}>
-            <View style={styles.cardHeader}>
-              <Text style={[styles.cardTitle, {color: theme.text}]}>
-                Sandbox: react-native-file-access
-              </Text>
-              <View style={[styles.badge, styles.sandboxBadge]}>
-                <Text style={styles.badgeText}>Sandbox</Text>
-              </View>
-            </View>
-            <SandboxReactNativeView
-              style={[
-                styles.sandbox,
-                {backgroundColor: theme.background, borderColor: theme.border},
-              ]}
-              componentName={'AppFileAccess'} // componentName from sandbox-file-access.js
-              allowedTurboModules={['FileAccess']}
-              jsBundleSource="sandbox-file-access" // bundle name for query from metro
-              onMessage={message => {
-                console.log('Host received message from sandbox:', message)
-              }}
-              onError={error => {
-                console.log('Host received error from sandbox:', error)
-              }}
-            />
-          </View>
+          <SandboxReactNativeView
+            style={styles.sandboxView}
+            origin="sandbox.fs-experiment.demo"
+            componentName="SandboxApp"
+            jsBundleSource="sandbox"
+            allowedTurboModules={ALL_TURBO_MODULES}
+            turboModuleSubstitutions={
+              useSubstitution ? SANDBOXED_SUBSTITUTIONS : undefined
+            }
+            onMessage={msg => console.log('Host received from sandbox:', msg)}
+            onError={err =>
+              console.log('Host received error from sandbox:', err)
+            }
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -225,138 +134,51 @@ function App(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 1},
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+  section: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    marginTop: 4,
-    fontWeight: '400',
-  },
-  content: {
-    padding: 16,
-  },
-  card: {
-    marginBottom: 20,
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  cardHeader: {
+  sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    flex: 1,
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
   },
   badge: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingVertical: 3,
+    borderRadius: 5,
   },
   badgeText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
-  sandboxBadge: {
-    backgroundColor: '#ff6b35',
+  switchBar: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
   },
-  textInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 16,
-    minHeight: 100,
-    textAlignVertical: 'top',
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  buttonGroup: {
+  switchRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
   },
-  primaryButton: {
-    // backgroundColor set dynamically
-  },
-  secondaryButton: {
-    // backgroundColor set dynamically
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  statusContainer: {
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  statusLabel: {
+  switchLabel: {
     fontSize: 14,
     fontWeight: '500',
-    marginBottom: 4,
+    flex: 1,
   },
-  statusText: {
-    fontSize: 14,
-    fontStyle: 'italic',
-    lineHeight: 20,
-  },
-  pathText: {
-    fontSize: 12,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    opacity: 0.8,
-    lineHeight: 16,
-  },
-  sandbox: {
-    height: 320,
-    borderWidth: 1,
-    borderRadius: 8,
+  sandboxView: {
+    height: 400,
+    marginBottom: 8,
   },
 })
 

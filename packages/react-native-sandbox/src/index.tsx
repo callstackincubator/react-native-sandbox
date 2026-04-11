@@ -16,6 +16,7 @@ import NativeSandboxReactNativeView, {
 } from '../specs/NativeSandboxReactNativeView'
 
 const SANDBOX_TURBOMODULES_WHITELIST = [
+  'NativeDOMCxx',
   'NativeMicrotasksCxx',
   'NativePerformanceCxx',
   'RedBox',
@@ -101,6 +102,15 @@ export interface SandboxReactNativeViewProps extends ViewProps {
    * These will be merged with the default whitelist for enhanced functionality.
    */
   allowedTurboModules?: string[]
+
+  /**
+   * Map of TurboModule substitutions for this sandbox instance.
+   * Keys are the module names that sandbox JS code requests,
+   * values are the actual native module names to resolve instead.
+   * Substituted modules are implicitly allowed and don't need to be
+   * listed in allowedTurboModules.
+   */
+  turboModuleSubstitutions?: Record<string, string>
 
   /**
    * Array of sandbox origins that are allowed to send messages to this sandbox.

@@ -20,7 +20,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     let viewController = UIViewController()
     viewController.view = reactNativeFactory.rootViewFactory.view(
-      withModuleName: "App",
+      withModuleName: "MultInstance-FSExperiment",
       initialProperties: [:],
       launchOptions: launchOptions
     )
@@ -42,7 +42,7 @@ class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
 #if DEBUG
     RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
 #else
-    Bundle.main.url(forResource: jsBundleName, withExtension: "jsbundle")
+    Bundle.main.url(forResource: "main", withExtension: "jsbundle")
 #endif
   }
 }
