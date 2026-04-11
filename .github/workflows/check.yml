@@ -150,26 +150,26 @@ jobs:
         working-directory: apps/fs-experiment
         run: npx react-native build-ios --mode Debug
 
-      - name: Boot simulator
-        run: |
-          UDID=$(xcrun simctl list devices available \
-            | grep "$HARNESS_IOS_DEVICE" \
-            | head -1 \
-            | grep -oE '[0-9A-Fa-f-]{36}')
-          [ -n "$UDID" ] || { echo "No simulator found for $HARNESS_IOS_DEVICE"; exit 1; }
-          xcrun simctl boot "$UDID" || true
-          echo "SIMULATOR_UDID=$UDID" >> "$GITHUB_ENV"
-
-      - name: Install app on simulator
+      - name: Find built app
+        id: app-path
         run: |
           APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData \
             -name "MultInstance-FSExperiment.app" \
             -path "*/Debug-iphonesimulator/*" \
             | head -1)
-          xcrun simctl install "$SIMULATOR_UDID" "$APP_PATH"
+          echo "path=$APP_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Boot simulator & install app
+        id: simulator
+        uses: ./.github/actions/boot-simulator
+        with:
+          device: ${{ env.HARNESS_IOS_DEVICE }}
+          app-path: ${{ steps.app-path.outputs.path }}
 
       - name: Run harness tests (iOS)
         working-directory: apps/fs-experiment
+        env:
+          HARNESS_IOS_VERSION: ${{ steps.simulator.outputs.ios-version }}
         run: bun run harness:ios
 
   harness-android:

@@ -1,0 +1,130 @@
+name: Boot iOS Simulator
+description: >
+  Find, boot, and optionally install an app on an iOS simulator.
+  When force=false (default), picks the closest available device
+  matching the requested name/version.
+
+inputs:
+  device:
+    description: 'Simulator device name (e.g. "iPhone 16 Pro")'
+    required: true
+  ios-version:
+    description: 'Preferred iOS version (e.g. "18.4"). When force=false the closest available version is used.'
+    required: false
+    default: ''
+  force:
+    description: 'If true, fail when the exact device + version combo is not found.'
+    required: false
+    default: 'false'
+  app-path:
+    description: 'Path to .app bundle to install after boot. Skipped if empty.'
+    required: false
+    default: ''
+
+outputs:
+  udid:
+    description: 'UDID of the booted simulator'
+    value: ${{ steps.boot.outputs.udid }}
+  ios-version:
+    description: 'Actual iOS version of the booted simulator'
+    value: ${{ steps.boot.outputs.ios-version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Boot simulator
+      id: boot
+      uses: actions/github-script@v7
+      env:
+        INPUT_DEVICE: ${{ inputs.device }}
+        INPUT_IOS_VERSION: ${{ inputs.ios-version }}
+        INPUT_FORCE: ${{ inputs.force }}
+        INPUT_APP_PATH: ${{ inputs.app-path }}
+      with:
+        script: |
+          const { execSync } = require('child_process');
+
+          const device = process.env.INPUT_DEVICE;
+          const wantVersion = process.env.INPUT_IOS_VERSION || '';
+          const force = process.env.INPUT_FORCE === 'true';
+          const appPath = process.env.INPUT_APP_PATH || '';
+
+          const raw = execSync('xcrun simctl list devices available --json', {
+            encoding: 'utf-8',
+          });
+          const { devices } = JSON.parse(raw);
+
+          // Flatten into [{ name, udid, version }]
+          const candidates = [];
+          for (const [runtime, list] of Object.entries(devices)) {
+            const m = runtime.match(/iOS[- ]([\d-]+)/);
+            if (!m) continue;
+            const version = m[1].replace(/-/g, '.');
+            for (const d of list) {
+              if (d.name === device && d.isAvailable) {
+                candidates.push({ name: d.name, udid: d.udid, version });
+              }
+            }
+          }
+
+          if (candidates.length === 0) {
+            core.setFailed(`No available simulator found for "${device}"`);
+            return;
+          }
+
+          let pick;
+
+          if (wantVersion) {
+            pick = candidates.find(c => c.version === wantVersion);
+            if (!pick && force) {
+              core.setFailed(
+                `Exact match "${device}" (iOS ${wantVersion}) not found. ` +
+                `Available: ${candidates.map(c => c.version).join(', ')}`
+              );
+              return;
+            }
+            if (!pick) {
+              // Pick closest version by sorting by distance to requested
+              const wanted = wantVersion.split('.').map(Number);
+              candidates.sort((a, b) => {
+                const va = a.version.split('.').map(Number);
+                const vb = b.version.split('.').map(Number);
+                const distA = Math.abs(va[0] - wanted[0]) * 1000 + Math.abs((va[1] || 0) - (wanted[1] || 0));
+                const distB = Math.abs(vb[0] - wanted[0]) * 1000 + Math.abs((vb[1] || 0) - (wanted[1] || 0));
+                return distA - distB;
+              });
+              pick = candidates[0];
+              core.warning(
+                `iOS ${wantVersion} not available for "${device}", ` +
+                `using iOS ${pick.version} instead`
+              );
+            }
+          } else {
+            // No version preference — pick the latest
+            candidates.sort((a, b) => {
+              const va = a.version.split('.').map(Number);
+              const vb = b.version.split('.').map(Number);
+              return (vb[0] - va[0]) * 1000 + (vb[1] || 0) - (va[1] || 0);
+            });
+            pick = candidates[0];
+          }
+
+          core.info(`Booting ${pick.name} (iOS ${pick.version}) — ${pick.udid}`);
+          try {
+            execSync(`xcrun simctl boot "${pick.udid}"`, { stdio: 'inherit' });
+          } catch {
+            core.info('Simulator already booted or boot returned non-zero (continuing)');
+          }
+
+          core.info('Waiting for simulator to finish booting…');
+          execSync(`xcrun simctl bootstatus "${pick.udid}" -b`, { stdio: 'inherit' });
+
+          if (appPath) {
+            core.info(`Installing ${appPath}`);
+            execSync(`xcrun simctl install "${pick.udid}" "${appPath}"`, {
+              stdio: 'inherit',
+            });
+          }
+
+          core.setOutput('udid', pick.udid);
+          core.setOutput('ios-version', pick.version);
