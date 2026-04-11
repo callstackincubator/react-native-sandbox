@@ -640,7 +640,6 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
           jsi::Function jsonStringify = jsonObject.getPropertyAsFunction(rt, "stringify");
           jsi::Value jsonResult = jsonStringify.call(rt, messageArg);
           std::string messageJson = jsonResult.getString(rt).utf8(rt);
-          NSString *messageNS = [NSString stringWithUTF8String:messageJson.c_str()];
 
           // Route message to specific sandbox
           BOOL success = [self routeMessage:messageJson toSandbox:targetOrigin];

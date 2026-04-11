@@ -60,6 +60,10 @@ RCT_EXPORT_MODULE(SandboxedFileAccess)
                      requestedName:(NSString *)requestedName
                       resolvedName:(NSString *)resolvedName
 {
+    if (!origin) {
+        NSLog(@"[SandboxedFileAccess] ERROR: origin is nil, refusing to configure");
+        return;
+    }
     NSLog(@"[SandboxedFileAccess] Configuring for origin '%@'", origin);
     [self _setupDirectoriesForOrigin:origin];
 }

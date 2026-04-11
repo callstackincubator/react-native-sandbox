@@ -69,6 +69,10 @@ RCT_EXPORT_MODULE(SandboxedRNFSManager)
                      requestedName:(NSString *)requestedName
                       resolvedName:(NSString *)resolvedName
 {
+    if (!origin) {
+        NSLog(@"[SandboxedRNFSManager] ERROR: origin is nil, refusing to configure");
+        return;
+    }
     NSLog(@"[SandboxedRNFSManager] Configuring for origin '%@'", origin);
     [self _setupDirectoriesForOrigin:origin];
 }

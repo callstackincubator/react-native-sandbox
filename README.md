@@ -174,7 +174,7 @@ We're actively working on expanding the capabilities of `react-native-sandbox`. 
 - [x] **TurboModule Substitutions** - Replace native module implementations per sandbox
   - Configurable via `turboModuleSubstitutions` prop (JS/TS only)
   - Sandbox-aware modules receive origin context for per-instance scoping
-  - Supports both TurboModules (new arch) and legacy bridge modules
+  - TurboModules (New Architecture / Fabric) only
 - [x] **Storage & File System Isolation** - Secure data partitioning
   - Per-sandbox AsyncStorage isolation via scoped storage directories
   - Sandboxed file system access (react-native-fs, react-native-file-access) with path jailing

@@ -597,6 +597,10 @@ RCT_EXPORT_METHOD(getAllKeys:(RCTResponseSenderBlock)callback)
                      requestedName:(NSString *)requestedName
                       resolvedName:(NSString *)resolvedName
 {
+    if (!origin) {
+        NSLog(@"[SandboxedRNCAsyncStorage] ERROR: origin is nil, refusing to configure");
+        return;
+    }
     NSString *appSupport = NSSearchPathForDirectoriesInDomains(
         NSApplicationSupportDirectory, NSUserDomainMask, YES).firstObject;
     NSString *bundleId = [[NSBundle mainBundle] bundleIdentifier] ?: @"com.unknown";
