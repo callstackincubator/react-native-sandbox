@@ -16,9 +16,9 @@ class SandboxReactNativeView(
     var pendingComponentName: String? = null
     var pendingInitialProperties: Bundle? = null
     var pendingLaunchOptions: Bundle? = null
-    var loadScheduled: Boolean = false
-    var needsLoad: Boolean = false
-    var onAttachLoadCallback: (() -> Unit)? = null
+    internal var loadScheduled: Boolean = false
+    internal var needsLoad: Boolean = false
+    internal var onAttachLoadCallback: (() -> Unit)? = null
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
