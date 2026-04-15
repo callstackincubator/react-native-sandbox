@@ -36,7 +36,6 @@ const SANDBOX_TURBOMODULES_WHITELIST = [
   'AccessibilityManager',
   'LinkingManager',
   'BlobModule',
-  'LogBox',
   'Appearance',
   'ReactDevToolsRuntimeSettingsModule',
   'NativeReactNativeFeatureFlagsCxx',
