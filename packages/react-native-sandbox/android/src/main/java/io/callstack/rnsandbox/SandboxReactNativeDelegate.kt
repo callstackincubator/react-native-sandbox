@@ -387,7 +387,7 @@ class SandboxReactNativeDelegate(
          * On Android 12 and below, Context.registerComponentCallbacks() delegates to
          * getApplicationContext().registerComponentCallbacks(). Since getApplicationContext()
          * returns `this` in SandboxContextWrapper, that causes infinite recursion and a
-         * StackOverflowError. Android 13+ fixed this in ContextWrapper by delegating to mBase 
+         * StackOverflowError. Android 13+ fixed this in ContextWrapper by delegating to mBase
          * directly. We mirror that fix here to support older platforms.
          */
         override fun registerComponentCallbacks(callback: android.content.ComponentCallbacks) {
