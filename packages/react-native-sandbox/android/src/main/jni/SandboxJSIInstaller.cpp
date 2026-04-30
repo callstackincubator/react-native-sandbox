@@ -1,5 +1,6 @@
 #include "ISandboxDelegate.h"
 #include "SandboxBindingsInstaller.h"
+#include "SandboxLogBox.h"
 #include "SandboxRegistry.h"
 
 #include <android/log.h>
@@ -376,6 +377,8 @@ jlong installSandboxJSIBindings(
     LOGW("Failed to setup error handler: %s", e.what());
   }
 
+  rnsandbox::disableFuseboxLogBoxToast(runtime);
+
   // Register in C++ SandboxRegistry if origin is set
   {
     JNIEnv* jniEnv = getJNIEnv();
@@ -499,6 +502,14 @@ Java_io_callstack_rnsandbox_SandboxJSIInstaller_nativeInstallErrorHandler(
     setupErrorHandler(*state->runtime, std::weak_ptr<SandboxJSIState>(state));
   } catch (const std::exception& e) {
     LOGW("Failed to setup error handler post-bundle: %s", e.what());
+  }
+
+  try {
+    // Redundant with the pre-bundle call in installSandboxJSIBindings,
+    // kept as a safety net for edge cases where the flag gets re-set.
+    rnsandbox::disableFuseboxLogBoxToast(*state->runtime);
+  } catch (const std::exception& e) {
+    LOGW("Failed to disable LogBox: %s", e.what());
   }
 }
 

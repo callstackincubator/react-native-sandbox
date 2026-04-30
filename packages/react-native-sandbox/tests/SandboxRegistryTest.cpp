@@ -184,6 +184,75 @@ TEST_F(SandboxRegistryTest, EdgeCases) {
   EXPECT_FALSE(registry.isPermittedFrom("test", ""));
 }
 
+TEST_F(SandboxRegistryTest, AllowedOriginsOverwriteOnReRegistration) {
+  auto& registry = SandboxRegistry::getInstance();
+  auto delegate1 = std::make_shared<StrictMock<MockSandboxDelegate>>();
+  auto delegate2 = std::make_shared<StrictMock<MockSandboxDelegate>>();
+
+  std::set<std::string> firstOrigins = {"allowed-a"};
+  registry.registerSandbox("shared-origin", delegate1, firstOrigins);
+  EXPECT_TRUE(registry.isPermittedFrom("shared-origin", "allowed-a"));
+  EXPECT_FALSE(registry.isPermittedFrom("shared-origin", "allowed-b"));
+
+  std::set<std::string> secondOrigins = {"allowed-b"};
+  registry.registerSandbox("shared-origin", delegate2, secondOrigins);
+
+  // Second registration overwrites the allowedOrigins for the whole origin
+  EXPECT_FALSE(registry.isPermittedFrom("shared-origin", "allowed-a"));
+  EXPECT_TRUE(registry.isPermittedFrom("shared-origin", "allowed-b"));
+
+  // Both delegates are still registered
+  auto all = registry.findAll("shared-origin");
+  EXPECT_EQ(all.size(), 2u);
+}
+
+TEST_F(SandboxRegistryTest, UnregisterDelegateWithUnknownDelegateIsNoOp) {
+  auto& registry = SandboxRegistry::getInstance();
+  auto registered = std::make_shared<StrictMock<MockSandboxDelegate>>();
+  auto unknown = std::make_shared<StrictMock<MockSandboxDelegate>>();
+
+  std::set<std::string> allowedOrigins = {"other"};
+  registry.registerSandbox("origin", registered, allowedOrigins);
+
+  // Unregistering a delegate that was never registered should be a no-op
+  registry.unregisterDelegate("origin", unknown);
+
+  auto all = registry.findAll("origin");
+  EXPECT_EQ(all.size(), 1u);
+  EXPECT_EQ(all[0], registered);
+
+  // Unregistering from a non-existent origin should also be a no-op
+  registry.unregisterDelegate("nonexistent", registered);
+}
+
+TEST_F(SandboxRegistryTest, FindAllWithNonExistentOrigin) {
+  auto& registry = SandboxRegistry::getInstance();
+
+  auto result = registry.findAll("never-registered");
+  EXPECT_TRUE(result.empty());
+}
+
+TEST_F(SandboxRegistryTest, ResetReleasesSharedPtrReferences) {
+  auto& registry = SandboxRegistry::getInstance();
+  auto delegate = std::make_shared<StrictMock<MockSandboxDelegate>>();
+
+  std::set<std::string> allowedOrigins = {"other"};
+  registry.registerSandbox("origin-a", delegate, allowedOrigins);
+
+  // Registry holds a reference, so use_count should be > 1
+  EXPECT_GT(delegate.use_count(), 1);
+
+  registry.reset();
+
+  // After reset, the registry should have released its reference
+  EXPECT_EQ(delegate.use_count(), 1);
+
+  // Registry should be empty
+  EXPECT_EQ(registry.find("origin-a"), nullptr);
+  EXPECT_TRUE(registry.findAll("origin-a").empty());
+  EXPECT_FALSE(registry.isPermittedFrom("origin-a", "other"));
+}
+
 TEST_F(SandboxRegistryTest, ThreadSafety) {
   auto& registry = SandboxRegistry::getInstance();
   const int numThreads = 4;

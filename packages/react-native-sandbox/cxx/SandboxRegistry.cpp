@@ -1,6 +1,5 @@
 #include "SandboxRegistry.h"
 #include <algorithm>
-#include <iostream>
 
 namespace rnsandbox {
 

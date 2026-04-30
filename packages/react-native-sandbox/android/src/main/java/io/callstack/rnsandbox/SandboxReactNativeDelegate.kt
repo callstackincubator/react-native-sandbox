@@ -437,7 +437,7 @@ class SandboxReactNativeDelegate(
                         return module
                     }
                 }
-                Log.w(TAG, "Substitution target '$resolvedName' not found in any package for '$name'")
+                Log.d(TAG, "Substitution target '$resolvedName' not found in any package for '$name'")
                 return null
             }
 

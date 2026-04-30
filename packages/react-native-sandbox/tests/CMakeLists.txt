@@ -43,7 +43,6 @@ target_link_libraries(${TEST_EXECUTABLE_NAME}
 target_compile_options(${TEST_EXECUTABLE_NAME} PRIVATE
     -Wall
     -Wextra
-    -std=c++17
 )
 
 enable_testing()

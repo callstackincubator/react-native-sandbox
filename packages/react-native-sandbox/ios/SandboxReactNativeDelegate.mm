@@ -28,6 +28,7 @@
 #include "ISandboxAwareModule.h"
 #import "RCTSandboxAwareModule.h"
 #include "SandboxDelegateWrapper.h"
+#include "SandboxLogBox.h"
 #include "SandboxRegistry.h"
 #import "StubTurboModuleCxx.h"
 
@@ -339,6 +340,15 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
     facebook::react::defineReadOnlyGlobal(runtime, "postMessage", [self createPostMessageFunction:runtime]);
     facebook::react::defineReadOnlyGlobal(runtime, "setOnMessage", [self createSetOnMessageFunction:runtime]);
     [self setupErrorHandler:runtime];
+    // Must run post-bundle (in the buffered executor) because:
+    // 1. installConsoleHandler sets __FUSEBOX = true during runtime init
+    // 2. didInitializeRuntime: fires BEFORE installConsoleHandler finishes
+    // 3. So clearing in didInitializeRuntime: is a no-op — Fusebox re-sets it
+    // 4. The buffered executor flushes AFTER bundle eval, guaranteeing the
+    //    flag is cleared after Fusebox sets it.
+    // For warnings during bundle eval, sandbox JS should call
+    // LogBox.ignoreAllLogs() or LogBox.uninstall() to prevent the toast.
+    rnsandbox::disableFuseboxLogBoxToast(runtime);
   }];
 }
 
