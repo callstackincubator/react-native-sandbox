@@ -15,6 +15,7 @@ import App from '../App'
 const isIOS = Platform.OS === 'ios'
 const TEST_TIMEOUT = 60_000
 const RENDER_TIMEOUT = 10_000
+const SANDBOX_READY_TIMEOUT = 90_000
 
 async function sleep(ms: number) {
   return new Promise(r => setTimeout(r, ms))
@@ -85,8 +86,10 @@ describe('Substitution OFF', () => {
   beforeAll(async () => {
     blockCleanup = true
     await render(<App />, {timeout: RENDER_TIMEOUT})
-    await sleep(4000)
-  }, 30_000)
+    await screen.findByTestId('sandbox-seg-file-access', {
+      timeout: SANDBOX_READY_TIMEOUT,
+    })
+  }, SANDBOX_READY_TIMEOUT + RENDER_TIMEOUT)
 
   if (isIOS) {
     it(
