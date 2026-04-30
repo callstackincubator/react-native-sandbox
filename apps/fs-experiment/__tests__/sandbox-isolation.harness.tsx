@@ -86,7 +86,7 @@ describe('Substitution OFF', () => {
   beforeAll(async () => {
     blockCleanup = true
     await render(<App />, {timeout: RENDER_TIMEOUT})
-    await screen.findByTestId('sandbox-seg-file-access', {
+    await screen.findByTestId('sandbox-ready', {
       timeout: SANDBOX_READY_TIMEOUT,
     })
   }, SANDBOX_READY_TIMEOUT + RENDER_TIMEOUT)

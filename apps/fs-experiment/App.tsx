@@ -40,6 +40,7 @@ const SANDBOXED_SUBSTITUTIONS: Record<string, string> = {
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark'
   const [useSubstitution, setUseSubstitution] = useState(false)
+  const [sandboxReady, setSandboxReady] = useState(false)
 
   const theme = {
     bg: isDarkMode ? '#000' : '#fff',
@@ -54,6 +55,7 @@ function App(): React.JSX.Element {
 
   return (
     <SafeAreaView style={[styles.root, {backgroundColor: theme.bg}]}>
+      {sandboxReady && <View testID="sandbox-ready" style={styles.hidden} />}
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={theme.bg}
@@ -122,7 +124,10 @@ function App(): React.JSX.Element {
             turboModuleSubstitutions={
               useSubstitution ? SANDBOXED_SUBSTITUTIONS : undefined
             }
-            onMessage={msg => console.log('Host received from sandbox:', msg)}
+            onMessage={msg => {
+              if (msg.cmd === 'ready') setSandboxReady(true)
+              console.log('Host received from sandbox:', msg)
+            }}
             onError={err =>
               console.log('Host received error from sandbox:', err)
             }
@@ -136,6 +141,10 @@ function App(): React.JSX.Element {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  hidden: {
+    width: 0,
+    height: 0,
   },
   section: {
     borderBottomWidth: StyleSheet.hairlineWidth,
