@@ -55,7 +55,6 @@ function App(): React.JSX.Element {
 
   return (
     <SafeAreaView style={[styles.root, {backgroundColor: theme.bg}]}>
-      {sandboxReady && <View testID="sandbox-ready" style={styles.hidden} />}
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={theme.bg}
@@ -116,6 +115,7 @@ function App(): React.JSX.Element {
           </View>
 
           <SandboxReactNativeView
+            testID={sandboxReady ? 'sandbox-ready' : undefined}
             style={styles.sandboxView}
             origin="sandbox.fs-experiment.demo"
             componentName="SandboxApp"
@@ -141,10 +141,6 @@ function App(): React.JSX.Element {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-  },
-  hidden: {
-    width: 0,
-    height: 0,
   },
   section: {
     borderBottomWidth: StyleSheet.hairlineWidth,
