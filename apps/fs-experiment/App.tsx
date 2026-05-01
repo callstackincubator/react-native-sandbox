@@ -40,6 +40,7 @@ const SANDBOXED_SUBSTITUTIONS: Record<string, string> = {
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark'
   const [useSubstitution, setUseSubstitution] = useState(false)
+  const [sandboxReady, setSandboxReady] = useState(false)
 
   const theme = {
     bg: isDarkMode ? '#000' : '#fff',
@@ -114,6 +115,7 @@ function App(): React.JSX.Element {
           </View>
 
           <SandboxReactNativeView
+            testID={sandboxReady ? 'sandbox-ready' : undefined}
             style={styles.sandboxView}
             origin="sandbox.fs-experiment.demo"
             componentName="SandboxApp"
@@ -122,7 +124,12 @@ function App(): React.JSX.Element {
             turboModuleSubstitutions={
               useSubstitution ? SANDBOXED_SUBSTITUTIONS : undefined
             }
-            onMessage={msg => console.log('Host received from sandbox:', msg)}
+            onMessage={msg => {
+              const payload =
+                typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data
+              if (payload?.cmd === 'ready') setSandboxReady(true)
+              console.log('Host received from sandbox:', msg)
+            }}
             onError={err =>
               console.log('Host received error from sandbox:', err)
             }
