@@ -125,7 +125,9 @@ function App(): React.JSX.Element {
               useSubstitution ? SANDBOXED_SUBSTITUTIONS : undefined
             }
             onMessage={msg => {
-              if (msg.cmd === 'ready') setSandboxReady(true)
+              const payload =
+                typeof msg.data === 'string' ? JSON.parse(msg.data) : msg.data
+              if (payload?.cmd === 'ready') setSandboxReady(true)
               console.log('Host received from sandbox:', msg)
             }}
             onError={err =>
