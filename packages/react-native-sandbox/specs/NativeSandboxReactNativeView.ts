@@ -69,6 +69,13 @@ export interface NativeProps extends ViewProps {
   /** Array of sandbox origins that are allowed to send messages to this sandbox */
   allowedOrigins?: readonly string[]
 
+  /**
+   * Milliseconds to keep the shared ReactHost alive after the last surface
+   * unmounts. A new same-origin sandbox mounting within this window gets a
+   * warm start. Defaults to 0 (eager destroy). Only effective with origin.
+   */
+  idleTTL?: CodegenTypes.Int32
+
   /** Internal flag indicating if onMessage handler is provided */
   hasOnMessageHandler?: boolean
 

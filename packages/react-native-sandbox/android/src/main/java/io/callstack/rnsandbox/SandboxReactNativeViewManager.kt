@@ -52,6 +52,14 @@ class SandboxReactNativeViewManager :
         view.delegate?.origin = value ?: ""
     }
 
+    @ReactProp(name = "idleTTL")
+    override fun setIdleTTL(
+        view: SandboxReactNativeView,
+        value: Int,
+    ) {
+        view.delegate?.idleTTLMs = value.toLong()
+    }
+
     @ReactProp(name = "componentName")
     override fun setComponentName(
         view: SandboxReactNativeView,

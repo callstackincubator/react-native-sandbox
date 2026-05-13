@@ -57,6 +57,8 @@ import SandboxReactNativeView from '@callstack/react-native-sandbox';
 | `launchOptions` | `object` | :white_large_square: | `{}` | Launch configuration options |
 | `allowedTurboModules` | `string[]` | :white_large_square: | [check here](https://github.com/callstackincubator/react-native-sandbox/blob/main/packages/react-native-sandbox/src/index.tsx#L18) | Additional TurboModules to allow |
 | `turboModuleSubstitutions` | `Record<string, string>` | :white_large_square: | `undefined` | Map of module name substitutions (requested → resolved). Substituted modules are implicitly allowed. |
+| `allowedOrigins` | `string[]` | :white_large_square: | `[]` | Origins allowed to send messages to this sandbox |
+| `idleTTL` | `number \| () => number` | :white_large_square: | `0` | Milliseconds to keep a shared origin's ReactHost alive after the last surface unmounts. A new same-origin sandbox mounting within this window gets a warm start. Only effective with `origin`. Can be a number or function returning a number. |
 | `onMessage` | `function` | :white_large_square: | `undefined` | Callback for messages from sandbox |
 | `onError` | `function` | :white_large_square: | `undefined` | Callback for sandbox errors |
 | `style` | `ViewStyle` | :white_large_square: | `undefined` | Container styling |
@@ -220,6 +222,28 @@ const handleMessage = (data: unknown) => {
     console.log('Sandbox metrics:', data.metrics);
   }
 };
+```
+
+### Origin Pooling with Idle TTL
+
+Sandboxes sharing the same `origin` reuse a single ReactHost / Hermes VM. When the last surface for an origin unmounts, the ReactHost is kept alive for `idleTTL` milliseconds so that a re-mount within that window gets a warm start instead of a cold boot.
+
+```tsx
+// Static TTL
+<SandboxReactNativeView
+  origin="dashboard"
+  idleTTL={2000}
+  componentName="DashboardWidget"
+  jsBundleSource="sandbox"
+/>
+
+// Dynamic TTL via function — evaluated at render time, not at unmount time
+<SandboxReactNativeView
+  origin="analytics"
+  idleTTL={() => isLowMemory() ? 1000 : 5000}
+  componentName="AnalyticsWidget"
+  jsBundleSource="sandbox"
+/>
 ```
 
 ### Direct communication Between Sandboxes

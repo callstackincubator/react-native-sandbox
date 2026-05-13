@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "multi-instance-monorepo",
@@ -91,6 +92,26 @@
         "@react-native/typescript-config": "0.82.1",
         "react-native-harness": "^1.0.0",
         "react-test-renderer": "19.1.1",
+      },
+    },
+    "apps/origin-pooling": {
+      "name": "@apps/origin-pooling",
+      "version": "1.0.0",
+      "dependencies": {
+        "@callstack/react-native-sandbox": "workspace:*",
+        "react": "19.1.0",
+        "react-native": "0.80.1",
+      },
+      "devDependencies": {
+        "@babel/core": "^7.25.2",
+        "@babel/preset-env": "^7.25.3",
+        "@babel/runtime": "^7.25.0",
+        "@react-native-community/cli": "18.0.0",
+        "@react-native-community/cli-platform-android": "18.0.0",
+        "@react-native-community/cli-platform-ios": "18.0.0",
+        "@react-native/babel-preset": "0.80.1",
+        "@react-native/metro-config": "0.80.1",
+        "@react-native/typescript-config": "0.80.1",
       },
     },
     "apps/p2p-chat": {
@@ -188,7 +209,7 @@
     },
     "packages/react-native-sandbox": {
       "name": "@callstack/react-native-sandbox",
-      "version": "0.6.0",
+      "version": "0.6.1",
       "devDependencies": {
         "react": "19.1.0",
         "react-native": "0.80.1",
@@ -205,6 +226,8 @@
     "@apps/demo": ["@apps/demo@workspace:apps/demo"],
 
     "@apps/fs-experiment": ["@apps/fs-experiment@workspace:apps/fs-experiment"],
+
+    "@apps/origin-pooling": ["@apps/origin-pooling@workspace:apps/origin-pooling"],
 
     "@apps/p2p-chat": ["@apps/p2p-chat@workspace:apps/p2p-chat"],
 

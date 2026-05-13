@@ -242,8 +242,22 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
     return url;
   }
 
+  // jsBundleSource can be either:
+  //   1. A bare resource name (e.g. "sandbox") — no extension, resolved by
+  //      RCTBundleURLProvider in dev, or as "sandbox.jsbundle" in release.
+  //   2. A full filename with extension (e.g. "sandbox.jsbundle") — looked up
+  //      directly via URLForResource:withExtension:nil.
+  // The two-step lookup below handles both cases without requiring callers to
+  // know which form they're using.
   if ([jsBundleSourceNS hasSuffix:@".jsbundle"]) {
+    // Full filename provided — look it up directly (step 1 of 2).
     return [[NSBundle mainBundle] URLForResource:jsBundleSourceNS withExtension:nil];
+  }
+
+  // Bare name provided — try appending .jsbundle for Release builds (step 2 of 2).
+  NSURL *prebuiltURL = [[NSBundle mainBundle] URLForResource:jsBundleSourceNS withExtension:@"jsbundle"];
+  if (prebuiltURL) {
+    return prebuiltURL;
   }
 
   NSString *bundleName =
@@ -321,12 +335,28 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
     return;
   }
 
-  // Safely clear any existing JSI function and instance before new runtime setup
-  // This prevents crash on reload when old function is tied to invalid runtime
-  _onMessageSandbox.reset();
-  _onMessageSandbox = nullptr;
+  // The old _onMessageSandbox may hold a jsi::Function tied to a now-dead
+  // runtime. Calling reset()/~Function() would access the dead runtime and
+  // crash (SIGSEGV in jsi::Pointer::~Pointer). Instead, release ownership
+  // without invoking the destructor — the runtime already freed the backing
+  // memory, so this is an intentional leak of the shared_ptr control block
+  // only (~32 bytes per reload, reclaimed at process exit).
+  //
+  // The leaked pointer is appended to sLeakedJsiFunctions so that memory
+  // analysis tools (Leaks, ASan) see an owned reference rather than an
+  // unreferenced allocation. Without this, each reload would appear as a
+  // phantom leak in profiling sessions.
+  if (_onMessageSandbox) {
+    static NSMutableArray *sLeakedJsiFunctions;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+      sLeakedJsiFunctions = [NSMutableArray new];
+    });
+    auto *leaked = new std::shared_ptr<jsi::Function>(std::move(_onMessageSandbox));
+    [sLeakedJsiFunctions addObject:[NSValue valueWithPointer:leaked]];
+    _onMessageSandbox = nullptr;
+  }
 
-  // Clear old instance reference before setting new one
   _rctInstance = nil;
 
   Ivar ivar = class_getInstanceVariable([host class], "_instance");

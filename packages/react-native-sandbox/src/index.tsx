@@ -119,6 +119,25 @@ export interface SandboxReactNativeViewProps extends ViewProps {
   allowedOrigins?: string[]
 
   /**
+   * Milliseconds to keep the shared ReactHost alive after the last surface
+   * unmounts. A new same-origin sandbox mounting within this window gets a
+   * warm start. Defaults to 0 (eager destroy). Only effective with `origin`.
+   *
+   * Can be a number or a function that returns a number, allowing dynamic
+   * TTL calculation based on runtime conditions. The function is evaluated
+   * once per render (memoized on `idleTTL` identity), not at unmount time —
+   * the value captured at the last render before unmount is what takes effect.
+   *
+   * **Pool TTL semantics:** when multiple same-origin sandboxes are mounted
+   * simultaneously, the pool adopts the *maximum* TTL seen across all of them.
+   * A sandbox that sets a tight TTL (e.g. 100 ms) expecting quick cleanup will
+   * observe the longer-lived behavior if a peer has already registered a larger
+   * TTL. If you need strict per-delegate cleanup, avoid sharing an origin or
+   * manage the TTL externally.
+   */
+  idleTTL?: number | (() => number)
+
+  /**
    * Callback function called when the sandbox sends a message to the parent.
    * Use this for bidirectional communication between parent and sandbox.
    *
@@ -230,6 +249,7 @@ const SandboxReactNativeView = forwardRef<
       moduleName,
       onMessage,
       onError,
+      idleTTL: idleTTLProp,
       ...rest
     },
     ref
@@ -241,6 +261,14 @@ const SandboxReactNativeView = forwardRef<
 
     // Use provided origin or assign a unique ID
     const sandboxOrigin = useMemo(() => origin || generateSandboxId(), [origin])
+
+    // Evaluate idleTTL on every render. If idleTTLProp is a function it is
+    // called each render so the value passed to native always reflects the
+    // latest result (e.g. isLowMemory() changing between renders). The value
+    // captured at the last render before unmount is what the native pool uses
+    // as the TTL — this is render-time evaluation, not unmount-time.
+    const idleTTL =
+      typeof idleTTLProp === 'function' ? idleTTLProp() : idleTTLProp
 
     const postMessage = useCallback((message: any) => {
       if (nativeRef.current) {
@@ -337,6 +365,7 @@ const SandboxReactNativeView = forwardRef<
           onError={onError ? _onError : undefined}
           onMessage={onMessage ? _onMessage : undefined}
           allowedTurboModules={_allowedTurboModules}
+          idleTTL={idleTTL}
           style={_style}
           {...rest}
         />
