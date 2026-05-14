@@ -13,6 +13,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <unordered_map>
 
 #import <React/RCTBridge+Private.h>
 #import <React/RCTBridge.h>
@@ -21,6 +22,7 @@
 #import <ReactAppDependencyProvider/RCTAppDependencyProvider.h>
 #import <ReactCommon/RCTInteropTurboModule.h>
 #import <ReactCommon/RCTTurboModule.h>
+#include <folly/json.h>
 
 #import <objc/runtime.h>
 
@@ -83,6 +85,10 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 @interface SandboxReactNativeDelegate () {
   RCTInstance *_rctInstance;
   std::shared_ptr<jsi::Function> _onMessageSandbox;
+  // Per-surface message callbacks keyed by delegate ID.
+  // When a sandbox uses useSurfaceMessaging, its setOnMessage registers here
+  // so each surface gets its own listener even in a shared VM.
+  std::unordered_map<std::string, std::shared_ptr<jsi::Function>> _surfaceMessageCallbacks;
   std::shared_ptr<rnsandbox::SandboxDelegateWrapper> _delegateWrapper;
   std::set<std::string> _allowedTurboModules;
   std::set<std::string> _allowedOrigins;
@@ -90,6 +96,7 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
   std::string _origin;
   std::string _jsBundleSource;
   NSMutableDictionary<NSString *, id<RCTBridgeModule>> *_substitutedModuleInstances;
+  NSMutableArray<NSDictionary *> *_pendingHostMessages;
 }
 
 - (void)cleanupResources;
@@ -113,6 +120,7 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
     _hasOnMessageHandler = NO;
     _hasOnErrorHandler = NO;
     _substitutedModuleInstances = [NSMutableDictionary new];
+    _pendingHostMessages = [NSMutableArray new];
     self.dependencyProvider = [[RCTAppDependencyProvider alloc] init];
   }
   return self;
@@ -121,14 +129,43 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 - (void)cleanupResources
 {
   _onMessageSandbox.reset();
+  _surfaceMessageCallbacks.clear();
   _rctInstance = nil;
   _allowedTurboModules.clear();
   _allowedOrigins.clear();
   _turboModuleSubstitutions.clear();
   [_substitutedModuleInstances removeAllObjects];
+  @synchronized(_pendingHostMessages) {
+    [_pendingHostMessages removeAllObjects];
+  }
   if (_delegateWrapper) {
     _delegateWrapper->invalidate();
     _delegateWrapper.reset();
+  }
+}
+
+- (void)flushPendingHostMessages
+{
+  if (!self.eventEmitter || !self.hasOnMessageHandler) {
+    return;
+  }
+
+  NSArray<NSDictionary *> *messages;
+  @synchronized(_pendingHostMessages) {
+    if (_pendingHostMessages.count == 0) {
+      return;
+    }
+    messages = [_pendingHostMessages copy];
+    [_pendingHostMessages removeAllObjects];
+  }
+
+  for (NSDictionary *msg in messages) {
+    NSString *dataStr = msg[@"data"];
+    if (dataStr) {
+      folly::dynamic parsed = folly::parseJson([dataStr UTF8String]);
+      SandboxReactNativeViewEventEmitter::OnMessage messageEvent = {.data = parsed};
+      self.eventEmitter->onMessage(messageEvent);
+    }
   }
 }
 
@@ -162,7 +199,9 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
   if (!_origin.empty()) {
     auto &registry = rnsandbox::SandboxRegistry::getInstance();
-    registry.unregister(_origin);
+    if (_delegateWrapper) {
+      registry.unregisterDelegate(_origin, _delegateWrapper);
+    }
   }
   if (_delegateWrapper) {
     _delegateWrapper->invalidate();
@@ -181,6 +220,32 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 - (void)setJsBundleSource:(std::string)jsBundleSource
 {
   _jsBundleSource = jsBundleSource;
+}
+
+- (void)ensureRegistered
+{
+  if (_origin.empty()) {
+    return;
+  }
+  // Check the registry directly rather than relying on _delegateWrapper,
+  // since registry.unregister() removes the entry without invalidating the wrapper.
+  auto &registry = rnsandbox::SandboxRegistry::getInstance();
+  auto existing = registry.findAll(_origin);
+  bool isRegistered = false;
+  for (const auto &d : existing) {
+    if (_delegateWrapper && d == _delegateWrapper) {
+      isRegistered = true;
+      break;
+    }
+  }
+  if (!isRegistered) {
+    if (_delegateWrapper) {
+      _delegateWrapper->invalidate();
+      _delegateWrapper.reset();
+    }
+    _delegateWrapper = std::make_shared<rnsandbox::SandboxDelegateWrapper>(self);
+    registry.registerSandbox(_origin, _delegateWrapper, _allowedOrigins);
+  }
 }
 
 - (void)setAllowedOrigins:(std::set<std::string>)allowedOrigins
@@ -214,13 +279,13 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 - (void)dealloc
 {
   if (_delegateWrapper) {
+    if (!_origin.empty()) {
+      auto &registry = rnsandbox::SandboxRegistry::getInstance();
+      registry.unregisterDelegate(_origin, _delegateWrapper);
+    }
     _delegateWrapper->invalidate();
     _delegateWrapper.reset();
-  }
-  if (!_origin.empty()) {
-    auto &registry = rnsandbox::SandboxRegistry::getInstance();
-    registry.unregister(_origin);
-  } else {
+  } else if (_origin.empty()) {
     [self cleanupResources];
   }
 }
@@ -267,7 +332,8 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
 - (void)postMessage:(const std::string &)message
 {
-  if (!_onMessageSandbox || !_rctInstance) {
+  bool hasAnyCallback = _onMessageSandbox || !_surfaceMessageCallbacks.empty();
+  if (!hasAnyCallback || !_rctInstance) {
     return;
   }
 
@@ -276,17 +342,22 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
       // Validate runtime before any JSI operations
       runtime.global(); // Test if runtime is accessible
 
-      // Double-check the JSI function is still valid
-      if (!_onMessageSandbox) {
-        return;
-      }
-
       jsi::Value parsedValue = runtime.global()
                                    .getPropertyAsObject(runtime, "JSON")
                                    .getPropertyAsFunction(runtime, "parse")
                                    .call(runtime, jsi::String::createFromUtf8(runtime, message));
 
-      _onMessageSandbox->call(runtime, {std::move(parsedValue)});
+      // Invoke the legacy shared callback (if any)
+      if (_onMessageSandbox) {
+        _onMessageSandbox->call(runtime, parsedValue);
+      }
+
+      // Invoke all per-surface callbacks
+      for (auto &[id, cb] : _surfaceMessageCallbacks) {
+        if (cb) {
+          cb->call(runtime, parsedValue);
+        }
+      }
     } catch (const jsi::JSError &e) {
       if (self.eventEmitter && self.hasOnErrorHandler) {
         SandboxReactNativeViewEventEmitter::OnError errorEvent = {
@@ -308,25 +379,42 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 - (bool)routeMessage:(const std::string &)message toSandbox:(const std::string &)targetId
 {
   auto &registry = rnsandbox::SandboxRegistry::getInstance();
-  auto target = registry.find(targetId);
-  if (!target) {
+
+  // Check if target exists before checking permissions
+  auto targets = registry.findAll(targetId);
+  if (targets.empty()) {
     return false;
   }
 
-  // Check if the current sandbox is permitted to send messages to the target
+  // Enforce allowedOrigins access control
   if (!registry.isPermittedFrom(_origin, targetId)) {
-    if (self.eventEmitter && self.hasOnErrorHandler) {
-      std::string errorMessage =
-          fmt::format("Access denied: Sandbox '{}' is not permitted to send messages to '{}'", _origin, targetId);
-      SandboxReactNativeViewEventEmitter::OnError errorEvent = {
-          .isFatal = false, .name = "AccessDeniedError", .message = errorMessage, .stack = ""};
-      self.eventEmitter->onError(errorEvent);
-    }
-    return false;
+    [self postErrorWithName:"AccessDeniedError"
+                    message:fmt::format(
+                                "Access denied: Sandbox '{}' is not permitted to send messages to '{}'",
+                                _origin,
+                                targetId)
+                      stack:""
+                    isFatal:false];
+    return true; // Error already handled, don't emit SandboxRoutingError
   }
 
-  target->postMessage(message);
+  for (auto &target : targets) {
+    target->postMessage(message);
+  }
   return true;
+}
+
+- (void)postErrorWithName:(const std::string &)name
+                  message:(const std::string &)message
+                    stack:(const std::string &)stack
+                  isFatal:(bool)isFatal
+{
+  if (!self.eventEmitter || !self.hasOnErrorHandler) {
+    return;
+  }
+  SandboxReactNativeViewEventEmitter::OnError errorEvent = {
+      .isFatal = isFatal, .name = name, .message = message, .stack = stack};
+  self.eventEmitter->onError(errorEvent);
 }
 
 - (void)hostDidStart:(RCTHost *)host
@@ -357,6 +445,14 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
     _onMessageSandbox = nullptr;
   }
 
+  // Same treatment for per-surface callbacks
+  for (auto &[id, cb] : _surfaceMessageCallbacks) {
+    if (cb) {
+      [[maybe_unused]] auto leaked = new std::shared_ptr<jsi::Function>(std::move(cb));
+    }
+  }
+  _surfaceMessageCallbacks.clear();
+
   _rctInstance = nil;
 
   Ivar ivar = class_getInstanceVariable([host class], "_instance");
@@ -367,8 +463,27 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
   }
 
   [_rctInstance callFunctionOnBufferedRuntimeExecutor:[=](jsi::Runtime &runtime) {
-    facebook::react::defineReadOnlyGlobal(runtime, "postMessage", [self createPostMessageFunction:runtime]);
-    facebook::react::defineReadOnlyGlobal(runtime, "setOnMessage", [self createSetOnMessageFunction:runtime]);
+    auto postMessageFn = [self createPostMessageFunction:runtime];
+    auto setOnMessageFn = [self createSetOnMessageFunction:runtime];
+
+    // Use Object.defineProperty with configurable:true so that warm-start
+    // re-installations can redefine these globals for the new delegate.
+    jsi::Object global = runtime.global();
+    jsi::Object objectCtor = global.getPropertyAsObject(runtime, "Object");
+    jsi::Function defineProperty = objectCtor.getPropertyAsFunction(runtime, "defineProperty");
+
+    auto defineGlobal = [&](const char *name, jsi::Function &&fn) {
+      jsi::Object descriptor(runtime);
+      descriptor.setProperty(runtime, "value", std::move(fn));
+      descriptor.setProperty(runtime, "writable", false);
+      descriptor.setProperty(runtime, "enumerable", false);
+      descriptor.setProperty(runtime, "configurable", true);
+      defineProperty.call(runtime, global, jsi::String::createFromAscii(runtime, name), descriptor);
+    };
+
+    defineGlobal("postMessage", std::move(postMessageFn));
+    defineGlobal("setOnMessage", std::move(setOnMessageFn));
+
     [self setupErrorHandler:runtime];
     // Must run post-bundle (in the buffered executor) because:
     // 1. installConsoleHandler sets __FUSEBOX = true during runtime init
@@ -662,45 +777,41 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
           std::string targetOrigin = targetOriginArg.getString(rt).utf8(rt);
 
           // Prevent self-targeting
-          if (_origin == targetOrigin) {
-            if (self.eventEmitter && self.hasOnErrorHandler) {
-              std::string errorMessage = fmt::format("Cannot send message to self (sandbox '{}')", targetOrigin);
-              SandboxReactNativeViewEventEmitter::OnError errorEvent = {
-                  .isFatal = false, .name = "SelfTargetingError", .message = errorMessage, .stack = ""};
-              self.eventEmitter->onError(errorEvent);
-            } else {
-              // Fallback: throw JSError if no error handler
-              throw jsi::JSError(rt, fmt::format("Cannot send message to self (sandbox '{}')", targetOrigin).c_str());
-            }
-            return jsi::Value::undefined();
-          }
-
           // Convert message to JSON string
           jsi::Object jsonObject = rt.global().getPropertyAsObject(rt, "JSON");
           jsi::Function jsonStringify = jsonObject.getPropertyAsFunction(rt, "stringify");
           jsi::Value jsonResult = jsonStringify.call(rt, messageArg);
           std::string messageJson = jsonResult.getString(rt).utf8(rt);
 
-          // Route message to specific sandbox
+          // Route message to specific sandbox (same-origin allowed, matches Android)
           BOOL success = [self routeMessage:messageJson toSandbox:targetOrigin];
           if (!success) {
-            // Target sandbox doesn't exist - trigger error event
+            // Target sandbox doesn't exist
             if (self.eventEmitter && self.hasOnErrorHandler) {
               std::string errorMessage = fmt::format("Target sandbox '{}' not found", targetOrigin);
               SandboxReactNativeViewEventEmitter::OnError errorEvent = {
                   .isFatal = false, .name = "SandboxRoutingError", .message = errorMessage, .stack = ""};
               self.eventEmitter->onError(errorEvent);
             } else {
-              // Fallback: throw JSError if no error handler
               std::string errorMessage = fmt::format("Target sandbox '{}' not found", targetOrigin);
               throw jsi::JSError(rt, errorMessage.c_str());
             }
           }
         } else {
-          // targetOrigin is undefined/null - route to host (backward compatibility)
+          // targetOrigin is undefined/null - route to host
           if (self.eventEmitter && self.hasOnMessageHandler) {
             SandboxReactNativeViewEventEmitter::OnMessage messageEvent = {.data = jsi::dynamicFromValue(rt, args[0])};
             self.eventEmitter->onMessage(messageEvent);
+          } else {
+            // Event emitter or handler not ready yet (warm start race). Buffer the message.
+            jsi::Object jsonObject = rt.global().getPropertyAsObject(rt, "JSON");
+            jsi::Function jsonStringify = jsonObject.getPropertyAsFunction(rt, "stringify");
+            jsi::Value jsonResult = jsonStringify.call(rt, args[0]);
+            std::string messageJson = jsonResult.getString(rt).utf8(rt);
+            NSString *nsMsg = [NSString stringWithUTF8String:messageJson.c_str()];
+            @synchronized(_pendingHostMessages) {
+              [_pendingHostMessages addObject:@{@"data" : nsMsg}];
+            }
           }
         }
 
@@ -713,10 +824,10 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
   return jsi::Function::createFromHostFunction(
       runtime,
       jsi::PropNameID::forAscii(runtime, "setOnMessage"),
-      1,
+      2, // Accept 1 or 2 arguments: callback and optional delegateId
       [=](jsi::Runtime &rt, const jsi::Value &, const jsi::Value *args, size_t count) {
-        if (count != 1) {
-          throw jsi::JSError(rt, "Expected exactly one argument");
+        if (count < 1 || count > 2) {
+          throw jsi::JSError(rt, "Expected 1 or 2 arguments: setOnMessage(callback, delegateId?)");
         }
 
         const jsi::Value &arg = args[0];
@@ -726,10 +837,20 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
         jsi::Function fn = arg.asObject(rt).asFunction(rt);
 
-        // Safely reset existing function before assigning new one
-        // This prevents crash if old function is tied to invalid runtime
-        _onMessageSandbox.reset();
-        _onMessageSandbox = std::make_shared<jsi::Function>(std::move(fn));
+        // Check for optional delegate ID (2nd arg) for per-surface registration
+        std::string delegateId;
+        if (count == 2 && args[1].isString()) {
+          delegateId = args[1].getString(rt).utf8(rt);
+        }
+
+        if (!delegateId.empty()) {
+          // Per-surface: register under the delegate ID
+          _surfaceMessageCallbacks[delegateId] = std::make_shared<jsi::Function>(std::move(fn));
+        } else {
+          // Legacy: single shared callback (last-writer-wins)
+          _onMessageSandbox.reset();
+          _onMessageSandbox = std::make_shared<jsi::Function>(std::move(fn));
+        }
 
         return jsi::Value::undefined();
       });
@@ -746,31 +867,67 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
   jsi::Object errorUtils = errorUtilsVal.asObject(runtime);
 
+  // On warm start, setGlobalHandler is already stubbed — our error handler
+  // from the cold start is still active and broadcasts via the registry,
+  // so we can safely skip re-installation.
+  jsi::Value setHandlerVal = errorUtils.getProperty(runtime, "setGlobalHandler");
+  if (!setHandlerVal.isObject() || !setHandlerVal.asObject(runtime).isFunction(runtime)) {
+    return;
+  }
+  // Check if it's our stub (stub has length 1 and returns undefined for any input).
+  // A more reliable check: try to get the handler name. If setGlobalHandler was
+  // already called and stubbed, just skip.
+  jsi::Function setHandlerFn = setHandlerVal.asObject(runtime).asFunction(runtime);
+  // The stub we install has the name "setGlobalHandler" but accepts 1 arg.
+  // The real RN setGlobalHandler also accepts 1 arg. We need a different signal.
+  // Simplest: use a flag property on ErrorUtils to mark that we've installed.
+  jsi::Value installedFlag = errorUtils.getProperty(runtime, "__sandboxErrorHandlerInstalled");
+  if (!installedFlag.isUndefined() && installedFlag.getBool()) {
+    return;
+  }
+
   std::shared_ptr<jsi::Value> originalHandler = std::make_shared<jsi::Value>(
       errorUtils.getProperty(runtime, "getGlobalHandler").asObject(runtime).asFunction(runtime).call(runtime));
+
+  SandboxReactNativeDelegate *__weak weakSelf = self;
 
   auto handlerFunc = jsi::Function::createFromHostFunction(
       runtime,
       jsi::PropNameID::forAscii(runtime, "customGlobalErrorHandler"),
       2,
-      [=, originalHandler = std::move(originalHandler)](
+      [weakSelf, capturedOrigin = std::string(_origin), originalHandler = std::move(originalHandler)](
           jsi::Runtime &rt, const jsi::Value &thisVal, const jsi::Value *args, size_t count) -> jsi::Value {
         if (count < 2) {
           return jsi::Value::undefined();
         }
 
-        if (self.eventEmitter && self.hasOnErrorHandler) {
-          const jsi::Object &error = args[0].asObject(rt);
-          bool isFatal = args[1].getBool();
+        const jsi::Object &error = args[0].asObject(rt);
+        bool isFatal = args[1].getBool();
+        std::string name = safeGetStringProperty(rt, error, "name");
+        std::string message = safeGetStringProperty(rt, error, "message");
+        std::string stack = safeGetStringProperty(rt, error, "stack");
 
-          SandboxReactNativeViewEventEmitter::OnError errorEvent = {
-              .isFatal = isFatal,
-              .name = safeGetStringProperty(rt, error, "name"),
-              .message = safeGetStringProperty(rt, error, "message"),
-              .stack = safeGetStringProperty(rt, error, "stack")};
-          self.eventEmitter->onError(errorEvent);
-        } else { // Call the original handler
-          if (originalHandler->isObject() && originalHandler->asObject(rt).isFunction(rt)) {
+        bool handled = false;
+
+        // When an origin is set, broadcast the error to ALL delegates
+        // registered for this origin so every view sharing the VM can
+        // independently receive onError events (matches Android behavior).
+        if (!capturedOrigin.empty()) {
+          auto &registry = rnsandbox::SandboxRegistry::getInstance();
+          auto delegates = registry.findAll(capturedOrigin);
+          for (auto &delegate : delegates) {
+            delegate->postError(name, message, stack, isFatal);
+            handled = true;
+          }
+        }
+
+        if (!handled) {
+          SandboxReactNativeDelegate *strongSelf = weakSelf;
+          if (strongSelf && strongSelf.eventEmitter && strongSelf.hasOnErrorHandler) {
+            SandboxReactNativeViewEventEmitter::OnError errorEvent = {
+                .isFatal = isFatal, .name = name, .message = message, .stack = stack};
+            strongSelf.eventEmitter->onError(errorEvent);
+          } else if (originalHandler->isObject() && originalHandler->asObject(rt).isFunction(rt)) {
             jsi::Function original = originalHandler->asObject(rt).asFunction(rt);
             original.call(rt, args, count);
           }
@@ -781,10 +938,13 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
   // Set the new global error handler
   jsi::Function setHandler = errorUtils.getProperty(runtime, "setGlobalHandler").asObject(runtime).asFunction(runtime);
-  setHandler.call(runtime, {std::move(handlerFunc)});
+  setHandler.call(runtime, std::move(handlerFunc));
 
-  // Disable further setGlobalHandler from sandbox
+  // Disable further setGlobalHandler from sandbox JS code
   stubJsiFunction(runtime, errorUtils, "setGlobalHandler");
+
+  // Mark that our error handler is installed so warm starts skip re-installation
+  errorUtils.setProperty(runtime, "__sandboxErrorHandlerInstalled", true);
 }
 
 @end

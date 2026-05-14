@@ -1,10 +1,10 @@
 /**
- * SandboxApp — runs INSIDE each sandbox (library approach).
+ * SandboxAppConvention — convention-based approach (no library dependency).
  *
- * Uses useSurfaceMessaging from @callstack/react-native-sandbox
- * for per-surface routing.
+ * Uses the __sandboxDelegateId prop directly with globalThis.postMessage
+ * and globalThis.setOnMessage for per-surface routing. No import from
+ * @callstack/react-native-sandbox needed.
  */
-import {useSurfaceMessaging} from '@callstack/react-native-sandbox'
 import React, {useEffect, useRef, useState} from 'react'
 import {
   ScrollView,
@@ -14,14 +14,18 @@ import {
   View,
 } from 'react-native'
 
+declare const globalThis: {
+  postMessage: (msg: unknown, targetOrigin?: string) => void
+  setOnMessage: (cb: (msg: unknown) => void, delegateId?: string) => void
+}
+
 type LogEntry = {dir: 'in' | 'out'; text: string; ts: number}
 
 type Props = {
   __sandboxDelegateId?: string
 }
 
-export default function SandboxApp({__sandboxDelegateId}: Props) {
-  const {postMessage, setOnMessage} = useSurfaceMessaging(__sandboxDelegateId)
+export default function SandboxAppConvention({__sandboxDelegateId}: Props) {
   const [log, setLog] = useState<LogEntry[]>([])
   const instanceId = useRef(Math.random().toString(36).slice(2, 6)).current
   const seq = useRef(0)
@@ -30,32 +34,47 @@ export default function SandboxApp({__sandboxDelegateId}: Props) {
   const addLog = (dir: 'in' | 'out', text: string) =>
     setLog(prev => [...prev.slice(-19), {dir, text, ts: Date.now()}])
 
-  useEffect(() => {
-    postMessage({type: 'rendered', instanceId})
-    addLog('out', `rendered (${instanceId})`)
-  }, [instanceId, postMessage])
+  // Convention: spread __sandboxDelegateId into the payload for per-surface routing
+  const send = React.useCallback(
+    (msg: Record<string, unknown>, targetOrigin?: string) => {
+      const payload =
+        !targetOrigin && __sandboxDelegateId
+          ? {...msg, __sandboxDelegateId}
+          : msg
+      globalThis.postMessage(payload, targetOrigin)
+    },
+    [__sandboxDelegateId]
+  )
 
   useEffect(() => {
-    const unsubscribe = setOnMessage((msg: unknown) => {
+    send({type: 'rendered', instanceId})
+    addLog('out', `rendered (${instanceId})`)
+  }, [instanceId, send])
+
+  // Convention: pass delegateId as 2nd arg for per-surface listener
+  useEffect(() => {
+    globalThis.setOnMessage((msg: unknown) => {
       const data = msg as Record<string, unknown>
       addLog('in', `from ${data.instanceId ?? '?'}: ${data.type}`)
-    })
-    return unsubscribe
-  }, [setOnMessage])
+    }, __sandboxDelegateId)
+    return () => {
+      globalThis.setOnMessage(() => {}, __sandboxDelegateId)
+    }
+  }, [__sandboxDelegateId])
 
   const sendHeartbeat = () => {
     const s = ++seq.current
-    postMessage({type: 'heartbeat', instanceId, seq: s})
+    send({type: 'heartbeat', instanceId, seq: s})
     addLog('out', `heartbeat seq=${s}`)
   }
 
   const pingAlpha = () => {
-    postMessage({type: 'ping', instanceId}, 'alpha')
+    send({type: 'ping', instanceId}, 'alpha')
     addLog('out', 'ping → alpha')
   }
 
   const pingBeta = () => {
-    postMessage({type: 'ping', instanceId}, 'beta')
+    send({type: 'ping', instanceId}, 'beta')
     addLog('out', 'ping → beta')
   }
 
@@ -69,7 +88,7 @@ export default function SandboxApp({__sandboxDelegateId}: Props) {
   return (
     <View style={styles.root}>
       <Text style={styles.title}>ID: {instanceId}</Text>
-      <Text style={styles.approach}>Library (useSurfaceMessaging)</Text>
+      <Text style={styles.approach}>Convention (no import)</Text>
       <View style={styles.buttons}>
         <View style={styles.btnRow}>
           <TouchableOpacity style={styles.btnGreen} onPress={sendHeartbeat}>

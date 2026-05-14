@@ -78,10 +78,25 @@ class SandboxReactNativeDelegate(
             val destroyGeneration: java.util.concurrent.atomic.AtomicLong =
                 java.util.concurrent.atomic
                     .AtomicLong(0),
+            var jsiStateHandle: Long = 0,
         )
+
+        private val nextDelegateId =
+            java.util.concurrent.atomic
+                .AtomicLong(0)
+        private val delegateById = java.util.concurrent.ConcurrentHashMap<String, SandboxReactNativeDelegate>()
+
+        /**
+         * Finds a delegate by its unique ID. Called from JNI when postMessage
+         * includes a __sandboxDelegateId for per-surface routing.
+         */
+        @JvmStatic
+        fun findByDelegateId(id: String): SandboxReactNativeDelegate? = delegateById[id]
     }
 
     @JvmField var origin: String = ""
+
+    @JvmField var delegateId: String = ""
 
     var jsBundleSource: String = ""
     var allowedTurboModules: Set<String> = emptySet()
@@ -100,6 +115,8 @@ class SandboxReactNativeDelegate(
     private var sandboxReactContext: ReactContext? = null
     private var ownsReactHost = false
     private var instanceEventListener: ReactInstanceEventListener? = null
+    private var registryDelegateHandle: Long = 0
+    private val pendingHostMessages = mutableListOf<String>()
 
     @OptIn(UnstableReactNativeAPI::class)
     fun loadReactNativeView(
@@ -114,6 +131,10 @@ class SandboxReactNativeDelegate(
         val capturedBundleSource = jsBundleSource
         val capturedAllowedModules = allowedTurboModules
 
+        // Generate a unique delegate ID for per-surface message routing
+        delegateId = "delegate:${nextDelegateId.incrementAndGet()}"
+        delegateById[delegateId] = this
+
         try {
             val shared = if (origin.isNotEmpty()) sharedHosts[origin] else null
 
@@ -127,6 +148,19 @@ class SandboxReactNativeDelegate(
                 shared.idleTTLMs = maxOf(shared.idleTTLMs, idleTTLMs)
                 ownsReactHost = false
                 Log.d(TAG, "Reusing shared ReactHost for origin '$origin' (refCount=${shared.refCount})")
+
+                // Register this delegate in the C++ SandboxRegistry so that
+                // postMessage/onError broadcasts from the shared VM reach
+                // every view, not just the first one that created the host.
+                registryDelegateHandle = SandboxJSIInstaller.nativeRegisterDelegate(origin, this)
+
+                // Grab the JSI state handle from the first view so Host→JS
+                // messaging (ref.postMessage) works for this view too.
+                jsiStateHandle = shared.jsiStateHandle
+
+                // The ReactContext is already initialized; grab it directly
+                // so postMessage can call runOnJSQueueThread.
+                sandboxReactContext = host.currentReactContext
             } else {
                 sandboxContext = SandboxContextWrapper(context, origin)
 
@@ -199,15 +233,15 @@ class SandboxReactNativeDelegate(
             instanceEventListener = listener
             host.addReactInstanceEventListener(listener)
 
-            val surface = host.createSurface(sandboxContext, componentName, initialProperties)
+            val surface = host.createSurface(sandboxContext, componentName, initialProperties.withDelegateId())
             reactSurface = surface
-
-            surface.start()
 
             val activity = getActivity()
             if (activity != null) {
                 host.onHostResume(activity)
             }
+
+            surface.start()
 
             return surface.view
         } catch (e: Exception) {
@@ -270,6 +304,11 @@ class SandboxReactNativeDelegate(
 
     fun onJSIBindingsInstalled(stateHandle: Long) {
         jsiStateHandle = stateHandle
+        // Store on the shared host so views that reuse this host can
+        // deliver Host→JS messages through the same JSI state.
+        if (origin.isNotEmpty()) {
+            sharedHosts[origin]?.jsiStateHandle = stateHandle
+        }
     }
 
     fun postMessage(message: String) {
@@ -285,17 +324,51 @@ class SandboxReactNativeDelegate(
 
     @Suppress("unused")
     fun emitOnMessageFromJS(messageJson: String) {
-        if (!hasOnMessageHandler) return
-
         UiThreadUtil.runOnUiThread {
             try {
+                val view = sandboxView
+                if (!hasOnMessageHandler || view == null || !view.isAttachedToWindow) {
+                    synchronized(pendingHostMessages) {
+                        pendingHostMessages.add(messageJson)
+                    }
+                    return@runOnUiThread
+                }
                 val data =
                     Arguments.createMap().apply {
                         putString("data", messageJson)
                     }
-                sandboxView?.emitOnMessage(data)
+                view.emitOnMessage(data)
             } catch (e: Exception) {
                 Log.e(TAG, "Error emitting onMessage: ${e.message}", e)
+            }
+        }
+    }
+
+    /**
+     * Flush any messages that were buffered because the view wasn't ready
+     * when they arrived (warm start timing). Called from the view manager
+     * after the React Native child view is attached.
+     */
+    fun flushPendingHostMessages() {
+        if (!hasOnMessageHandler) return
+        val messages: List<String>
+        synchronized(pendingHostMessages) {
+            if (pendingHostMessages.isEmpty()) return
+            messages = pendingHostMessages.toList()
+            pendingHostMessages.clear()
+        }
+        UiThreadUtil.runOnUiThread {
+            val view = sandboxView ?: return@runOnUiThread
+            for (messageJson in messages) {
+                try {
+                    val data =
+                        Arguments.createMap().apply {
+                            putString("data", messageJson)
+                        }
+                    view.emitOnMessage(data)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error flushing pending message: ${e.message}", e)
+                }
             }
         }
     }
@@ -345,8 +418,43 @@ class SandboxReactNativeDelegate(
     }
 
     fun cleanup() {
+        if (delegateId.isNotEmpty()) {
+            delegateById.remove(delegateId)
+        }
+
+        synchronized(pendingHostMessages) {
+            pendingHostMessages.clear()
+        }
+
+        if (registryDelegateHandle != 0L) {
+            SandboxJSIInstaller.nativeUnregisterDelegate(registryDelegateHandle)
+            registryDelegateHandle = 0
+        }
+
+        // Only destroy the shared JSI state when this view owns the host AND
+        // it's the last user AND the host is actually being destroyed (no TTL).
+        // When TTL is active, the host stays alive and a new surface may reuse
+        // the JSI state, so we must not tear it down.
         if (jsiStateHandle != 0L) {
-            SandboxJSIInstaller.nativeDestroy(jsiStateHandle)
+            val isLastUser =
+                if (origin.isNotEmpty()) {
+                    val shared = sharedHosts[origin]
+                    shared == null || (shared.refCount <= 1 && ownsReactHost)
+                } else {
+                    true
+                }
+            val hostBeingKeptAlive =
+                if (origin.isNotEmpty()) {
+                    val shared = sharedHosts[origin]
+                    shared != null && shared.refCount <= 1 && shared.idleTTLMs > 0
+                } else {
+                    false
+                }
+            if (isLastUser && !hostBeingKeptAlive) {
+                SandboxJSIInstaller.nativeDestroy(jsiStateHandle)
+            } else if (ownsReactHost && !hostBeingKeptAlive) {
+                SandboxJSIInstaller.nativeUnregisterStateDelegate(jsiStateHandle)
+            }
             jsiStateHandle = 0
         }
         sandboxReactContext = null
@@ -378,6 +486,11 @@ class SandboxReactNativeDelegate(
                                 }
                                 val current = sharedHosts[capturedOrigin]
                                 if (current != null && current.refCount <= 0 && current.destroyGeneration.get() == gen) {
+                                    // Now actually destroy the JSI state that was kept alive
+                                    if (current.jsiStateHandle != 0L) {
+                                        SandboxJSIInstaller.nativeDestroy(current.jsiStateHandle)
+                                        current.jsiStateHandle = 0
+                                    }
                                     sharedHosts.remove(capturedOrigin)
                                     current.reactHost.onHostDestroy()
                                     current.reactHost.destroy("lazy sandbox cleanup", null)
@@ -401,6 +514,16 @@ class SandboxReactNativeDelegate(
 
     fun destroy() {
         cleanup()
+    }
+
+    /**
+     * Injects __sandboxDelegateId into the initialProperties Bundle so the
+     * sandbox JS can pass it back through useSurfaceMessaging for per-surface routing.
+     */
+    private fun Bundle?.withDelegateId(): Bundle {
+        val bundle = this ?: Bundle()
+        bundle.putString("__sandboxDelegateId", delegateId)
+        return bundle
     }
 
     private class SandboxContextWrapper(

@@ -189,17 +189,20 @@ TEST_F(SandboxRegistryTest, AllowedOriginsOverwriteOnReRegistration) {
   auto delegate1 = std::make_shared<StrictMock<MockSandboxDelegate>>();
   auto delegate2 = std::make_shared<StrictMock<MockSandboxDelegate>>();
 
+  // shared-origin allows messages from "allowed-a" (receiver-side: allowed-a
+  // can send TO shared-origin)
   std::set<std::string> firstOrigins = {"allowed-a"};
   registry.registerSandbox("shared-origin", delegate1, firstOrigins);
-  EXPECT_TRUE(registry.isPermittedFrom("shared-origin", "allowed-a"));
-  EXPECT_FALSE(registry.isPermittedFrom("shared-origin", "allowed-b"));
+  EXPECT_TRUE(registry.isPermittedFrom("allowed-a", "shared-origin"));
+  EXPECT_FALSE(registry.isPermittedFrom("allowed-b", "shared-origin"));
 
+  // Re-registration overwrites allowedOrigins: now only "allowed-b" can send to
+  // shared-origin
   std::set<std::string> secondOrigins = {"allowed-b"};
   registry.registerSandbox("shared-origin", delegate2, secondOrigins);
 
-  // Second registration overwrites the allowedOrigins for the whole origin
-  EXPECT_FALSE(registry.isPermittedFrom("shared-origin", "allowed-a"));
-  EXPECT_TRUE(registry.isPermittedFrom("shared-origin", "allowed-b"));
+  EXPECT_FALSE(registry.isPermittedFrom("allowed-a", "shared-origin"));
+  EXPECT_TRUE(registry.isPermittedFrom("allowed-b", "shared-origin"));
 
   // Both delegates are still registered
   auto all = registry.findAll("shared-origin");
@@ -275,8 +278,11 @@ TEST_F(SandboxRegistryTest, ThreadSafety) {
             auto found = registry.find(origin);
             EXPECT_EQ(found, mockDelegate);
 
-            EXPECT_TRUE(registry.isPermittedFrom(origin, "other_sandbox"));
-            EXPECT_FALSE(registry.isPermittedFrom(origin, "blocked_sandbox"));
+            // With receiver-side semantics: "other_sandbox" would need to
+            // allow this origin. Instead test that this origin allows
+            // messages from "other_sandbox" (i.e. other_sandbox → origin).
+            EXPECT_TRUE(registry.isPermittedFrom("other_sandbox", origin));
+            EXPECT_FALSE(registry.isPermittedFrom("blocked_sandbox", origin));
 
             registry.unregisterDelegate(origin, mockDelegate);
 

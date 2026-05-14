@@ -376,4 +376,5 @@ const SandboxReactNativeView = forwardRef<
 )
 
 SandboxReactNativeView.displayName = 'SandboxReactNativeView'
+export {useSurfaceMessaging} from './useSurfaceMessaging'
 export default SandboxReactNativeView

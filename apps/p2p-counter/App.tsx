@@ -9,6 +9,9 @@ interface CounterSandboxProps {
   sourceName: string
   backgroundColor: string
   targetOrigin: string
+  // allowedOrigins uses receiver-side semantics: origins permitted to send TO this sandbox
+  allowedOrigins: string[]
+  // The toggle and label describe the outbound direction from this sandbox's perspective
   isCommunicationEnabled: boolean
   onCommunicationToggle: (enabled: boolean) => void
   communicationLabel: string
@@ -18,6 +21,7 @@ function CounterSandboxView({
   sourceName,
   backgroundColor,
   targetOrigin,
+  allowedOrigins,
   isCommunicationEnabled,
   onCommunicationToggle,
   communicationLabel,
@@ -66,7 +70,7 @@ function CounterSandboxView({
           backgroundColor,
           targetOrigin: targetOrigin,
         }}
-        allowedOrigins={isCommunicationEnabled ? [targetOrigin] : []}
+        allowedOrigins={allowedOrigins}
         onMessage={handleMessage}
         onError={handleError}
       />
@@ -85,10 +89,17 @@ export default function App() {
       </View>
 
       <View style={styles.sandboxContainer}>
+        {/*
+         * allowedOrigins uses receiver-side semantics: each sandbox declares which
+         * origins may send TO it. So sandbox A gets allowedOrigins=["B"] when the
+         * B→A toggle is on, and sandbox B gets allowedOrigins=["A"] when A→B is on.
+         * The toggle and its label live on the sandbox that initiates the direction.
+         */}
         <CounterSandboxView
           sourceName="A"
           backgroundColor="#CCFFCC"
           targetOrigin="B"
+          allowedOrigins={allowBtoA ? ['B'] : []}
           isCommunicationEnabled={allowAtoB}
           onCommunicationToggle={setAllowAtoB}
           communicationLabel="A → B"
@@ -97,6 +108,7 @@ export default function App() {
           sourceName="B"
           backgroundColor="#CCCCFF"
           targetOrigin="A"
+          allowedOrigins={allowAtoB ? ['A'] : []}
           isCommunicationEnabled={allowBtoA}
           onCommunicationToggle={setAllowBtoA}
           communicationLabel="B → A"

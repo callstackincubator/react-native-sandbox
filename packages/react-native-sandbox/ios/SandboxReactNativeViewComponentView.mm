@@ -14,6 +14,8 @@
 
 #import "SandboxReactNativeDelegate.h"
 
+#include "SandboxRegistry.h"
+
 using namespace facebook::react;
 
 #pragma mark - SharedFactory (origin-based pooling)
@@ -75,6 +77,15 @@ static void ensureSharedFactories()
 {
   [super updateEventEmitter:eventEmitter];
   [self updateEventEmitterIfNeeded];
+
+  // If the factory was destroyed (e.g. by TTL cleanup) but the view is being
+  // remounted with the same props (so updateProps won't trigger a reload),
+  // detect this here and schedule a reload.
+  const auto &props = *std::static_pointer_cast<const SandboxReactNativeViewProps>(_props);
+  if (!self.reactNativeFactory && !self.reactNativeRootView && props.componentName.length() > 0 &&
+      props.jsBundleSource.length() > 0) {
+    [self scheduleReactViewLoad];
+  }
 }
 
 - (void)updateState:(const facebook::react::State::Shared &)state
@@ -152,6 +163,16 @@ static void ensureSharedFactories()
       newViewProps.jsBundleSource.length() > 0) {
     [self scheduleReactViewLoad];
   }
+
+  // If the factory was destroyed by TTL cleanup but the view still has a root
+  // view (props unchanged, so no reload was triggered above), force a reload.
+  // This handles the case where the same sandbox is re-added after TTL expiry.
+  if (self.reactNativeRootView && !self.reactNativeFactory && newViewProps.componentName.length() > 0 &&
+      newViewProps.jsBundleSource.length() > 0) {
+    [self.reactNativeRootView removeFromSuperview];
+    self.reactNativeRootView = nil;
+    [self scheduleReactViewLoad];
+  }
 }
 
 - (void)updateEventEmitterIfNeeded
@@ -159,6 +180,8 @@ static void ensureSharedFactories()
   if (self.reactNativeDelegate && _eventEmitter) {
     if (auto eventEmitter = std::static_pointer_cast<const SandboxReactNativeViewEventEmitter>(_eventEmitter)) {
       self.reactNativeDelegate.eventEmitter = eventEmitter;
+      // Flush any messages buffered during warm start before the emitter was ready
+      [self.reactNativeDelegate flushPendingHostMessages];
     }
   }
 }
@@ -196,6 +219,12 @@ static void ensureSharedFactories()
   if (moduleName.length == 0 || jsBundleSource.length == 0 || !self.reactNativeDelegate) {
     return;
   }
+
+  // Ensure the delegate is registered in the SandboxRegistry before loading.
+  // The delegate may have been unregistered by TTL cleanup while the view was
+  // recycled with the same origin — setOrigin won't be called again in that
+  // case since the prop hasn't changed, so we force re-registration here.
+  [self.reactNativeDelegate ensureRegistered];
 
   NSDictionary *initialProperties = @{};
   if (!props.initialProperties.isNull()) {
@@ -248,6 +277,15 @@ static void ensureSharedFactories()
       shared.idleTTLMs = MAX(shared.idleTTLMs, props.idleTTL);
       self.usesSharedFactory = YES;
       self.currentOrigin = origin;
+
+      // Warm start: the factory's RCTHost already has JSI bindings pointing
+      // to the old delegate. Re-install them on the existing runtime so
+      // postMessage/setOnMessage route to this new delegate.
+      RCTHost *host = shared.factory.rootViewFactory.reactHost;
+      if (host) {
+        [self.reactNativeDelegate hostDidStart:host];
+      }
+
       return;
     }
   }
@@ -295,6 +333,12 @@ static void ensureSharedFactories()
         SharedFactory *current = sSharedFactories[origin];
         if (current && current.refCount <= 0 && current.destroyGeneration == gen) {
           [sSharedFactories removeObjectForKey:origin];
+          // Purge all delegates for this origin from the registry so that
+          // subsequent pings correctly get SandboxRoutingError.
+          // We use unregister (not unregisterDelegate) because the host is
+          // being torn down — all delegates for this origin are stale.
+          auto &registry = rnsandbox::SandboxRegistry::getInstance();
+          registry.unregister([origin UTF8String]);
         }
       });
     } else {

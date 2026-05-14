@@ -162,7 +162,14 @@ class SandboxReactNativeViewManager :
                 it.getString(i)?.let { name -> origins.add(name) }
             }
         }
-        view.delegate?.allowedOrigins = origins
+        val delegate = view.delegate ?: return
+        delegate.allowedOrigins = origins
+
+        // Update the C++ SandboxRegistry so isPermittedFrom checks work
+        val origin = delegate.origin
+        if (origin.isNotEmpty()) {
+            SandboxJSIInstaller.nativeUpdateAllowedOrigins(origin, origins.toTypedArray())
+        }
     }
 
     @ReactProp(name = "hasOnMessageHandler")
@@ -171,6 +178,9 @@ class SandboxReactNativeViewManager :
         value: Boolean,
     ) {
         view.delegate?.hasOnMessageHandler = value
+        if (value) {
+            view.delegate?.flushPendingHostMessages()
+        }
     }
 
     @ReactProp(name = "hasOnErrorHandler")
@@ -239,6 +249,20 @@ class SandboxReactNativeViewManager :
             ),
         )
         view.requestLayout()
+
+        // Ensure allowedOrigins are registered in the C++ SandboxRegistry.
+        // Props may arrive in any order, so this guarantees the registry
+        // has the correct allowedOrigins after the view is fully loaded.
+        if (delegate.origin.isNotEmpty() && delegate.allowedOrigins.isNotEmpty()) {
+            SandboxJSIInstaller.nativeUpdateAllowedOrigins(
+                delegate.origin,
+                delegate.allowedOrigins.toTypedArray(),
+            )
+        }
+
+        // Flush any messages that arrived from JS before the view was ready
+        // (warm start race condition).
+        view.delegate?.flushPendingHostMessages()
     }
 
     private fun dynamicToBundle(dynamic: Dynamic): Bundle? {

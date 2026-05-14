@@ -77,6 +77,42 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (bool)routeMessage:(const std::string &)message toSandbox:(const std::string &)targetId;
 
+/**
+ * Posts an error to the host view via the event emitter.
+ * Used by the C++ SandboxRegistry to broadcast errors to all delegates
+ * sharing the same origin.
+ * @param name Error name/type
+ * @param message Error message
+ * @param stack Stack trace (may be empty)
+ * @param isFatal Whether the error is fatal
+ */
+- (void)postErrorWithName:(const std::string &)name
+                  message:(const std::string &)message
+                    stack:(const std::string &)stack
+                  isFatal:(bool)isFatal;
+
+/**
+ * Flushes any messages that were buffered because the event emitter wasn't
+ * ready when they arrived (warm start timing race). Called from the
+ * ComponentView after the event emitter is set.
+ */
+- (void)flushPendingHostMessages;
+
+/**
+ * Ensures the delegate is registered in the SandboxRegistry.
+ * Called before loading a React Native view to handle the case where
+ * the delegate was unregistered by TTL cleanup while the view was recycled
+ * with the same origin (setOrigin won't be called again in that case).
+ */
+- (void)ensureRegistered;
+
+/**
+ * Cleans up JSI resources and unregisters from the SandboxRegistry.
+ * Called when the idle TTL expires after the last sandbox for an origin unmounts,
+ * ensuring the registry entry is removed and the stale runtime reference is cleared.
+ */
+- (void)cleanupResources;
+
 @end
 
 NS_ASSUME_NONNULL_END
