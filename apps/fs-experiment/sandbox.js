@@ -58,6 +58,9 @@ function installTestCommandHandler() {
 function SandboxApp(props) {
   useEffect(() => {
     installTestCommandHandler()
+    if (typeof globalThis.postMessage === 'function') {
+      globalThis.postMessage({cmd: 'ready'})
+    }
   }, [])
 
   return <FileOpsUI testIDPrefix="sandbox" {...props} />

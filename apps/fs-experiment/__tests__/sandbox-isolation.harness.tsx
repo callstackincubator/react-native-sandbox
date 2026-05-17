@@ -8,6 +8,7 @@ import {
   expect,
   it,
   render,
+  waitFor,
 } from 'react-native-harness'
 
 import App from '../App'
@@ -15,6 +16,7 @@ import App from '../App'
 const isIOS = Platform.OS === 'ios'
 const TEST_TIMEOUT = 60_000
 const RENDER_TIMEOUT = 10_000
+const SANDBOX_READY_TIMEOUT = 90_000
 
 async function sleep(ms: number) {
   return new Promise(r => setTimeout(r, ms))
@@ -26,7 +28,16 @@ async function setSubstitution(enabled: boolean) {
 
   await userEvent.press(await screen.findByTestId('substitution-switch'))
   await screen.findByAccessibilityLabel(wantLabel)
-  await sleep(3000)
+  // Toggling substitution restarts the sandbox — wait for it to be ready again
+  // instead of a fixed sleep
+  await waitFor(
+    () => {
+      if (!screen.queryByTestId('sandbox-ready')) {
+        throw new Error('Sandbox not ready after substitution change')
+      }
+    },
+    {timeout: SANDBOX_READY_TIMEOUT}
+  )
 }
 
 async function writeAndRead(
@@ -85,8 +96,15 @@ describe('Substitution OFF', () => {
   beforeAll(async () => {
     blockCleanup = true
     await render(<App />, {timeout: RENDER_TIMEOUT})
-    await sleep(4000)
-  }, 30_000)
+    await waitFor(
+      () => {
+        if (!screen.queryByTestId('sandbox-ready')) {
+          throw new Error('Sandbox not ready')
+        }
+      },
+      {timeout: SANDBOX_READY_TIMEOUT}
+    )
+  }, SANDBOX_READY_TIMEOUT + RENDER_TIMEOUT)
 
   if (isIOS) {
     it(

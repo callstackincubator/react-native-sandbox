@@ -33,6 +33,7 @@ const config = {
   forwardClientLogs: true,
   resetEnvironmentBetweenTestFiles: true,
   disableViewFlattening: true,
+  bridgeTimeout: 120_000,
 }
 
 export default config

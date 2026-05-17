@@ -40,6 +40,7 @@ const SANDBOXED_SUBSTITUTIONS: Record<string, string> = {
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark'
   const [useSubstitution, setUseSubstitution] = useState(false)
+  const [sandboxReady, setSandboxReady] = useState(false)
 
   const theme = {
     bg: isDarkMode ? '#000' : '#fff',
@@ -98,7 +99,10 @@ function App(): React.JSX.Element {
                 useSubstitution ? 'substitution-on' : 'substitution-off'
               }
               style={styles.switchRow}
-              onPress={() => setUseSubstitution(v => !v)}>
+              onPress={() => {
+                setSandboxReady(false)
+                setUseSubstitution(v => !v)
+              }}>
               <Text style={[styles.switchLabel, {color: theme.text}]}>
                 Module substitution{' '}
                 <Text style={{color: theme.textSec, fontSize: 12}}>
@@ -107,12 +111,18 @@ function App(): React.JSX.Element {
               </Text>
               <Switch
                 value={useSubstitution}
-                onValueChange={setUseSubstitution}
+                onValueChange={v => {
+                  setSandboxReady(false)
+                  setUseSubstitution(v)
+                }}
                 trackColor={{false: theme.border, true: theme.green}}
               />
             </Pressable>
           </View>
 
+          {sandboxReady && (
+            <View testID="sandbox-ready" style={styles.readyMarker} />
+          )}
           <SandboxReactNativeView
             style={styles.sandboxView}
             origin="sandbox.fs-experiment.demo"
@@ -122,7 +132,11 @@ function App(): React.JSX.Element {
             turboModuleSubstitutions={
               useSubstitution ? SANDBOXED_SUBSTITUTIONS : undefined
             }
-            onMessage={msg => console.log('Host received from sandbox:', msg)}
+            onMessage={msg => {
+              const payload = typeof msg === 'string' ? JSON.parse(msg) : msg
+              if (payload?.cmd === 'ready') setSandboxReady(true)
+              console.log('Host received from sandbox:', msg)
+            }}
             onError={err =>
               console.log('Host received error from sandbox:', err)
             }
@@ -136,6 +150,10 @@ function App(): React.JSX.Element {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  readyMarker: {
+    width: 0,
+    height: 0,
   },
   section: {
     borderBottomWidth: StyleSheet.hairlineWidth,
