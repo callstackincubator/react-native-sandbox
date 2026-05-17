@@ -2,6 +2,7 @@ package io.callstack.rnsandbox
 
 import android.content.Context
 import android.os.Bundle
+import android.view.MotionEvent
 import android.widget.FrameLayout
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReactContext
@@ -22,8 +23,43 @@ class SandboxReactNativeView(
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        SandboxTouchInterceptor.register(this)
         if (needsLoad && childCount == 0) {
             onAttachLoadCallback?.invoke()
+        }
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        SandboxTouchInterceptor.unregister(this)
+    }
+
+    /**
+     * Forward a touch event directly to the sandbox's child surface view,
+     * bypassing the host's ReactSurfaceView dispatch entirely.
+     * Called by [SandboxTouchInterceptor] when a touch lands inside this sandbox.
+     */
+    fun dispatchTouchEventToChild(ev: MotionEvent) {
+        if (childCount > 0) {
+            val child = getChildAt(0)
+
+            // Convert screen-absolute coordinates to sandbox-local coordinates.
+            // The MotionEvent from the Window callback carries raw screen coords
+            // (ev.rawX/rawY), but dispatchTouchEvent on a child expects coords
+            // relative to the child's top-left corner. We get our screen position
+            // and subtract it from the raw coords to produce the local offset.
+            val loc = IntArray(2)
+            getLocationOnScreen(loc)
+            val offsetX = ev.rawX - loc[0]
+            val offsetY = ev.rawY - loc[1]
+
+            // Create a copy of the original event rather than mutating it —
+            // the original may still be referenced by other parts of the
+            // Android dispatch pipeline.
+            val localEvent = MotionEvent.obtain(ev)
+            localEvent.setLocation(offsetX, offsetY)
+            child?.dispatchTouchEvent(localEvent)
+            localEvent.recycle()
         }
     }
 

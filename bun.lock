@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "multi-instance-monorepo",
@@ -186,9 +187,31 @@
         "react-test-renderer": "19.1.0",
       },
     },
+    "apps/touch-test-demo": {
+      "name": "@apps/touch-test-demo",
+      "version": "1.0.0",
+      "dependencies": {
+        "@callstack/react-native-sandbox": "workspace:*",
+        "react": "19.1.0",
+        "react-native": "0.80.1",
+      },
+      "devDependencies": {
+        "@babel/core": "^7.25.2",
+        "@babel/preset-env": "^7.25.3",
+        "@babel/runtime": "^7.25.0",
+        "@react-native-community/cli": "18.0.0",
+        "@react-native-community/cli-platform-android": "18.0.0",
+        "@react-native-community/cli-platform-ios": "18.0.0",
+        "@react-native/babel-preset": "0.80.1",
+        "@react-native/eslint-config": "0.80.1",
+        "@react-native/metro-config": "0.80.1",
+        "@react-native/typescript-config": "0.80.1",
+        "react-test-renderer": "19.1.0",
+      },
+    },
     "packages/react-native-sandbox": {
       "name": "@callstack/react-native-sandbox",
-      "version": "0.6.0",
+      "version": "0.6.1",
       "devDependencies": {
         "react": "19.1.0",
         "react-native": "0.80.1",
@@ -213,6 +236,8 @@
     "@apps/recursive": ["@apps/recursive@workspace:apps/recursive"],
 
     "@apps/side-by-side": ["@apps/side-by-side@workspace:apps/side-by-side"],
+
+    "@apps/touch-test-demo": ["@apps/touch-test-demo@workspace:apps/touch-test-demo"],
 
     "@babel/code-frame": ["@babel/code-frame@7.27.1", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.27.1", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg=="],
 
