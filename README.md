@@ -150,6 +150,7 @@ Full examples:
 - [`apps/p2p-chat`](./apps/p2p-counter/README.md): Direct sandbox-to-sandbox chat demo.
 - [`apps/p2p-counter`](./apps/p2p-counter/README.md): Direct sandbox-to-sandbox communication demo.
 - [`apps/fs-experiment`](./apps/fs-experiment/README.md): File system & storage isolation with TurboModule substitutions.
+- [`apps/origin-pooling`](./apps/origin-pooling/): Origin sharing, idle TTL, and per-surface messaging demo.
 
 ## 📚 API Reference
 
