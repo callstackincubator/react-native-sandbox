@@ -16,10 +16,36 @@
 
 using namespace facebook::react;
 
+#pragma mark - SharedFactory (origin-based pooling)
+
+@interface SharedFactory : NSObject
+@property (nonatomic, strong) RCTReactNativeFactory *factory;
+@property (nonatomic, assign) NSInteger refCount;
+@property (nonatomic, assign) NSInteger idleTTLMs;
+@property (nonatomic, assign) NSInteger destroyGeneration;
+@end
+
+@implementation SharedFactory
+@end
+
+static NSMutableDictionary<NSString *, SharedFactory *> *sSharedFactories = nil;
+
+static void ensureSharedFactories()
+{
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    sSharedFactories = [NSMutableDictionary new];
+  });
+}
+
+#pragma mark - SandboxReactNativeViewComponentView
+
 @interface SandboxReactNativeViewComponentView () <RCTSandboxReactNativeViewViewProtocol>
 @property (nonatomic, strong) RCTReactNativeFactory *reactNativeFactory;
 @property (nonatomic, strong, nullable) SandboxReactNativeDelegate *reactNativeDelegate;
 @property (nonatomic, assign) BOOL didScheduleLoad;
+@property (nonatomic, assign) BOOL usesSharedFactory;
+@property (nonatomic, copy, nullable) NSString *currentOrigin;
 @end
 
 @implementation SandboxReactNativeViewComponentView {
@@ -37,8 +63,9 @@ using namespace facebook::react;
     static const auto defaultProps = std::make_shared<const SandboxReactNativeViewProps>();
     _props = defaultProps;
 
-    // Create delegate once during initialization
     self.reactNativeDelegate = [[SandboxReactNativeDelegate alloc] init];
+    self.usesSharedFactory = NO;
+    self.currentOrigin = nil;
   }
 
   return self;
@@ -47,8 +74,6 @@ using namespace facebook::react;
 - (void)updateEventEmitter:(const facebook::react::EventEmitter::Shared &)eventEmitter
 {
   [super updateEventEmitter:eventEmitter];
-
-  // EventEmitter has been updated, try to set it on the delegate
   [self updateEventEmitterIfNeeded];
 }
 
@@ -56,8 +81,6 @@ using namespace facebook::react;
            oldState:(const facebook::react::State::Shared &)oldState
 {
   [super updateState:state oldState:oldState];
-
-  // State has been updated, eventEmitter might be available now
   [self updateEventEmitterIfNeeded];
 }
 
@@ -82,14 +105,12 @@ using namespace facebook::react;
     }
 
     if (oldViewProps.allowedTurboModules != newViewProps.allowedTurboModules) {
-      // Convert std::vector to std::set
       std::set<std::string> allowedModules(
           newViewProps.allowedTurboModules.begin(), newViewProps.allowedTurboModules.end());
       [self.reactNativeDelegate setAllowedTurboModules:allowedModules];
     }
 
     if (oldViewProps.allowedOrigins != newViewProps.allowedOrigins) {
-      // Convert std::vector to std::set
       std::set<std::string> allowedOrigins(newViewProps.allowedOrigins.begin(), newViewProps.allowedOrigins.end());
       [self.reactNativeDelegate setAllowedOrigins:allowedOrigins];
     }
@@ -109,20 +130,26 @@ using namespace facebook::react;
     self.reactNativeDelegate.hasOnMessageHandler = newViewProps.hasOnMessageHandler;
     self.reactNativeDelegate.hasOnErrorHandler = newViewProps.hasOnErrorHandler;
 
-    // Always try to set the eventEmitter when props update
     [self updateEventEmitterIfNeeded];
   }
 
   BOOL turboModuleConfigChanged = oldViewProps.allowedTurboModules != newViewProps.allowedTurboModules ||
       oldViewProps.turboModuleSubstitutions != newViewProps.turboModuleSubstitutions;
+  BOOL originChanged = oldViewProps.origin != newViewProps.origin;
 
-  if (turboModuleConfigChanged) {
+  if (turboModuleConfigChanged || originChanged) {
+    [self releaseSharedFactory];
     self.reactNativeFactory = nil;
   }
 
-  if (turboModuleConfigChanged || oldViewProps.componentName != newViewProps.componentName ||
+  if (turboModuleConfigChanged || originChanged || oldViewProps.componentName != newViewProps.componentName ||
       oldViewProps.initialProperties != newViewProps.initialProperties ||
       oldViewProps.launchOptions != newViewProps.launchOptions) {
+    [self scheduleReactViewLoad];
+  }
+
+  if (!self.reactNativeRootView && newViewProps.componentName.length() > 0 &&
+      newViewProps.jsBundleSource.length() > 0) {
     [self scheduleReactViewLoad];
   }
 }
@@ -170,7 +197,6 @@ using namespace facebook::react;
     return;
   }
 
-  // Convert props to Objective-C types
   NSDictionary *initialProperties = @{};
   if (!props.initialProperties.isNull()) {
     initialProperties = (NSDictionary *)convertFollyDynamicToId(props.initialProperties);
@@ -182,8 +208,9 @@ using namespace facebook::react;
   }
 
   if (!self.reactNativeFactory) {
-    self.reactNativeFactory = [[RCTReactNativeFactory alloc] initWithDelegate:self.reactNativeDelegate];
+    [self acquireFactory];
   }
+
   UIView *rnView = [self.reactNativeFactory.rootViewFactory viewWithModuleName:moduleName
                                                              initialProperties:initialProperties
                                                                  launchOptions:launchOptions];
@@ -194,8 +221,89 @@ using namespace facebook::react;
   rnView.frame = self.bounds;
   rnView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 
-  // Try to set eventEmitter after React Native view is loaded
   [self updateEventEmitterIfNeeded];
+}
+
+#pragma mark - Origin-based factory pooling
+
+- (void)acquireFactory
+{
+  // sSharedFactories is an NSMutableDictionary and is NOT thread-safe.
+  // All accesses (acquire, release, and the dispatch_after cleanup block)
+  // must occur on the main thread. Fabric component-view updates are
+  // dispatched to the main thread by the React renderer, so this invariant
+  // holds today — but assert explicitly so any future off-thread call is
+  // caught immediately rather than producing a silent data race.
+  NSAssert([NSThread isMainThread], @"acquireFactory must be called on the main thread");
+  ensureSharedFactories();
+
+  const auto &props = *std::static_pointer_cast<const SandboxReactNativeViewProps>(_props);
+  NSString *origin = RCTNSStringFromString(props.origin);
+
+  if (origin.length > 0) {
+    SharedFactory *shared = sSharedFactories[origin];
+    if (shared) {
+      self.reactNativeFactory = shared.factory;
+      shared.refCount++;
+      shared.idleTTLMs = MAX(shared.idleTTLMs, props.idleTTL);
+      self.usesSharedFactory = YES;
+      self.currentOrigin = origin;
+      return;
+    }
+  }
+
+  self.reactNativeFactory = [[RCTReactNativeFactory alloc] initWithDelegate:self.reactNativeDelegate];
+
+  if (origin.length > 0) {
+    SharedFactory *shared = [SharedFactory new];
+    shared.factory = self.reactNativeFactory;
+    shared.refCount = 1;
+    shared.idleTTLMs = props.idleTTL;
+    shared.destroyGeneration = 0;
+    sSharedFactories[origin] = shared;
+    self.usesSharedFactory = YES;
+    self.currentOrigin = origin;
+  } else {
+    self.usesSharedFactory = NO;
+    self.currentOrigin = nil;
+  }
+}
+
+- (void)releaseSharedFactory
+{
+  if (!self.usesSharedFactory || !self.currentOrigin) {
+    return;
+  }
+  NSAssert([NSThread isMainThread], @"releaseSharedFactory must be called on the main thread");
+  ensureSharedFactories();
+
+  NSString *origin = self.currentOrigin;
+  SharedFactory *shared = sSharedFactories[origin];
+  if (!shared) {
+    self.usesSharedFactory = NO;
+    self.currentOrigin = nil;
+    return;
+  }
+
+  shared.refCount--;
+  if (shared.refCount <= 0) {
+    NSInteger ttl = shared.idleTTLMs;
+    if (ttl > 0) {
+      NSInteger gen = ++shared.destroyGeneration;
+      dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(ttl * NSEC_PER_MSEC)), dispatch_get_main_queue(), ^{
+        ensureSharedFactories();
+        SharedFactory *current = sSharedFactories[origin];
+        if (current && current.refCount <= 0 && current.destroyGeneration == gen) {
+          [sSharedFactories removeObjectForKey:origin];
+        }
+      });
+    } else {
+      [sSharedFactories removeObjectForKey:origin];
+    }
+  }
+
+  self.usesSharedFactory = NO;
+  self.currentOrigin = nil;
 }
 
 - (void)prepareForRecycle
@@ -205,7 +313,13 @@ using namespace facebook::react;
   [self.reactNativeRootView removeFromSuperview];
   self.reactNativeRootView = nil;
 
-  // Keep the delegate for reuse - it holds configuration and is designed to be persistent
+  [self releaseSharedFactory];
+  self.reactNativeFactory = nil;
+}
+
+- (void)dealloc
+{
+  [self releaseSharedFactory];
 }
 
 Class<RCTComponentViewProtocol> SandboxReactNativeViewCls(void)

@@ -67,6 +67,17 @@ class SandboxReactNativeDelegate(
             val reactHost: ReactHostImpl,
             val sandboxContext: Context,
             var refCount: Int,
+            // idleTTLMs: max-wins across all registering delegates for this origin.
+            // A delegate with a tight TTL will observe the longer-lived behavior if
+            // a peer has already registered a larger value. See idleTTL JSDoc.
+            var idleTTLMs: Long = 0,
+            // Incremented each time a deferred destroy is scheduled so that a
+            // re-mount within the TTL window can cancel the pending destroy.
+            // All accesses must be on the main thread; use AtomicLong to make
+            // the increment-and-read sequence safe if that invariant ever relaxes.
+            val destroyGeneration: java.util.concurrent.atomic.AtomicLong =
+                java.util.concurrent.atomic
+                    .AtomicLong(0),
         )
     }
 
@@ -76,6 +87,7 @@ class SandboxReactNativeDelegate(
     var allowedTurboModules: Set<String> = emptySet()
     var turboModuleSubstitutions: Map<String, String> = emptyMap()
     var allowedOrigins: Set<String> = emptySet()
+    var idleTTLMs: Long = 0
 
     @JvmField var hasOnMessageHandler: Boolean = false
 
@@ -112,6 +124,7 @@ class SandboxReactNativeDelegate(
                 host = shared.reactHost
                 sandboxContext = shared.sandboxContext
                 shared.refCount++
+                shared.idleTTLMs = maxOf(shared.idleTTLMs, idleTTLMs)
                 ownsReactHost = false
                 Log.d(TAG, "Reusing shared ReactHost for origin '$origin' (refCount=${shared.refCount})")
             } else {
@@ -165,7 +178,7 @@ class SandboxReactNativeDelegate(
                 ownsReactHost = true
 
                 if (origin.isNotEmpty()) {
-                    sharedHosts[origin] = SharedReactHost(host, sandboxContext, refCount = 1)
+                    sharedHosts[origin] = SharedReactHost(host, sandboxContext, refCount = 1, idleTTLMs = idleTTLMs)
                     Log.d(TAG, "Created shared ReactHost for origin '$origin'")
                 }
             }
@@ -355,9 +368,26 @@ class SandboxReactNativeDelegate(
                 if (shared != null && shared.reactHost === host) {
                     shared.refCount--
                     if (shared.refCount <= 0) {
-                        sharedHosts.remove(origin)
-                        host.onHostDestroy()
-                        host.destroy("sandbox cleanup", null)
+                        val capturedOrigin = origin
+                        val ttl = shared.idleTTLMs
+                        if (ttl > 0) {
+                            val gen = shared.destroyGeneration.incrementAndGet()
+                            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                                check(android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+                                    "SharedReactHost destroy must run on the main thread"
+                                }
+                                val current = sharedHosts[capturedOrigin]
+                                if (current != null && current.refCount <= 0 && current.destroyGeneration.get() == gen) {
+                                    sharedHosts.remove(capturedOrigin)
+                                    current.reactHost.onHostDestroy()
+                                    current.reactHost.destroy("lazy sandbox cleanup", null)
+                                }
+                            }, ttl)
+                        } else {
+                            sharedHosts.remove(capturedOrigin)
+                            host.onHostDestroy()
+                            host.destroy("sandbox cleanup", null)
+                        }
                     }
                 }
             } else if (ownsReactHost) {
