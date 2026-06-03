@@ -2,7 +2,7 @@ import {useCallback} from 'react'
 
 declare const globalThis: {
   postMessage: (msg: unknown, targetOrigin?: string) => void
-  setOnMessage: (cb: (msg: unknown) => void, delegateId?: string) => void
+  setOnMessage: (cb: (msg: unknown) => void, surfaceId?: string) => void
 }
 
 /**
@@ -22,8 +22,8 @@ declare const globalThis: {
  *
  * Usage:
  * ```tsx
- * function MyWidget({__sandboxDelegateId}: Props) {
- *   const {postMessage, setOnMessage} = useSurfaceMessaging(__sandboxDelegateId);
+ * function MyWidget({__sandboxSurfaceId}: Props) {
+ *   const {postMessage, setOnMessage} = useSurfaceMessaging(__sandboxSurfaceId);
  *
  *   useEffect(() => {
  *     const unsubscribe = setOnMessage((msg) => console.log('received', msg));
@@ -34,15 +34,15 @@ declare const globalThis: {
  * }
  * ```
  *
- * @param delegateId - The `__sandboxDelegateId` prop injected by the native
+ * @param surfaceId - The `__sandboxSurfaceId` prop injected by the native
  *   side into initialProperties. If undefined, falls back to broadcast/shared.
  */
-export function useSurfaceMessaging(delegateId?: string) {
+export function useSurfaceMessaging(surfaceId?: string) {
   const postMessage = useCallback(
     (msg: unknown, targetOrigin?: string) => {
       if (targetOrigin) {
-        // Cross-origin: forward directly without adding delegate routing hint.
-        // The native side routes by origin, not by delegate ID.
+        // Cross-origin: forward directly without adding surface routing hint.
+        // The native side routes by origin, not by surface ID.
         globalThis.postMessage(
           typeof msg === 'object' && msg !== null ? msg : {data: msg},
           targetOrigin
@@ -52,23 +52,23 @@ export function useSurfaceMessaging(delegateId?: string) {
       // Per-surface: attach routing hint for the host view
       const payload =
         typeof msg === 'object' && msg !== null ? {...msg} : {data: msg}
-      if (delegateId) {
-        ;(payload as Record<string, unknown>).__sandboxDelegateId = delegateId
+      if (surfaceId) {
+        ;(payload as Record<string, unknown>).__sandboxSurfaceId = surfaceId
       }
       globalThis.postMessage(payload)
     },
-    [delegateId]
+    [surfaceId]
   )
 
   const setOnMessage = useCallback(
     (cb: (msg: unknown) => void) => {
-      globalThis.setOnMessage(cb, delegateId)
+      globalThis.setOnMessage(cb, surfaceId)
       // Return a cleanup function that unregisters the per-surface listener
       return () => {
-        globalThis.setOnMessage(() => {}, delegateId)
+        globalThis.setOnMessage(() => {}, surfaceId)
       }
     },
-    [delegateId]
+    [surfaceId]
   )
 
   return {postMessage, setOnMessage}

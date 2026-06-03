@@ -113,6 +113,13 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)cleanupResources;
 
+/**
+ * Generates a new unique surface ID for per-surface message routing.
+ * Called before each view load so the JS side can identify this surface.
+ * @return The generated surface ID string (e.g. "surface:1")
+ */
+- (NSString *)generateSurfaceId;
+
 @end
 
 NS_ASSUME_NONNULL_END

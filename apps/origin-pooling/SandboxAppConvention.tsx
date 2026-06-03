@@ -1,7 +1,7 @@
 /**
  * SandboxAppConvention — convention-based approach (no library dependency).
  *
- * Uses the __sandboxDelegateId prop directly with globalThis.postMessage
+ * Uses the __sandboxSurfaceId prop directly with globalThis.postMessage
  * and globalThis.setOnMessage for per-surface routing. No import from
  * @callstack/react-native-sandbox needed.
  */
@@ -16,16 +16,16 @@ import {
 
 declare const globalThis: {
   postMessage: (msg: unknown, targetOrigin?: string) => void
-  setOnMessage: (cb: (msg: unknown) => void, delegateId?: string) => void
+  setOnMessage: (cb: (msg: unknown) => void, surfaceId?: string) => void
 }
 
 type LogEntry = {dir: 'in' | 'out'; text: string; ts: number}
 
 type Props = {
-  __sandboxDelegateId?: string
+  __sandboxSurfaceId?: string
 }
 
-export default function SandboxAppConvention({__sandboxDelegateId}: Props) {
+export default function SandboxAppConvention({__sandboxSurfaceId}: Props) {
   const [log, setLog] = useState<LogEntry[]>([])
   const instanceId = useRef(Math.random().toString(36).slice(2, 6)).current
   const seq = useRef(0)
@@ -34,16 +34,14 @@ export default function SandboxAppConvention({__sandboxDelegateId}: Props) {
   const addLog = (dir: 'in' | 'out', text: string) =>
     setLog(prev => [...prev.slice(-19), {dir, text, ts: Date.now()}])
 
-  // Convention: spread __sandboxDelegateId into the payload for per-surface routing
+  // Convention: spread __sandboxSurfaceId into the payload for per-surface routing
   const send = React.useCallback(
     (msg: Record<string, unknown>, targetOrigin?: string) => {
       const payload =
-        !targetOrigin && __sandboxDelegateId
-          ? {...msg, __sandboxDelegateId}
-          : msg
+        !targetOrigin && __sandboxSurfaceId ? {...msg, __sandboxSurfaceId} : msg
       globalThis.postMessage(payload, targetOrigin)
     },
-    [__sandboxDelegateId]
+    [__sandboxSurfaceId]
   )
 
   useEffect(() => {
@@ -51,16 +49,16 @@ export default function SandboxAppConvention({__sandboxDelegateId}: Props) {
     addLog('out', `rendered (${instanceId})`)
   }, [instanceId, send])
 
-  // Convention: pass delegateId as 2nd arg for per-surface listener
+  // Convention: pass surfaceId as 2nd arg for per-surface listener
   useEffect(() => {
     globalThis.setOnMessage((msg: unknown) => {
       const data = msg as Record<string, unknown>
       addLog('in', `from ${data.instanceId ?? '?'}: ${data.type}`)
-    }, __sandboxDelegateId)
+    }, __sandboxSurfaceId)
     return () => {
-      globalThis.setOnMessage(() => {}, __sandboxDelegateId)
+      globalThis.setOnMessage(() => {}, __sandboxSurfaceId)
     }
-  }, [__sandboxDelegateId])
+  }, [__sandboxSurfaceId])
 
   const sendHeartbeat = () => {
     const s = ++seq.current

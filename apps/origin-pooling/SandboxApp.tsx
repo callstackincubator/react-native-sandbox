@@ -17,11 +17,11 @@ import {
 type LogEntry = {dir: 'in' | 'out'; text: string; ts: number}
 
 type Props = {
-  __sandboxDelegateId?: string
+  __sandboxSurfaceId?: string
 }
 
-export default function SandboxApp({__sandboxDelegateId}: Props) {
-  const {postMessage, setOnMessage} = useSurfaceMessaging(__sandboxDelegateId)
+export default function SandboxApp({__sandboxSurfaceId}: Props) {
+  const {postMessage, setOnMessage} = useSurfaceMessaging(__sandboxSurfaceId)
   const [log, setLog] = useState<LogEntry[]>([])
   const instanceId = useRef(Math.random().toString(36).slice(2, 6)).current
   const seq = useRef(0)

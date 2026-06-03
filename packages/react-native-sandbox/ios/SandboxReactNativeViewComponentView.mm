@@ -231,6 +231,12 @@ static void ensureSharedFactories()
     initialProperties = (NSDictionary *)convertFollyDynamicToId(props.initialProperties);
   }
 
+  // Inject __sandboxSurfaceId for per-surface message routing (parity with Android)
+  NSString *surfaceId = [self.reactNativeDelegate generateSurfaceId];
+  NSMutableDictionary *propsWithSurfaceId = [initialProperties mutableCopy];
+  propsWithSurfaceId[@"__sandboxSurfaceId"] = surfaceId;
+  initialProperties = [propsWithSurfaceId copy];
+
   NSDictionary *launchOptions = @{};
   if (!props.launchOptions.isNull()) {
     launchOptions = (NSDictionary *)convertFollyDynamicToId(props.launchOptions);

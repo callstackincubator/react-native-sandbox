@@ -10,6 +10,7 @@
 #include <jsi/JSIDynamic.h>
 #include <jsi/decorator.h>
 #include <react/utils/jsi-utils.h>
+#include <atomic>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -95,6 +96,7 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
   std::map<std::string, std::string> _turboModuleSubstitutions;
   std::string _origin;
   std::string _jsBundleSource;
+  std::string _surfaceId;
   NSMutableDictionary<NSString *, id<RCTBridgeModule>> *_substitutedModuleInstances;
   NSMutableArray<NSDictionary *> *_pendingHostMessages;
 }
@@ -112,6 +114,10 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 // Note: Registry functionality has been moved to SandboxRegistry class
 // This class now focuses solely on delegate responsibilities
 
+static std::atomic<long> sNextSurfaceId{0};
+static std::mutex sDelegateBySurfaceIdMutex;
+static std::unordered_map<std::string, __unsafe_unretained SandboxReactNativeDelegate *> sDelegateBySurfaceId;
+
 #pragma mark - Instance Methods
 
 - (instancetype)init
@@ -126,11 +132,27 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
   return self;
 }
 
+- (NSString *)generateSurfaceId
+{
+  long nextId = ++sNextSurfaceId;
+  _surfaceId = "surface:" + std::to_string(nextId);
+  {
+    std::lock_guard<std::mutex> lock(sDelegateBySurfaceIdMutex);
+    sDelegateBySurfaceId[_surfaceId] = self;
+  }
+  return [NSString stringWithUTF8String:_surfaceId.c_str()];
+}
+
 - (void)cleanupResources
 {
   _onMessageSandbox.reset();
   _surfaceMessageCallbacks.clear();
   _rctInstance = nil;
+  if (!_surfaceId.empty()) {
+    std::lock_guard<std::mutex> lock(sDelegateBySurfaceIdMutex);
+    sDelegateBySurfaceId.erase(_surfaceId);
+  }
+  _surfaceId.clear();
   _allowedTurboModules.clear();
   _allowedOrigins.clear();
   _turboModuleSubstitutions.clear();
@@ -278,6 +300,10 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
 - (void)dealloc
 {
+  if (!_surfaceId.empty()) {
+    std::lock_guard<std::mutex> lock(sDelegateBySurfaceIdMutex);
+    sDelegateBySurfaceId.erase(_surfaceId);
+  }
   if (_delegateWrapper) {
     if (!_origin.empty()) {
       auto &registry = rnsandbox::SandboxRegistry::getInstance();
@@ -799,9 +825,27 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
           }
         } else {
           // targetOrigin is undefined/null - route to host
-          if (self.eventEmitter && self.hasOnMessageHandler) {
-            SandboxReactNativeViewEventEmitter::OnMessage messageEvent = {.data = jsi::dynamicFromValue(rt, args[0])};
-            self.eventEmitter->onMessage(messageEvent);
+          // Check for __sandboxSurfaceId to route to the correct delegate
+          SandboxReactNativeDelegate *targetDelegate = self;
+          jsi::Object msgObj = args[0].getObject(rt);
+          if (msgObj.hasProperty(rt, "__sandboxSurfaceId")) {
+            jsi::Value idVal = msgObj.getProperty(rt, "__sandboxSurfaceId");
+            if (idVal.isString()) {
+              std::string surfaceId = idVal.getString(rt).utf8(rt);
+              std::lock_guard<std::mutex> lock(sDelegateBySurfaceIdMutex);
+              auto it = sDelegateBySurfaceId.find(surfaceId);
+              if (it != sDelegateBySurfaceId.end() && it->second != nil) {
+                targetDelegate = it->second;
+              }
+            }
+          }
+
+          if (targetDelegate.eventEmitter && targetDelegate.hasOnMessageHandler) {
+            // Strip __sandboxSurfaceId from the emitted event data
+            folly::dynamic eventData = jsi::dynamicFromValue(rt, args[0]);
+            eventData.erase("__sandboxSurfaceId");
+            SandboxReactNativeViewEventEmitter::OnMessage messageEvent = {.data = eventData};
+            targetDelegate.eventEmitter->onMessage(messageEvent);
           } else {
             // Event emitter or handler not ready yet (warm start race). Buffer the message.
             jsi::Object jsonObject = rt.global().getPropertyAsObject(rt, "JSON");
@@ -809,8 +853,8 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
             jsi::Value jsonResult = jsonStringify.call(rt, args[0]);
             std::string messageJson = jsonResult.getString(rt).utf8(rt);
             NSString *nsMsg = [NSString stringWithUTF8String:messageJson.c_str()];
-            @synchronized(_pendingHostMessages) {
-              [_pendingHostMessages addObject:@{@"data" : nsMsg}];
+            @synchronized(targetDelegate->_pendingHostMessages) {
+              [targetDelegate->_pendingHostMessages addObject:@{@"data" : nsMsg}];
             }
           }
         }
@@ -824,10 +868,10 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
   return jsi::Function::createFromHostFunction(
       runtime,
       jsi::PropNameID::forAscii(runtime, "setOnMessage"),
-      2, // Accept 1 or 2 arguments: callback and optional delegateId
+      2, // Accept 1 or 2 arguments: callback and optional surfaceId
       [=](jsi::Runtime &rt, const jsi::Value &, const jsi::Value *args, size_t count) {
         if (count < 1 || count > 2) {
-          throw jsi::JSError(rt, "Expected 1 or 2 arguments: setOnMessage(callback, delegateId?)");
+          throw jsi::JSError(rt, "Expected 1 or 2 arguments: setOnMessage(callback, surfaceId?)");
         }
 
         const jsi::Value &arg = args[0];
@@ -837,15 +881,15 @@ static std::string safeGetStringProperty(jsi::Runtime &rt, const jsi::Object &ob
 
         jsi::Function fn = arg.asObject(rt).asFunction(rt);
 
-        // Check for optional delegate ID (2nd arg) for per-surface registration
-        std::string delegateId;
+        // Check for optional surface ID (2nd arg) for per-surface registration
+        std::string surfaceId;
         if (count == 2 && args[1].isString()) {
-          delegateId = args[1].getString(rt).utf8(rt);
+          surfaceId = args[1].getString(rt).utf8(rt);
         }
 
-        if (!delegateId.empty()) {
-          // Per-surface: register under the delegate ID
-          _surfaceMessageCallbacks[delegateId] = std::make_shared<jsi::Function>(std::move(fn));
+        if (!surfaceId.empty()) {
+          // Per-surface: register under the surface ID
+          _surfaceMessageCallbacks[surfaceId] = std::make_shared<jsi::Function>(std::move(fn));
         } else {
           // Legacy: single shared callback (last-writer-wins)
           _onMessageSandbox.reset();

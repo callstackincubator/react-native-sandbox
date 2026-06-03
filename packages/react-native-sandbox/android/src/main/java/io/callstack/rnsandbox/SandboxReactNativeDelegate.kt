@@ -81,22 +81,22 @@ class SandboxReactNativeDelegate(
             var jsiStateHandle: Long = 0,
         )
 
-        private val nextDelegateId =
+        private val nextSurfaceId =
             java.util.concurrent.atomic
                 .AtomicLong(0)
-        private val delegateById = java.util.concurrent.ConcurrentHashMap<String, SandboxReactNativeDelegate>()
+        private val delegateBySurfaceId = java.util.concurrent.ConcurrentHashMap<String, SandboxReactNativeDelegate>()
 
         /**
-         * Finds a delegate by its unique ID. Called from JNI when postMessage
-         * includes a __sandboxDelegateId for per-surface routing.
+         * Finds a delegate by its surface ID. Called from JNI when postMessage
+         * includes a __sandboxSurfaceId for per-surface routing.
          */
         @JvmStatic
-        fun findByDelegateId(id: String): SandboxReactNativeDelegate? = delegateById[id]
+        fun findBySurfaceId(id: String): SandboxReactNativeDelegate? = delegateBySurfaceId[id]
     }
 
     @JvmField var origin: String = ""
 
-    @JvmField var delegateId: String = ""
+    @JvmField var surfaceId: String = ""
 
     var jsBundleSource: String = ""
     var allowedTurboModules: Set<String> = emptySet()
@@ -131,9 +131,9 @@ class SandboxReactNativeDelegate(
         val capturedBundleSource = jsBundleSource
         val capturedAllowedModules = allowedTurboModules
 
-        // Generate a unique delegate ID for per-surface message routing
-        delegateId = "delegate:${nextDelegateId.incrementAndGet()}"
-        delegateById[delegateId] = this
+        // Generate a unique surface ID for per-surface message routing
+        surfaceId = "surface:${nextSurfaceId.incrementAndGet()}"
+        delegateBySurfaceId[surfaceId] = this
 
         try {
             val shared = if (origin.isNotEmpty()) sharedHosts[origin] else null
@@ -233,7 +233,7 @@ class SandboxReactNativeDelegate(
             instanceEventListener = listener
             host.addReactInstanceEventListener(listener)
 
-            val surface = host.createSurface(sandboxContext, componentName, initialProperties.withDelegateId())
+            val surface = host.createSurface(sandboxContext, componentName, initialProperties.withSurfaceId())
             reactSurface = surface
 
             val activity = getActivity()
@@ -418,8 +418,8 @@ class SandboxReactNativeDelegate(
     }
 
     fun cleanup() {
-        if (delegateId.isNotEmpty()) {
-            delegateById.remove(delegateId)
+        if (surfaceId.isNotEmpty()) {
+            delegateBySurfaceId.remove(surfaceId)
         }
 
         synchronized(pendingHostMessages) {
@@ -517,12 +517,12 @@ class SandboxReactNativeDelegate(
     }
 
     /**
-     * Injects __sandboxDelegateId into the initialProperties Bundle so the
+     * Injects __sandboxSurfaceId into the initialProperties Bundle so the
      * sandbox JS can pass it back through useSurfaceMessaging for per-surface routing.
      */
-    private fun Bundle?.withDelegateId(): Bundle {
+    private fun Bundle?.withSurfaceId(): Bundle {
         val bundle = this ?: Bundle()
-        bundle.putString("__sandboxDelegateId", delegateId)
+        bundle.putString("__sandboxSurfaceId", surfaceId)
         return bundle
     }
 

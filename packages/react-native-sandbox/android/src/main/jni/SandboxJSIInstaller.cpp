@@ -406,22 +406,22 @@ jlong installSandboxJSIBindings(
           // and setOnMessage callbacks, so deliver to JS only once.
           targets.front()->postMessage(messageJson);
         } else if (!statePtr->origin.empty()) {
-          // Per-surface routing: if the message contains __sandboxDelegateId,
+          // Per-surface routing: if the message contains __sandboxSurfaceId,
           // route only to that specific delegate instead of broadcasting.
-          std::string delegateId;
+          std::string surfaceId;
           if (args[0].isObject()) {
             jsi::Object msgObj = args[0].getObject(rt);
-            jsi::Value idVal = msgObj.getProperty(rt, "__sandboxDelegateId");
+            jsi::Value idVal = msgObj.getProperty(rt, "__sandboxSurfaceId");
             if (idVal.isString()) {
-              delegateId = idVal.getString(rt).utf8(rt);
-              // Create a shallow copy without __sandboxDelegateId to avoid
+              surfaceId = idVal.getString(rt).utf8(rt);
+              // Create a shallow copy without __sandboxSurfaceId to avoid
               // mutating the caller's object (which may be frozen/sealed).
               jsi::Object copy(rt);
               jsi::Array names = msgObj.getPropertyNames(rt);
               size_t len = names.size(rt);
               for (size_t i = 0; i < len; ++i) {
                 jsi::String name = names.getValueAtIndex(rt, i).getString(rt);
-                if (name.utf8(rt) != "__sandboxDelegateId") {
+                if (name.utf8(rt) != "__sandboxSurfaceId") {
                   copy.setProperty(rt, name, msgObj.getProperty(rt, name));
                 }
               }
@@ -429,18 +429,18 @@ jlong installSandboxJSIBindings(
             }
           }
 
-          if (!delegateId.empty()) {
-            // Route to the specific delegate identified by delegateId
+          if (!surfaceId.empty()) {
+            // Route to the specific delegate identified by surfaceId
             jclass delegateCls = jniEnv->FindClass(
                 "io/callstack/rnsandbox/SandboxReactNativeDelegate");
             jmethodID findMethod = jniEnv->GetStaticMethodID(
                 delegateCls,
-                "findByDelegateId",
+                "findBySurfaceId",
                 "(Ljava/lang/String;)"
                 "Lio/callstack/rnsandbox/SandboxReactNativeDelegate;");
-            jstring jDelegateId = jniEnv->NewStringUTF(delegateId.c_str());
+            jstring jSurfaceId = jniEnv->NewStringUTF(surfaceId.c_str());
             jobject targetDelegate = jniEnv->CallStaticObjectMethod(
-                delegateCls, findMethod, jDelegateId);
+                delegateCls, findMethod, jSurfaceId);
             if (targetDelegate) {
               jclass cls = jniEnv->GetObjectClass(targetDelegate);
               jmethodID mid = jniEnv->GetMethodID(
@@ -451,7 +451,7 @@ jlong installSandboxJSIBindings(
               jniEnv->DeleteLocalRef(cls);
               jniEnv->DeleteLocalRef(targetDelegate);
             }
-            jniEnv->DeleteLocalRef(jDelegateId);
+            jniEnv->DeleteLocalRef(jSurfaceId);
             jniEnv->DeleteLocalRef(delegateCls);
           } else {
             // No delegate ID — broadcast to all delegates (backward compat)
@@ -489,7 +489,7 @@ jlong installSandboxJSIBindings(
           size_t count) -> jsi::Value {
         if (count < 1 || count > 2) {
           throw jsi::JSError(
-              rt, "setOnMessage(callback, delegateId?): expected 1 or 2 args");
+              rt, "setOnMessage(callback, surfaceId?): expected 1 or 2 args");
         }
         if (!args[0].isObject() || !args[0].asObject(rt).isFunction(rt)) {
           throw jsi::JSError(rt, "setOnMessage: argument must be a function");
@@ -499,10 +499,10 @@ jlong installSandboxJSIBindings(
         if (!statePtr)
           return jsi::Value::undefined();
 
-        // Check for optional delegate ID (2nd arg) for per-surface registration
-        std::string delegateId;
+        // Check for optional surface ID (2nd arg) for per-surface registration
+        std::string surfaceId;
         if (count == 2 && args[1].isString()) {
-          delegateId = args[1].getString(rt).utf8(rt);
+          surfaceId = args[1].getString(rt).utf8(rt);
         }
 
         std::vector<std::string> buffered;
@@ -510,9 +510,9 @@ jlong installSandboxJSIBindings(
             args[0].asObject(rt).asFunction(rt));
         {
           std::lock_guard<std::mutex> lock(statePtr->mutex);
-          if (!delegateId.empty()) {
-            // Per-surface: register under the delegate ID
-            statePtr->surfaceMessageCallbacks[delegateId] = fn;
+          if (!surfaceId.empty()) {
+            // Per-surface: register under the surface ID
+            statePtr->surfaceMessageCallbacks[surfaceId] = fn;
           } else {
             // Legacy: single shared callback
             statePtr->onMessageCallback.reset();
