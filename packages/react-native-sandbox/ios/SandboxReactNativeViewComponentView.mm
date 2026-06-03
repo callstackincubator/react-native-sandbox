@@ -349,6 +349,8 @@ static void ensureSharedFactories()
       });
     } else {
       [sSharedFactories removeObjectForKey:origin];
+      auto &registry = rnsandbox::SandboxRegistry::getInstance();
+      registry.unregister([origin UTF8String]);
     }
   }
 
