@@ -27,12 +27,19 @@ import com.facebook.react.runtime.ReactHostImpl
 import com.facebook.react.runtime.hermes.HermesInstance
 import com.facebook.react.shell.MainReactPackage
 import com.facebook.react.uimanager.ViewManager
+import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
 
 class SandboxReactNativeDelegate(
     private val context: Context,
 ) {
     companion object {
         private const val TAG = "SandboxRNDelegate"
+
+        private const val REMOTE_BUNDLE_CONNECT_TIMEOUT_MS = 10_000
+        private const val REMOTE_BUNDLE_READ_TIMEOUT_MS = 15_000
+        private const val REMOTE_BUNDLE_DOWNLOAD_TIMEOUT_MS = 20_000L
 
         private val sharedHosts = mutableMapOf<String, SharedReactHost>()
         private val registeredSubstitutionPackages = mutableListOf<ReactPackage>()
@@ -166,13 +173,20 @@ class SandboxReactNativeDelegate(
                 val componentFactory = ComponentFactory()
                 DefaultComponentsRegistry.register(componentFactory)
 
+                // For a remote (http/https) bundle, disable developer support on this
+                // ReactHost. With dev support enabled the runtime ignores jsBundleLoader
+                // and fetches the bundle from the Metro dev server using jsMainModulePath,
+                // turning the URL into http://localhost:8081/<url>.bundle (a 404). Local
+                // sources ("index"/asset names) keep dev support so Fast Refresh works.
+                val isRemoteBundle = capturedBundleSource.startsWith("http://") ||
+                    capturedBundleSource.startsWith("https://")
                 host =
                     ReactHostImpl(
                         sandboxContext,
                         hostDelegate,
                         componentFactory,
-                        true,
-                        true,
+                        !isRemoteBundle,
+                        !isRemoteBundle,
                     )
 
                 ownsReactHost = true
@@ -259,7 +273,43 @@ class SandboxReactNativeDelegate(
         if (bundleSource.isEmpty()) return null
         return when {
             bundleSource.startsWith("http://") || bundleSource.startsWith("https://") -> {
-                JSBundleLoader.createFileLoader(bundleSource)
+                // JSBundleLoader.createFileLoader(url) does not download anything:
+                // loadScriptFromFile treats the argument as a local path, so a remote
+                // URL never resolves. Prefetch the bundle to a cache file (off the main
+                // thread to avoid NetworkOnMainThreadException) and hand it to the
+                // network loader, which keeps the original sourceURL for stack traces.
+                val cacheFile = File(
+                    context.cacheDir,
+                    "sandbox-remote-${bundleSource.hashCode()}.bundle",
+                )
+                var downloadError: Exception? = null
+                val worker = Thread {
+                    try {
+                        val connection = URL(bundleSource).openConnection() as HttpURLConnection
+                        connection.connectTimeout = REMOTE_BUNDLE_CONNECT_TIMEOUT_MS
+                        connection.readTimeout = REMOTE_BUNDLE_READ_TIMEOUT_MS
+                        try {
+                            connection.inputStream.use { input ->
+                                cacheFile.outputStream().use { output -> input.copyTo(output) }
+                            }
+                        } finally {
+                            connection.disconnect()
+                        }
+                    } catch (e: Exception) {
+                        downloadError = e
+                    }
+                }
+                worker.start()
+                worker.join(REMOTE_BUNDLE_DOWNLOAD_TIMEOUT_MS)
+                if (downloadError != null || !cacheFile.exists() || cacheFile.length() == 0L) {
+                    Log.e(TAG, "Failed to download remote bundle '$bundleSource'", downloadError)
+                    return null
+                }
+                Log.d(TAG, "Downloaded remote bundle '$bundleSource' (${cacheFile.length()} bytes)")
+                JSBundleLoader.createCachedBundleFromNetworkLoader(
+                    bundleSource,
+                    cacheFile.absolutePath,
+                )
             }
 
             else -> {
