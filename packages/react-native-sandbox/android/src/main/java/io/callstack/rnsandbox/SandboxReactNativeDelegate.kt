@@ -278,34 +278,47 @@ class SandboxReactNativeDelegate(
                 // URL never resolves. Prefetch the bundle to a cache file (off the main
                 // thread to avoid NetworkOnMainThreadException) and hand it to the
                 // network loader, which keeps the original sourceURL for stack traces.
+                //
+                // The cache file is keyed by the URL, and a remote URL is treated as
+                // immutable: if it was already downloaded, reuse the cached copy and
+                // skip the network entirely. This makes repeated loads (e.g. every cold
+                // start) instant and offline-capable. To ship an update, change the URL
+                // (a version segment or `?v=` query) — a new URL misses the cache and is
+                // fetched once. Serving changing content at a fixed URL won't update.
                 val cacheFile = File(
                     context.cacheDir,
                     "sandbox-remote-${bundleSource.hashCode()}.bundle",
                 )
-                var downloadError: Exception? = null
-                val worker = Thread {
-                    try {
-                        val connection = URL(bundleSource).openConnection() as HttpURLConnection
-                        connection.connectTimeout = REMOTE_BUNDLE_CONNECT_TIMEOUT_MS
-                        connection.readTimeout = REMOTE_BUNDLE_READ_TIMEOUT_MS
+                if (cacheFile.exists() && cacheFile.length() > 0L) {
+                    Log.d(TAG, "Reusing cached bundle '$bundleSource' (${cacheFile.length()} bytes)")
+                } else {
+                    var downloadError: Exception? = null
+                    val worker = Thread {
                         try {
-                            connection.inputStream.use { input ->
-                                cacheFile.outputStream().use { output -> input.copyTo(output) }
+                            val connection = URL(bundleSource).openConnection() as HttpURLConnection
+                            connection.connectTimeout = REMOTE_BUNDLE_CONNECT_TIMEOUT_MS
+                            connection.readTimeout = REMOTE_BUNDLE_READ_TIMEOUT_MS
+                            try {
+                                connection.inputStream.use { input ->
+                                    cacheFile.outputStream().use { output -> input.copyTo(output) }
+                                }
+                            } finally {
+                                connection.disconnect()
                             }
-                        } finally {
-                            connection.disconnect()
+                        } catch (e: Exception) {
+                            downloadError = e
                         }
-                    } catch (e: Exception) {
-                        downloadError = e
                     }
+                    worker.start()
+                    worker.join(REMOTE_BUNDLE_DOWNLOAD_TIMEOUT_MS)
+                    if (downloadError != null || !cacheFile.exists() || cacheFile.length() == 0L) {
+                        // Drop a partial file so a later load can retry cleanly.
+                        cacheFile.delete()
+                        Log.e(TAG, "Failed to download remote bundle '$bundleSource'", downloadError)
+                        return null
+                    }
+                    Log.d(TAG, "Downloaded remote bundle '$bundleSource' (${cacheFile.length()} bytes)")
                 }
-                worker.start()
-                worker.join(REMOTE_BUNDLE_DOWNLOAD_TIMEOUT_MS)
-                if (downloadError != null || !cacheFile.exists() || cacheFile.length() == 0L) {
-                    Log.e(TAG, "Failed to download remote bundle '$bundleSource'", downloadError)
-                    return null
-                }
-                Log.d(TAG, "Downloaded remote bundle '$bundleSource' (${cacheFile.length()} bytes)")
                 JSBundleLoader.createCachedBundleFromNetworkLoader(
                     bundleSource,
                     cacheFile.absolutePath,
