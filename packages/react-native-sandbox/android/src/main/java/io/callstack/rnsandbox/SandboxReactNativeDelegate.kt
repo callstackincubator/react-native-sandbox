@@ -319,9 +319,19 @@ class SandboxReactNativeDelegate(
                     }
                     Log.d(TAG, "Downloaded remote bundle '$bundleSource' (${cacheFile.length()} bytes)")
                 }
-                JSBundleLoader.createCachedBundleFromNetworkLoader(
-                    bundleSource,
+                // Load the cached bundle synchronously (loadSynchronously = true).
+                // createCachedBundleFromNetworkLoader() loads with loadSynchronously
+                // = false, which on RN 0.85 bridgeless executes the script before the
+                // TurboModule JSI bindings are installed on the runtime — the bundle's
+                // InitializeCore then hits TurboModuleRegistry.getEnforcing('Platform-
+                // Constants') with no proxy registered and the VM aborts. A synchronous
+                // load mirrors how the built-in asset loader (createAssetLoader(.., true))
+                // runs the main bundle, which sequences correctly. We keep the original
+                // URL as sourceURL so stack traces still point at the remote bundle.
+                JSBundleLoader.createFileLoader(
                     cacheFile.absolutePath,
+                    bundleSource,
+                    true,
                 )
             }
 
