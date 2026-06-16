@@ -78,7 +78,21 @@ class SandboxReactNativeView(
         val w = right - left
         val h = bottom - top
         for (i in 0 until childCount) {
-            getChildAt(i).layout(0, 0, w, h)
+            val child = getChildAt(i)
+            // The child is a ReactSurfaceView from a SEPARATE ReactHost. Fabric
+            // lays our view out by calling layout() directly, without a measure
+            // pass, so the child never receives onMeasure(). But ReactSurfaceView
+            // only pushes layout constraints to its surface from onMeasure() (and
+            // its onLayout() is a no-op until wasMeasured is true). Without an
+            // explicit measure the nested surface keeps its initial constructor
+            // constraints and renders blank (regression surfaced on RN 0.85).
+            // Measure with EXACTLY specs so updateLayoutSpecs() runs with our real
+            // size, then lay the child out to fill us.
+            child.measure(
+                MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY),
+            )
+            child.layout(0, 0, w, h)
         }
     }
 
