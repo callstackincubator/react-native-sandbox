@@ -6,6 +6,8 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
+import com.facebook.react.uimanager.PointerEvents
+import com.facebook.react.views.view.ReactViewGroup
 import java.lang.ref.WeakReference
 
 /**
@@ -338,16 +340,31 @@ object SandboxTouchInterceptor {
                 if (!isDrawnAfter(group, i, childIndex)) continue
                 if (sibling.visibility != View.VISIBLE) continue
 
-                // Check the sibling's own bounds
-                sibling.getLocationOnScreen(siblingLoc)
-                val sibRect =
-                    Rect(
-                        siblingLoc[0],
-                        siblingLoc[1],
-                        siblingLoc[0] + sibling.width,
-                        siblingLoc[1] + sibling.height,
-                    )
-                if (sibRect.contains(screenX, screenY)) return true
+                // A view with pointerEvents NONE/BOX_NONE does not consume touch in
+                // its own box, so it does not obscure. This matters in debug builds:
+                // React Native's AppContainer adds a full-screen pointerEvents
+                // "box-none" overlay (for LogBox/the element inspector) drawn on top
+                // of everything. Without this check it is treated as an overlay and
+                // steals every touch that lands in a sandbox — the sandbox becomes
+                // untappable in dev (release has no such overlay, so it only repros
+                // in debug, which makes it easy to miss).
+                val pointerEvents = (sibling as? ReactViewGroup)?.pointerEvents
+                if (pointerEvents == PointerEvents.NONE) continue
+
+                // Check the sibling's own bounds — only if the view itself catches
+                // touch. BOX_NONE lets the touch pass through its own box (only its
+                // children can catch), so skip the own-bounds test for it.
+                if (pointerEvents != PointerEvents.BOX_NONE) {
+                    sibling.getLocationOnScreen(siblingLoc)
+                    val sibRect =
+                        Rect(
+                            siblingLoc[0],
+                            siblingLoc[1],
+                            siblingLoc[0] + sibling.width,
+                            siblingLoc[1] + sibling.height,
+                        )
+                    if (sibRect.contains(screenX, screenY)) return true
+                }
 
                 // Check descendants — catches overflow (e.g. a card with
                 // negative margin extending outside its parent's bounds)
