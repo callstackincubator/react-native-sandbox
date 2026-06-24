@@ -25,6 +25,17 @@ bool SandboxDelegateWrapper::routeMessage(const std::string &message, const std:
   return [delegate_ routeMessage:message toSandbox:targetId];
 }
 
+void SandboxDelegateWrapper::postError(
+    const std::string &name,
+    const std::string &message,
+    const std::string &stack,
+    bool isFatal)
+{
+  if (!delegate_)
+    return;
+  [delegate_ postErrorWithName:name message:message stack:stack isFatal:isFatal];
+}
+
 void SandboxDelegateWrapper::setOrigin(const std::string &origin)
 {
   if (!delegate_)

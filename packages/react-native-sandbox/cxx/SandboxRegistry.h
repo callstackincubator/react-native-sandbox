@@ -30,11 +30,26 @@ class SandboxRegistry {
   std::vector<std::shared_ptr<ISandboxDelegate>> findAll(
       const std::string& origin);
 
+  /**
+   * Checks whether sourceOrigin is permitted to send messages to targetOrigin.
+   * Returns true if the TARGET's allowedOrigins includes the source.
+   * This implements receiver-side access control: each sandbox's allowedOrigins
+   * specifies which origins are allowed to send messages TO it.
+   */
   bool isPermittedFrom(
       const std::string& sourceOrigin,
       const std::string& targetOrigin);
 
   void reset();
+
+  /**
+   * Updates the allowedOrigins for an existing origin without requiring
+   * a delegate reference. Used by Android when the allowedOrigins prop
+   * changes after initial registration.
+   */
+  void updateAllowedOrigins(
+      const std::string& origin,
+      const std::set<std::string>& allowedOrigins);
 
  private:
   SandboxRegistry() = default;

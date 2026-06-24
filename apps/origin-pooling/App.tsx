@@ -2,8 +2,13 @@
  * Origin Pooling Demo
  *
  * Dynamically add/remove sandboxes under two shared origins (alpha, beta)
- * plus an isolated (no-origin) option. Same-origin sandboxes share a
- * ReactHost / Hermes VM; removing the last one triggers the idle TTL.
+ * plus isolated sandboxes (each gets a unique origin and its own VM).
+ * Same-origin sandboxes share a ReactHost / Hermes VM; removing the last
+ * one triggers the idle TTL.
+ *
+ * Access control demo: alpha and beta only accept messages from "isolated-1".
+ * Other isolated sandboxes (isolated-2, isolated-3, …) will get
+ * AccessDeniedError when trying to ping alpha or beta.
  *
  * Messaging is handled inside the sandbox widget via globalThis.postMessage.
  * The host only logs messages received via onMessage.
@@ -25,12 +30,20 @@ type SandboxEntry = {key: string; label: string; origin: string}
 type LogEntry = {source: string; text: string; ts: number}
 
 let nextId = 0
+let nextIsolatedId = 0
 
 const ORIGIN_ALPHA = 'alpha'
 const ORIGIN_BETA = 'beta'
+const ISOLATED_PREFIX = 'isolated-'
 const COLOR_ALPHA = '#8232ff'
 const COLOR_BETA = '#e67e22'
 const COLOR_ISOLATED = '#6c757d'
+
+/**
+ * Only "isolated-1" is permitted to send messages to alpha/beta.
+ * All other isolated origins will be denied.
+ */
+const PERMITTED_ISOLATED = `${ISOLATED_PREFIX}1`
 
 /** Alpha uses a function-based TTL (4 seconds) */
 const ALPHA_TTL = () => 4000
@@ -48,7 +61,14 @@ export default function App() {
 
   const addSandbox = useCallback((origin: string) => {
     const id = String(++nextId)
-    setSandboxes(prev => [...prev, {key: id, label: `#${id}`, origin}])
+    const actualOrigin =
+      origin === ISOLATED_PREFIX
+        ? `${ISOLATED_PREFIX}${++nextIsolatedId}`
+        : origin
+    setSandboxes(prev => [
+      ...prev,
+      {key: id, label: `#${id}`, origin: actualOrigin},
+    ])
   }, [])
 
   const removeSandbox = useCallback((key: string) => {
@@ -59,14 +79,15 @@ export default function App() {
 
   const alphas = sandboxes.filter(s => s.origin === ORIGIN_ALPHA)
   const betas = sandboxes.filter(s => s.origin === ORIGIN_BETA)
-  const isolated = sandboxes.filter(s => s.origin === '')
+  const isolated = sandboxes.filter(s => s.origin.startsWith(ISOLATED_PREFIX))
 
   return (
     <SafeAreaView style={styles.safe}>
       <Text style={styles.heading}>Origin Pooling Demo</Text>
       <Text style={styles.subtitle}>
-        Same-origin sandboxes share a VM. Alpha: function-based TTL (4s). Beta:
-        static TTL (2s).
+        Same-origin sandboxes share a VM. Isolated sandboxes each get a unique
+        origin (own VM). Only isolated-1 can message alpha/beta — others get
+        AccessDeniedError.
       </Text>
 
       <View style={styles.controls}>
@@ -83,7 +104,7 @@ export default function App() {
         <Button
           title="+ Isolated"
           color={COLOR_ISOLATED}
-          onPress={() => addSandbox('')}
+          onPress={() => addSandbox(ISOLATED_PREFIX)}
         />
         <Button title="Clear Log" onPress={clearLog} />
       </View>
@@ -101,6 +122,8 @@ export default function App() {
             key={sb.key}
             entry={sb}
             color={COLOR_ALPHA}
+            componentName="SandboxAppConvention"
+            allowedOrigins={[ORIGIN_ALPHA, ORIGIN_BETA, PERMITTED_ISOLATED]}
             idleTTL={ALPHA_TTL}
             onRemove={() => removeSandbox(sb.key)}
             onMessage={data =>
@@ -129,6 +152,8 @@ export default function App() {
             key={sb.key}
             entry={sb}
             color={COLOR_BETA}
+            componentName="SandboxApp"
+            allowedOrigins={[ORIGIN_ALPHA, ORIGIN_BETA, PERMITTED_ISOLATED]}
             idleTTL={DEFAULT_TTL}
             onRemove={() => removeSandbox(sb.key)}
             onMessage={data => addLog(`beta ${sb.label}`, JSON.stringify(data))}
@@ -142,9 +167,9 @@ export default function App() {
         )}
       </ScrollView>
 
-      {/* Isolated sandboxes */}
+      {/* Isolated sandboxes — each gets a unique origin (own VM) */}
       <Text style={[styles.groupLabel, {color: COLOR_ISOLATED}]}>
-        no origin / isolated ({isolated.length})
+        isolated ({isolated.length}) — only isolated-1 can reach alpha/beta
       </Text>
       <ScrollView
         horizontal
@@ -155,6 +180,8 @@ export default function App() {
             key={sb.key}
             entry={sb}
             color={COLOR_ISOLATED}
+            componentName="SandboxApp"
+            allowedOrigins={[ORIGIN_ALPHA, ORIGIN_BETA]}
             idleTTL={DEFAULT_TTL}
             onRemove={() => removeSandbox(sb.key)}
             onMessage={data =>
@@ -192,6 +219,8 @@ export default function App() {
 type SandboxCardProps = {
   entry: SandboxEntry
   color: string
+  componentName: string
+  allowedOrigins: string[]
   idleTTL: number | (() => number)
   onRemove: () => void
   onMessage: (data: unknown) => void
@@ -201,6 +230,8 @@ type SandboxCardProps = {
 function SandboxCard({
   entry,
   color,
+  componentName,
+  allowedOrigins,
   idleTTL,
   onRemove,
   onMessage,
@@ -210,17 +241,17 @@ function SandboxCard({
     <View style={[styles.card, {borderColor: color}]}>
       <View style={[styles.cardHeader, {backgroundColor: color}]}>
         <Text style={styles.cardLabel}>
-          {entry.origin || 'isolated'} {entry.label}
+          {entry.origin} {entry.label}
         </Text>
         <Text style={styles.cardRemove} onPress={onRemove}>
           ✕
         </Text>
       </View>
       <SandboxReactNativeView
-        origin={entry.origin || undefined}
-        allowedOrigins={[ORIGIN_ALPHA, ORIGIN_BETA]}
+        origin={entry.origin}
+        allowedOrigins={allowedOrigins}
         idleTTL={idleTTL}
-        componentName="SandboxApp"
+        componentName={componentName}
         jsBundleSource="sandbox"
         onMessage={onMessage}
         onError={onError}

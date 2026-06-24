@@ -224,29 +224,7 @@ const handleMessage = (data: unknown) => {
 };
 ```
 
-### Origin Pooling with Idle TTL
-
-Sandboxes sharing the same `origin` reuse a single ReactHost / Hermes VM. When the last surface for an origin unmounts, the ReactHost is kept alive for `idleTTL` milliseconds so that a re-mount within that window gets a warm start instead of a cold boot.
-
-```tsx
-// Static TTL
-<SandboxReactNativeView
-  origin="dashboard"
-  idleTTL={2000}
-  componentName="DashboardWidget"
-  jsBundleSource="sandbox"
-/>
-
-// Dynamic TTL via function — evaluated at render time, not at unmount time
-<SandboxReactNativeView
-  origin="analytics"
-  idleTTL={() => isLowMemory() ? 1000 : 5000}
-  componentName="AnalyticsWidget"
-  jsBundleSource="sandbox"
-/>
-```
-
-### Direct communication Between Sandboxes
+### Direct Communication Between Sandboxes
 
 Enable direct communication between two sandbox instances:
 
@@ -310,6 +288,82 @@ export default function SandboxA() {
 ```
 
 The `SandboxB` component looks similar.
+
+### Origin Pooling with Idle TTL
+
+Sandboxes sharing the same `origin` reuse a single ReactHost / Hermes VM. When the last surface for an origin unmounts, the ReactHost is kept alive for `idleTTL` milliseconds so that a re-mount within that window gets a warm start instead of a cold boot.
+
+```tsx
+// Static TTL
+<SandboxReactNativeView
+  origin="dashboard"
+  idleTTL={2000}
+  componentName="DashboardWidget"
+  jsBundleSource="sandbox"
+/>
+
+// Dynamic TTL via function — evaluated at render time, not at unmount time
+<SandboxReactNativeView
+  origin="analytics"
+  idleTTL={() => isLowMemory() ? 1000 : 5000}
+  componentName="AnalyticsWidget"
+  jsBundleSource="sandbox"
+/>
+```
+
+### Per-Surface Messaging (`useSurfaceMessaging`)
+
+When multiple sandboxes share the same `origin`, they share a single Hermes VM. Without per-surface routing, `globalThis.postMessage` and `globalThis.setOnMessage` would be last-writer-wins — only the most recently mounted sandbox's listener would be active.
+
+Each sandbox automatically receives a `__sandboxSurfaceId` prop that uniquely identifies its surface. Pass this to `useSurfaceMessaging` (or directly to the global APIs) to get correctly scoped messaging.
+
+See the [`apps/origin-pooling`](https://github.com/callstackincubator/react-native-sandbox/tree/main/apps/origin-pooling) demo for both approaches in action.
+
+**Option A: `useSurfaceMessaging` hook (recommended)**
+
+```tsx
+import {useSurfaceMessaging} from '@callstack/react-native-sandbox'
+
+function MyWidget({__sandboxSurfaceId}: {__sandboxSurfaceId?: string}) {
+  const {postMessage, setOnMessage} = useSurfaceMessaging(__sandboxSurfaceId)
+
+  useEffect(() => {
+    const unsubscribe = setOnMessage((msg) => {
+      console.log('received', msg)
+    })
+    return unsubscribe
+  }, [setOnMessage])
+
+  const sendToHost = () => postMessage({type: 'hello'})
+  const sendToOther = () => postMessage({type: 'ping'}, 'other-origin')
+
+  return <Button title="Send" onPress={sendToHost} />
+}
+```
+
+**Option B: Convention-based (no library import)**
+
+```tsx
+declare const globalThis: {
+  postMessage: (msg: unknown, targetOrigin?: string) => void
+  setOnMessage: (cb: (msg: unknown) => void, surfaceId?: string) => void
+}
+
+function MyWidget({__sandboxSurfaceId}: {__sandboxSurfaceId?: string}) {
+  useEffect(() => {
+    globalThis.setOnMessage((msg) => {
+      console.log('received', msg)
+    }, __sandboxSurfaceId)
+    return () => globalThis.setOnMessage(() => {}, __sandboxSurfaceId)
+  }, [__sandboxSurfaceId])
+
+  const sendToHost = () => {
+    globalThis.postMessage({type: 'hello', __sandboxSurfaceId})
+  }
+}
+```
+
+If `__sandboxSurfaceId` is `undefined` (e.g. the sandbox has its own origin), both approaches fall back to standard broadcast behavior — no changes needed in your code.
 
 ## ⚡ Performance & Best Practices
 

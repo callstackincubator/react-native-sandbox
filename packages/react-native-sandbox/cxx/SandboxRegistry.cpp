@@ -20,12 +20,17 @@ void SandboxRegistry::registerSandbox(
 
   auto& delegates = sandboxRegistry_[origin];
   // Avoid duplicate registration of the same delegate
+  bool alreadyRegistered = false;
   for (const auto& d : delegates) {
     if (d == delegate) {
-      return;
+      alreadyRegistered = true;
+      break;
     }
   }
-  delegates.push_back(delegate);
+  if (!alreadyRegistered) {
+    delegates.push_back(delegate);
+  }
+  // Always update allowedOrigins (may change after initial registration)
   allowedOrigins_[origin] = allowedOrigins;
 }
 
@@ -105,18 +110,33 @@ bool SandboxRegistry::isPermittedFrom(
 
   std::lock_guard<std::recursive_mutex> lock(registryMutex_);
 
-  auto originsIt = allowedOrigins_.find(sourceOrigin);
+  // Check the TARGET's allowedOrigins to see if the source is permitted
+  // to send messages to it. This matches the documented semantics:
+  // "allowedOrigins specifies which sandbox origins are allowed to send
+  // messages TO this sandbox."
+  auto originsIt = allowedOrigins_.find(targetOrigin);
   if (originsIt == allowedOrigins_.end()) {
     return false;
   }
 
-  return originsIt->second.find(targetOrigin) != originsIt->second.end();
+  return originsIt->second.find(sourceOrigin) != originsIt->second.end();
 }
 
 void SandboxRegistry::reset() {
   std::lock_guard<std::recursive_mutex> lock(registryMutex_);
   sandboxRegistry_.clear();
   allowedOrigins_.clear();
+}
+
+void SandboxRegistry::updateAllowedOrigins(
+    const std::string& origin,
+    const std::set<std::string>& allowedOrigins) {
+  if (origin.empty()) {
+    return;
+  }
+
+  std::lock_guard<std::recursive_mutex> lock(registryMutex_);
+  allowedOrigins_[origin] = allowedOrigins;
 }
 
 } // namespace rnsandbox

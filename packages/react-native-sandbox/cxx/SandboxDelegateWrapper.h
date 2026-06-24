@@ -32,6 +32,11 @@ class SandboxDelegateWrapper : public ISandboxDelegate {
   void postMessage(const std::string& message) override;
   bool routeMessage(const std::string& message, const std::string& targetId)
       override;
+  void postError(
+      const std::string& name,
+      const std::string& message,
+      const std::string& stack,
+      bool isFatal) override;
   void setOrigin(const std::string& origin) override;
   void setAllowedOrigins(const std::set<std::string>& origins) override;
   void setAllowedTurboModules(const std::set<std::string>& modules) override;

@@ -16,6 +16,14 @@ class MockSandboxDelegate : public ISandboxDelegate {
       routeMessage,
       (const std::string& message, const std::string& targetId),
       (override));
+  MOCK_METHOD(
+      void,
+      postError,
+      (const std::string& name,
+       const std::string& message,
+       const std::string& stack,
+       bool isFatal),
+      (override));
   MOCK_METHOD(void, setOrigin, (const std::string& origin), (override));
   MOCK_METHOD(
       void,

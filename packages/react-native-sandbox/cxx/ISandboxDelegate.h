@@ -35,6 +35,19 @@ class ISandboxDelegate {
       const std::string& targetId) = 0;
 
   /**
+   * Posts an error to the host view.
+   * @param name Error name/type
+   * @param message Error message
+   * @param stack Stack trace (may be empty)
+   * @param isFatal Whether the error is fatal
+   */
+  virtual void postError(
+      const std::string& name,
+      const std::string& message,
+      const std::string& stack,
+      bool isFatal) = 0;
+
+  /**
    * Sets the origin identifier for this sandbox.
    * @param origin Unique identifier for the sandbox
    */
