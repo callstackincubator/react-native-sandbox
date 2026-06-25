@@ -199,11 +199,14 @@ jobs:
         working-directory: apps/fs-experiment
         run: npx react-native build-android --tasks assembleDebug
 
+      - name: Stop Gradle daemon
+        run: ./apps/fs-experiment/android/gradlew --stop
+
       - name: Run emulator and harness tests
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
           api-level: 35
-          target: google_apis
+          target: default
           arch: x86_64
           avd-name: test_device
           force-avd-creation: true
