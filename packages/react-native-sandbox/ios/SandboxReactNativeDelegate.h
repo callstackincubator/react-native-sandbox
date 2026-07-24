@@ -64,6 +64,13 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)init;
 
 /**
+ * Returns the resolved bundle URL for the current jsBundleSource.
+ * May return nil if the URL cannot be resolved yet (e.g., Expo dev-client
+ * has not yet received a deep-link with the Metro server URL).
+ */
+- (nullable NSURL *)bundleURL;
+
+/**
  * Posts a message to the JavaScript runtime.
  * @param message C++ string containing the JSON.stringified message
  */

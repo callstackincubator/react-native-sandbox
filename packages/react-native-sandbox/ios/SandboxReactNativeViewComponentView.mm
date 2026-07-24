@@ -13,6 +13,7 @@
 #import <ReactCommon/RCTHost.h>
 
 #import "SandboxReactNativeDelegate.h"
+#import <objc/runtime.h>
 
 #include "SandboxRegistry.h"
 
@@ -48,6 +49,9 @@ static void ensureSharedFactories()
 @property (nonatomic, assign) BOOL didScheduleLoad;
 @property (nonatomic, assign) BOOL usesSharedFactory;
 @property (nonatomic, copy, nullable) NSString *currentOrigin;
+// Non-nil while we are KVO-observing EXDevLauncherController.sourceUrl (Expo dev-client path).
+// Cleared once sourceUrl becomes non-nil and the sandbox load is triggered.
+@property (nonatomic, assign) BOOL isObservingExpoSourceUrl;
 @end
 
 @implementation SandboxReactNativeViewComponentView {
@@ -197,6 +201,19 @@ static void ensureSharedFactories()
   [self.reactNativeDelegate postMessage:messageStr];
 }
 
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context
+{
+  if ([keyPath isEqualToString:@"sourceUrl"] && change[NSKeyValueChangeNewKey] != [NSNull null]) {
+    [object removeObserver:self forKeyPath:@"sourceUrl"];
+    self.isObservingExpoSourceUrl = NO;
+    self.didScheduleLoad = NO;
+    [self scheduleReactViewLoad];
+  }
+}
+
 - (void)scheduleReactViewLoad
 {
   if (self.didScheduleLoad)
@@ -204,7 +221,7 @@ static void ensureSharedFactories()
   self.didScheduleLoad = YES;
 
   dispatch_async(dispatch_get_main_queue(), ^{
-    [self loadReactNativeView];
+      [self loadReactNativeView];
     self.didScheduleLoad = NO;
   });
 }
@@ -243,6 +260,34 @@ static void ensureSharedFactories()
   }
 
   if (!self.reactNativeFactory) {
+    // Guard: verify the bundle URL is resolvable before creating the factory.
+    // In Expo dev-client builds EXDevLauncherController.sourceUrl is nil until the
+    // host app JS bundle finishes loading (set in _initAppWithUrl:bundleUrl: on main thread).
+    // Rather than polling, subscribe once to RCTJavaScriptDidLoadNotification which fires
+    // after the host bundle loads — at that point sourceUrl is guaranteed to be set.
+    NSURL *resolvedURL = [self.reactNativeDelegate bundleURL];
+    if (!resolvedURL) {
+#if DEBUG
+      // EXDevLauncherController.sourceUrl is set asynchronously after the deep-link
+      // network check completes. If EXDevLauncherController is present at runtime,
+      // use KVO on its sourceUrl property to retry the load once it's non-nil.
+      // We use objc_getClass() to avoid a hard compile-time dependency on the header.
+      if (!self.isObservingExpoSourceUrl) {
+        Class devLauncherClass = objc_getClass("EXDevLauncherController");
+        if (devLauncherClass) {
+          id controller = [devLauncherClass performSelector:@selector(sharedInstance)];
+          if (controller) {
+            self.isObservingExpoSourceUrl = YES;
+            [controller addObserver:self
+                         forKeyPath:@"sourceUrl"
+                            options:NSKeyValueObservingOptionNew
+                            context:nil];
+          }
+        }
+      }
+#endif
+      return;
+    }
     [self acquireFactory];
   }
 
@@ -365,12 +410,33 @@ static void ensureSharedFactories()
   [self.reactNativeRootView removeFromSuperview];
   self.reactNativeRootView = nil;
 
+  if (self.isObservingExpoSourceUrl) {
+    Class devLauncherClass = objc_getClass("EXDevLauncherController");
+    if (devLauncherClass) {
+      id controller = [devLauncherClass performSelector:@selector(sharedInstance)];
+      if (controller) {
+        [controller removeObserver:self forKeyPath:@"sourceUrl"];
+      }
+    }
+    self.isObservingExpoSourceUrl = NO;
+  }
+
   [self releaseSharedFactory];
   self.reactNativeFactory = nil;
 }
 
 - (void)dealloc
 {
+  if (self.isObservingExpoSourceUrl) {
+    Class devLauncherClass = objc_getClass("EXDevLauncherController");
+    if (devLauncherClass) {
+      id controller = [devLauncherClass performSelector:@selector(sharedInstance)];
+      if (controller) {
+        [controller removeObserver:self forKeyPath:@"sourceUrl"];
+      }
+    }
+    self.isObservingExpoSourceUrl = NO;
+  }
   [self releaseSharedFactory];
 }
 
