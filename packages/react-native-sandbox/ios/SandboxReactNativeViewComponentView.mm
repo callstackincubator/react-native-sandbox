@@ -41,6 +41,8 @@ static void ensureSharedFactories()
   });
 }
 
+static void *kExpoSourceUrlKVOContext = &kExpoSourceUrlKVOContext;
+
 #pragma mark - SandboxReactNativeViewComponentView
 
 @interface SandboxReactNativeViewComponentView () <RCTSandboxReactNativeViewViewProtocol>
@@ -206,11 +208,13 @@ static void ensureSharedFactories()
                         change:(NSDictionary *)change
                        context:(void *)context
 {
-  if ([keyPath isEqualToString:@"sourceUrl"] && change[NSKeyValueChangeNewKey] != [NSNull null]) {
-    [object removeObserver:self forKeyPath:@"sourceUrl"];
+  if (context == kExpoSourceUrlKVOContext && change[NSKeyValueChangeNewKey] != [NSNull null]) {
+    [object removeObserver:self forKeyPath:@"sourceUrl" context:kExpoSourceUrlKVOContext];
     self.isObservingExpoSourceUrl = NO;
     self.didScheduleLoad = NO;
     [self scheduleReactViewLoad];
+  } else {
+    [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
   }
 }
 
@@ -262,9 +266,9 @@ static void ensureSharedFactories()
   if (!self.reactNativeFactory) {
     // Guard: verify the bundle URL is resolvable before creating the factory.
     // In Expo dev-client builds EXDevLauncherController.sourceUrl is nil until the
-    // host app JS bundle finishes loading (set in _initAppWithUrl:bundleUrl: on main thread).
-    // Rather than polling, subscribe once to RCTJavaScriptDidLoadNotification which fires
-    // after the host bundle loads — at that point sourceUrl is guaranteed to be set.
+    // host app JS bundle finishes loading (~1-2s after deep-link, set asynchronously on
+    // main thread after the network check in EXDevLauncherController completes).
+    // If it's nil we register a one-shot KVO observer and retry when it becomes non-nil.
     NSURL *resolvedURL = [self.reactNativeDelegate bundleURL];
     if (!resolvedURL) {
 #if DEBUG
@@ -281,7 +285,7 @@ static void ensureSharedFactories()
             [controller addObserver:self
                          forKeyPath:@"sourceUrl"
                             options:NSKeyValueObservingOptionNew
-                            context:nil];
+                            context:kExpoSourceUrlKVOContext];
           }
         }
       }
@@ -415,7 +419,7 @@ static void ensureSharedFactories()
     if (devLauncherClass) {
       id controller = [devLauncherClass performSelector:@selector(sharedInstance)];
       if (controller) {
-        [controller removeObserver:self forKeyPath:@"sourceUrl"];
+        [controller removeObserver:self forKeyPath:@"sourceUrl" context:kExpoSourceUrlKVOContext];
       }
     }
     self.isObservingExpoSourceUrl = NO;
@@ -432,7 +436,7 @@ static void ensureSharedFactories()
     if (devLauncherClass) {
       id controller = [devLauncherClass performSelector:@selector(sharedInstance)];
       if (controller) {
-        [controller removeObserver:self forKeyPath:@"sourceUrl"];
+        [controller removeObserver:self forKeyPath:@"sourceUrl" context:kExpoSourceUrlKVOContext];
       }
     }
     self.isObservingExpoSourceUrl = NO;

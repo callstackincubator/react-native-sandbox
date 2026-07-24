@@ -19,7 +19,6 @@
 #import <React/RCTBridge+Private.h>
 #import <React/RCTBridge.h>
 #import <React/RCTBundleURLProvider.h>
-#import <objc/runtime.h>
 #import <React/RCTFollyConvert.h>
 #import <ReactAppDependencyProvider/RCTAppDependencyProvider.h>
 #import <ReactCommon/RCTInteropTurboModule.h>

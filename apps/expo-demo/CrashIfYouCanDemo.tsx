@@ -31,6 +31,8 @@ export default function CrashIfYouCanDemo() {
       .catch((err: any) => console.log(err.message))
   }
 
+  // Hangs the sandbox JS thread only — the host app stays responsive because
+  // each sandbox runs in its own Hermes instance and JS thread.
   const infiniteLoop = () => {
     while (true) {}
   }
