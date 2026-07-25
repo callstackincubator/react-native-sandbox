@@ -178,8 +178,9 @@ class SandboxReactNativeDelegate(
                 // and fetches the bundle from the Metro dev server using jsMainModulePath,
                 // turning the URL into http://localhost:8081/<url>.bundle (a 404). Local
                 // sources ("index"/asset names) keep dev support so Fast Refresh works.
-                val isRemoteBundle = capturedBundleSource.startsWith("http://") ||
-                    capturedBundleSource.startsWith("https://")
+                val isRemoteBundle =
+                    capturedBundleSource.startsWith("http://") ||
+                        capturedBundleSource.startsWith("https://")
                 host =
                     ReactHostImpl(
                         sandboxContext,
@@ -294,22 +295,23 @@ class SandboxReactNativeDelegate(
             return cacheFile
         }
         var downloadError: Exception? = null
-        val worker = Thread {
-            try {
-                val connection = URL(bundleSource).openConnection() as HttpURLConnection
-                connection.connectTimeout = REMOTE_BUNDLE_CONNECT_TIMEOUT_MS
-                connection.readTimeout = REMOTE_BUNDLE_READ_TIMEOUT_MS
+        val worker =
+            Thread {
                 try {
-                    connection.inputStream.use { input ->
-                        cacheFile.outputStream().use { output -> input.copyTo(output) }
+                    val connection = URL(bundleSource).openConnection() as HttpURLConnection
+                    connection.connectTimeout = REMOTE_BUNDLE_CONNECT_TIMEOUT_MS
+                    connection.readTimeout = REMOTE_BUNDLE_READ_TIMEOUT_MS
+                    try {
+                        connection.inputStream.use { input ->
+                            cacheFile.outputStream().use { output -> input.copyTo(output) }
+                        }
+                    } finally {
+                        connection.disconnect()
                     }
-                } finally {
-                    connection.disconnect()
+                } catch (e: Exception) {
+                    downloadError = e
                 }
-            } catch (e: Exception) {
-                downloadError = e
             }
-        }
         worker.start()
         worker.join(REMOTE_BUNDLE_DOWNLOAD_TIMEOUT_MS)
         if (downloadError != null || !cacheFile.exists() || cacheFile.length() == 0L) {
