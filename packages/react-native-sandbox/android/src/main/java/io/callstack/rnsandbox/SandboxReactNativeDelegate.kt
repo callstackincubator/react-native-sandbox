@@ -273,72 +273,52 @@ class SandboxReactNativeDelegate(
         if (bundleSource.isEmpty()) return null
         return when {
             bundleSource.startsWith("http://") || bundleSource.startsWith("https://") -> {
-                // JSBundleLoader.createFileLoader(url) does not download anything:
-                // loadScriptFromFile treats the argument as a local path, so a remote
-                // URL never resolves. Prefetch the bundle to a cache file (off the main
-                // thread to avoid NetworkOnMainThreadException) and hand it to the
-                // network loader, which keeps the original sourceURL for stack traces.
-                //
-                // The cache file is keyed by the URL, and a remote URL is treated as
-                // immutable: if it was already downloaded, reuse the cached copy and
-                // skip the network entirely. This makes repeated loads (e.g. every cold
-                // start) instant and offline-capable. To ship an update, change the URL
-                // (a version segment or `?v=` query) — a new URL misses the cache and is
-                // fetched once. Serving changing content at a fixed URL won't update.
-                val cacheFile = File(
-                    context.cacheDir,
-                    "sandbox-remote-${bundleSource.hashCode()}.bundle",
-                )
-                if (cacheFile.exists() && cacheFile.length() > 0L) {
-                    Log.d(TAG, "Reusing cached bundle '$bundleSource' (${cacheFile.length()} bytes)")
-                } else {
-                    var downloadError: Exception? = null
-                    val worker = Thread {
-                        try {
-                            val connection = URL(bundleSource).openConnection() as HttpURLConnection
-                            connection.connectTimeout = REMOTE_BUNDLE_CONNECT_TIMEOUT_MS
-                            connection.readTimeout = REMOTE_BUNDLE_READ_TIMEOUT_MS
-                            try {
-                                connection.inputStream.use { input ->
-                                    cacheFile.outputStream().use { output -> input.copyTo(output) }
-                                }
-                            } finally {
-                                connection.disconnect()
-                            }
-                        } catch (e: Exception) {
-                            downloadError = e
-                        }
-                    }
-                    worker.start()
-                    worker.join(REMOTE_BUNDLE_DOWNLOAD_TIMEOUT_MS)
-                    if (downloadError != null || !cacheFile.exists() || cacheFile.length() == 0L) {
-                        // Drop a partial file so a later load can retry cleanly.
-                        cacheFile.delete()
-                        Log.e(TAG, "Failed to download remote bundle '$bundleSource'", downloadError)
-                        return null
-                    }
-                    Log.d(TAG, "Downloaded remote bundle '$bundleSource' (${cacheFile.length()} bytes)")
-                }
-                // Load the cached bundle synchronously (loadSynchronously = true).
-                // createCachedBundleFromNetworkLoader() loads with loadSynchronously
-                // = false, which on RN 0.85 bridgeless executes the script before the
-                // TurboModule JSI bindings are installed on the runtime — the bundle's
-                // InitializeCore then hits TurboModuleRegistry.getEnforcing('Platform-
-                // Constants') with no proxy registered and the VM aborts. A synchronous
-                // load mirrors how the built-in asset loader (createAssetLoader(.., true))
-                // runs the main bundle, which sequences correctly. We keep the original
-                // URL as sourceURL so stack traces still point at the remote bundle.
-                JSBundleLoader.createFileLoader(
-                    cacheFile.absolutePath,
-                    bundleSource,
-                    true,
-                )
+                // createFileLoader(url) treats its argument as a local path and never
+                // downloads. Prefetch to a cache file on a worker thread instead.
+                val cacheFile = downloadRemoteBundle(bundleSource) ?: return null
+                // Load synchronously: on RN 0.85 bridgeless an async load executes the
+                // bundle before TurboModule JSI bindings are installed, causing a fatal.
+                JSBundleLoader.createFileLoader(cacheFile.absolutePath, bundleSource, true)
             }
 
             else -> {
                 JSBundleLoader.createAssetLoader(context, "assets://$bundleSource", true)
             }
         }
+    }
+
+    private fun downloadRemoteBundle(bundleSource: String): File? {
+        val cacheFile = File(context.cacheDir, "sandbox-remote-${bundleSource.hashCode()}.bundle")
+        if (cacheFile.exists() && cacheFile.length() > 0L) {
+            Log.d(TAG, "Reusing cached bundle '$bundleSource' (${cacheFile.length()} bytes)")
+            return cacheFile
+        }
+        var downloadError: Exception? = null
+        val worker = Thread {
+            try {
+                val connection = URL(bundleSource).openConnection() as HttpURLConnection
+                connection.connectTimeout = REMOTE_BUNDLE_CONNECT_TIMEOUT_MS
+                connection.readTimeout = REMOTE_BUNDLE_READ_TIMEOUT_MS
+                try {
+                    connection.inputStream.use { input ->
+                        cacheFile.outputStream().use { output -> input.copyTo(output) }
+                    }
+                } finally {
+                    connection.disconnect()
+                }
+            } catch (e: Exception) {
+                downloadError = e
+            }
+        }
+        worker.start()
+        worker.join(REMOTE_BUNDLE_DOWNLOAD_TIMEOUT_MS)
+        if (downloadError != null || !cacheFile.exists() || cacheFile.length() == 0L) {
+            cacheFile.delete()
+            Log.e(TAG, "Failed to download remote bundle '$bundleSource'", downloadError)
+            return null
+        }
+        Log.d(TAG, "Downloaded remote bundle '$bundleSource' (${cacheFile.length()} bytes)")
+        return cacheFile
     }
 
     fun onJSIBindingsInstalled(stateHandle: Long) {
