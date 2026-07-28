@@ -7,13 +7,21 @@ import {
   useRef,
 } from 'react'
 import type {NativeSyntheticEvent} from 'react-native'
-import {StyleProp, StyleSheet, View, ViewProps, ViewStyle} from 'react-native'
+import {
+  NativeModules,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewProps,
+  ViewStyle,
+} from 'react-native'
 
 import type {NativeSandboxReactNativeViewComponentType} from '../specs/NativeSandboxReactNativeView'
 import NativeSandboxReactNativeView, {
   Commands,
   ErrorEvent,
 } from '../specs/NativeSandboxReactNativeView'
+import {resolveJsBundleSource} from './library'
 
 const SANDBOX_TURBOMODULES_WHITELIST = [
   'NativeDOMCxx',
@@ -347,10 +355,9 @@ const SandboxReactNativeView = forwardRef<
     }, [componentName, moduleName])
 
     const _jsBundleSource = useMemo(() => {
-      if (jsBundleSource) {
-        return jsBundleSource
-      }
-      return 'index'
+      const source = jsBundleSource || 'index'
+      const hostScriptURL = NativeModules.SourceCode?.scriptURL
+      return resolveJsBundleSource(source, hostScriptURL, __DEV__)
     }, [jsBundleSource])
 
     return (
