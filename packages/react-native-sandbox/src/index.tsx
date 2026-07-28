@@ -7,7 +7,7 @@ import {
   useRef,
 } from 'react'
 import type {NativeSyntheticEvent} from 'react-native'
-import {StyleProp, StyleSheet, View, ViewProps, ViewStyle} from 'react-native'
+import {StyleProp, View, ViewProps, ViewStyle} from 'react-native'
 
 import type {NativeSandboxReactNativeViewComponentType} from '../specs/NativeSandboxReactNativeView'
 import NativeSandboxReactNativeView, {
@@ -305,9 +305,14 @@ const SandboxReactNativeView = forwardRef<
       return null
     }, [])
 
+    // The native sandbox view fills the user-styled wrapper as an in-flow
+    // flex child. It used to be position:absolute (StyleSheet.absoluteFillObject),
+    // but on RN 0.85 an absolutely-positioned child with all-zero insets no longer
+    // stretches to a flex-sized parent — it collapses to height 0 and the embedded
+    // surface renders blank. flex:1 makes it claim the wrapper's space reliably.
     const _style: StyleProp<ViewStyle> = useMemo(
       () => ({
-        ...StyleSheet.absoluteFillObject,
+        flex: 1,
       }),
       []
     )
