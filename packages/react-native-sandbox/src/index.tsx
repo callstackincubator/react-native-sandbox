@@ -356,7 +356,10 @@ const SandboxReactNativeView = forwardRef<
 
     const _jsBundleSource = useMemo(() => {
       const source = jsBundleSource || 'index'
-      const hostScriptURL = NativeModules.SourceCode?.scriptURL
+      const sourceCodeModule = NativeModules.SourceCode
+      const hostScriptURL =
+        sourceCodeModule?.scriptURL ??
+        sourceCodeModule?.getConstants?.()?.scriptURL
       return resolveJsBundleSource(source, hostScriptURL, __DEV__)
     }, [jsBundleSource])
 
