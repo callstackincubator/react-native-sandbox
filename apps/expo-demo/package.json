@@ -1,0 +1,26 @@
+{
+  "name": "@apps/expo-demo",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "prebuild": "expo prebuild --clean",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@callstack/react-native-sandbox": "workspace:*",
+    "expo": "~54.0.17",
+    "expo-dev-client": "~6.0.0",
+    "react": "19.1.0",
+    "react-native": "0.81.4"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@types/react": "^19.1.9",
+    "babel-preset-expo": "~14.0.0",
+    "typescript": "~5.3.3"
+  }
+}
