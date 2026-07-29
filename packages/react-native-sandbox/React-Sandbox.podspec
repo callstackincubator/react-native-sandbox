@@ -23,13 +23,17 @@ Pod::Spec.new do |s|
   core_sources = ["ios/*.{h,m,mm,cpp}", "cxx/**/*.{h,cpp}"]
   expo_sources = has_expo ? ["ios/Expo/**/*.{h,m,mm,swift}"] : []
   s.source_files = core_sources + expo_sources
+  # All headers use ObjC++ types (std::string, std::shared_ptr, etc.) that Swift cannot
+  # import. Marking them private keeps them out of the generated umbrella header so that
+  # the Swift compiler can build SandboxAppContextBridge.swift without hitting C++ errors.
+  s.private_header_files = ["ios/*.h", "ios/Expo/*.h", "cxx/**/*.h"]
   install_modules_dependencies(s)
   s.dependency "fmt"
 
   expo_xcconfig = {}
   if has_expo
-    s.dependency "expo-modules-core"
-    s.dependency "expo"
+    s.dependency "ExpoModulesCore"
+    s.dependency "Expo"
     expo_xcconfig = { "OTHER_CPLUSPLUSFLAGS" => "$(inherited) -DRNS_HAS_EXPO_MODULES=1" }
   end
 

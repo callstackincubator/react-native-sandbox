@@ -37,11 +37,7 @@
 
 #if RNS_HAS_EXPO_MODULES
 #import <ExpoModulesCore/ExpoBridgeModule.h>
-#if __has_include(<React-Sandbox/React-Sandbox-Swift.h>)
-#import <React-Sandbox/React-Sandbox-Swift.h>
-#else
-#import "React-Sandbox-Swift.h"
-#endif
+#import "React_Sandbox-Swift.h"
 #endif
 
 namespace jsi = facebook::jsi;
