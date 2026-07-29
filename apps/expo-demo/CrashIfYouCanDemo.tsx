@@ -45,9 +45,15 @@ export default function CrashIfYouCanDemo() {
     <ScrollView contentContainerStyle={styles.container}>
       <Button title="1. Crash App (undefined global)" onPress={triggerCrash} />
       <View style={styles.spacer} />
-      <Button title="2. Overwrite Global (console.log)" onPress={overwriteGlobal} />
+      <Button
+        title="2. Overwrite Global (console.log)"
+        onPress={overwriteGlobal}
+      />
       <View style={styles.spacer} />
-      <Button title="3. Access Blocked TurboModule" onPress={accessBlockedTurboModule} />
+      <Button
+        title="3. Access Blocked TurboModule"
+        onPress={accessBlockedTurboModule}
+      />
       <View style={styles.spacer} />
       <Button title="4. Infinite Loop" onPress={infiniteLoop} />
       <View style={styles.spacer} />

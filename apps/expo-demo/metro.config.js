@@ -23,7 +23,7 @@ config.resolver.disableHierarchicalLookup = true
 // react is pinned to workspaceRoot because bun may hoist an older transitive
 // version into apps/expo-demo/node_modules when deduplicating workspace deps.
 config.resolver.extraNodeModules = {
-  react: path.resolve(workspaceRoot, 'node_modules/react'),
+  'react': path.resolve(workspaceRoot, 'node_modules/react'),
   'react-native': path.resolve(projectRoot, 'node_modules/react-native'),
   'react-dom': path.resolve(projectRoot, 'node_modules/react-dom'),
 }
