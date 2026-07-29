@@ -2,6 +2,8 @@ require "json"
 
 package = JSON.parse(File.read(File.join(__dir__, "package.json")))
 
+has_expo = File.exist?(File.join(__dir__, "../../node_modules/expo-modules-core"))
+
 header_search_paths = [
   "\"$(PODS_TARGET_SRCROOT)/ReactCommon\"",
   "\"$(PODS_ROOT)/Headers/Private/React-Core\"",
@@ -18,12 +20,20 @@ Pod::Spec.new do |s|
   s.authors      = { "Alex Babrykovich" => "aliaksandr.babrykovich@callstack.com" }
   s.platforms    = { :ios => "12.4" }
   s.source       = { :git => "https://github.com/callstackincubator/react-native-sandbox.git", :tag => "#{s.version}" }
-  s.source_files = ["ios/**/*.{h,m,mm,cpp,swift}", "cxx/**/*.{h,cpp}"]
+  s.source_files = ["ios/*.{h,m,mm,cpp}", "cxx/**/*.{h,cpp}"]
   install_modules_dependencies(s)
   s.dependency "fmt"
-  s.pod_target_xcconfig    = {
+
+  expo_xcconfig = {}
+  if has_expo
+    s.source_files += ["ios/Expo/**/*.{h,m,mm,swift}"]
+    s.dependency "expo-modules-core"
+    s.dependency "expo"
+    expo_xcconfig = { "OTHER_CPLUSPLUSFLAGS" => "$(inherited) -DRNS_HAS_EXPO_MODULES=1" }
+  end
+
+  s.pod_target_xcconfig = {
     "HEADER_SEARCH_PATHS" => header_search_paths + ["\"$(PODS_TARGET_SRCROOT)/cxx\""],
-    # "OTHER_CPLUSPLUSFLAGS" => "-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1",
     "CLANG_CXX_LANGUAGE_STANDARD" => "c++17"
-  }
+  }.merge(expo_xcconfig)
 end

@@ -13,6 +13,10 @@
 #import <ReactCommon/RCTHost.h>
 
 #import "SandboxReactNativeDelegate.h"
+
+#if RNS_HAS_EXPO_MODULES
+#import "SandboxExpoFactory.h"
+#endif
 #import <objc/runtime.h>
 
 #include "SandboxRegistry.h"
@@ -225,7 +229,7 @@ static void *kExpoSourceUrlKVOContext = &kExpoSourceUrlKVOContext;
   self.didScheduleLoad = YES;
 
   dispatch_async(dispatch_get_main_queue(), ^{
-      [self loadReactNativeView];
+    [self loadReactNativeView];
     self.didScheduleLoad = NO;
   });
 }
@@ -345,7 +349,11 @@ static void *kExpoSourceUrlKVOContext = &kExpoSourceUrlKVOContext;
     }
   }
 
+#if RNS_HAS_EXPO_MODULES
+  self.reactNativeFactory = SandboxCreateExpoFactory(self.reactNativeDelegate);
+#else
   self.reactNativeFactory = [[RCTReactNativeFactory alloc] initWithDelegate:self.reactNativeDelegate];
+#endif
 
   if (origin.length > 0) {
     SharedFactory *shared = [SharedFactory new];

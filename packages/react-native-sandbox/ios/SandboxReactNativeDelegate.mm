@@ -35,6 +35,15 @@
 #include "SandboxRegistry.h"
 #import "StubTurboModuleCxx.h"
 
+#if RNS_HAS_EXPO_MODULES
+#import <ExpoModulesCore/ExpoBridgeModule.h>
+#if __has_include(<React-Sandbox/React-Sandbox-Swift.h>)
+#import <React-Sandbox/React-Sandbox-Swift.h>
+#else
+#import "React-Sandbox-Swift.h"
+#endif
+#endif
+
 namespace jsi = facebook::jsi;
 namespace TurboModuleConvertUtils = facebook::react::TurboModuleConvertUtils;
 using namespace facebook::react;
@@ -654,6 +663,20 @@ static std::unordered_map<std::string, __unsafe_unretained SandboxReactNativeDel
       break;
     }
   }
+
+#if RNS_HAS_EXPO_MODULES
+  // Scope the Expo modules bridge to this sandbox's origin. Each sandbox already
+  // gets its own ExpoBridgeModule instance (via its own RCTHost), but the default
+  // init creates an un-scoped EXAppContext. Inject a scoped one so Expo modules
+  // (file system, secure store, etc.) write to origin-namespaced directories.
+  if ([moduleClass isSubclassOfClass:[ExpoBridgeModule class]]) {
+    NSString *originNS = [NSString stringWithUTF8String:_origin.c_str()];
+    EXAppContext *ctx = [SandboxAppContextBridge createScopedAppContextForOrigin:originNS];
+    ExpoBridgeModule *bridgeModule = [[moduleClass alloc] initWithAppContext:ctx];
+    _substitutedModuleInstances[moduleName] = bridgeModule;
+    return (id<RCTTurboModule>)bridgeModule;
+  }
+#endif
 
   if (!isSubstitutionTarget) {
     return nullptr;
