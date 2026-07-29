@@ -186,7 +186,7 @@ class SandboxReactNativeDelegate(
                             capturedSubstitutionPackages,
                             capturedOrigin,
                         ),
-                    )
+                    ) + getExpoPackages()
 
                 val bundleLoader = createBundleLoader(capturedBundleSource) ?: return null
 
@@ -301,6 +301,19 @@ class SandboxReactNativeDelegate(
         } catch (e: Exception) {
             Log.d(TAG, "Reflection-based bundle reload failed, falling back to full rebuild: ${e.message}")
             return false
+        }
+    }
+
+    private fun getExpoPackages(): List<ReactPackage> {
+        if (!BuildConfig.HAS_EXPO_MODULES) return emptyList()
+        return try {
+            val clazz = Class.forName("io.callstack.rnsandbox.ExpoIntegration")
+            val instance = clazz.getDeclaredField("INSTANCE").get(null)
+            @Suppress("UNCHECKED_CAST")
+            clazz.getDeclaredMethod("createPackages").invoke(instance) as List<ReactPackage>
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to load Expo packages", e)
+            emptyList()
         }
     }
 

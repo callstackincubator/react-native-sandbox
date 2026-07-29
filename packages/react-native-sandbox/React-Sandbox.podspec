@@ -20,13 +20,14 @@ Pod::Spec.new do |s|
   s.authors      = { "Alex Babrykovich" => "aliaksandr.babrykovich@callstack.com" }
   s.platforms    = { :ios => "12.4" }
   s.source       = { :git => "https://github.com/callstackincubator/react-native-sandbox.git", :tag => "#{s.version}" }
-  s.source_files = ["ios/*.{h,m,mm,cpp}", "cxx/**/*.{h,cpp}"]
+  core_sources = ["ios/*.{h,m,mm,cpp}", "cxx/**/*.{h,cpp}"]
+  expo_sources = has_expo ? ["ios/Expo/**/*.{h,m,mm,swift}"] : []
+  s.source_files = core_sources + expo_sources
   install_modules_dependencies(s)
   s.dependency "fmt"
 
   expo_xcconfig = {}
   if has_expo
-    s.source_files += ["ios/Expo/**/*.{h,m,mm,swift}"]
     s.dependency "expo-modules-core"
     s.dependency "expo"
     expo_xcconfig = { "OTHER_CPLUSPLUSFLAGS" => "$(inherited) -DRNS_HAS_EXPO_MODULES=1" }
