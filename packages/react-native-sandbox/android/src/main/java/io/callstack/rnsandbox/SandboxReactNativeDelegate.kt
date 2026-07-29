@@ -324,7 +324,8 @@ class SandboxReactNativeDelegate(
 
     private fun downloadRemoteBundle(bundleSource: String): File? {
         val cacheFile = File(context.cacheDir, "sandbox-remote-${bundleSource.hashCode()}.bundle")
-        if (cacheFile.exists() && cacheFile.length() > 0L) {
+        val isDevBundle = bundleSource.contains("dev=true")
+        if (!isDevBundle && cacheFile.exists() && cacheFile.length() > 0L) {
             Log.d(TAG, "Reusing cached bundle '$bundleSource' (${cacheFile.length()} bytes)")
             return cacheFile
         }

@@ -28,6 +28,12 @@ yarn add @callstack/react-native-sandbox
 
 The package uses **autolinking** and supports the **React Native New Architecture** - no manual configuration required.
 
+### Expo support
+
+No extra setup needed. This works out of the box in Expo (managed workflow with `expo-dev-client`, or bare) on both iOS and Android, in dev and release builds alike.
+
+In dev, the sandbox's bundle URL is derived in JS from the host's own resolved bundle URL (`NativeModules.SourceCode.scriptURL`) instead of guessing it natively. That value only reflects wherever the host bundle actually loaded from, regardless of which launcher (RN CLI, Expo's dev-client, etc.) resolved it, so there's no dependency on Expo internals, no runtime class probing, and nothing that can silently break across Expo SDK upgrades.
+
 ## 🎯 Basic Usage
 
 > For complete examples with both host and sandbox code, see the [project examples](https://github.com/callstackincubator/react-native-sandbox#-api-example).

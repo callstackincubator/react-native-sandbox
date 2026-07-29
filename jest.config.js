@@ -2,6 +2,7 @@
 module.exports = {
   projects: [
     '<rootDir>/apps/*/jest.config.js', // This will find all jest.config.js files in app directories
+    '<rootDir>/packages/*/jest.config.js',
   ],
   // Common settings for all projects
   transformIgnorePatterns: [
