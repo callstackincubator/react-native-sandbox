@@ -353,7 +353,38 @@ static std::unordered_map<std::string, __unsafe_unretained SandboxReactNativeDel
 
   NSString *bundleName =
       [jsBundleSourceNS hasSuffix:@".bundle"] ? [jsBundleSourceNS stringByDeletingPathExtension] : jsBundleSourceNS;
-  return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:bundleName];
+  NSURL *providerURL = [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:bundleName];
+  if (providerURL) {
+    return providerURL;
+  }
+
+#if DEBUG
+  // Expo dev-client does not configure RCTBundleURLProvider, so the call above returns nil.
+  // If EXDevLauncherController is present at runtime, derive the sandbox URL from its
+  // sourceUrl (the host app's bundle URL, e.g. http://host:port/apps/demo/index.bundle).
+  // We preserve the directory so sandbox.bundle resolves at the same Metro path prefix.
+  Class devLauncherClass = objc_getClass("EXDevLauncherController");
+  if (devLauncherClass) {
+    id controller = [devLauncherClass performSelector:@selector(sharedInstance)];
+    NSURL *sourceUrl = controller ? [controller performSelector:@selector(sourceUrl)] : nil;
+    if (sourceUrl) {
+      // Build a clean bundle URL: take scheme+host+port from sourceUrl, add the
+      // workspace-relative sandbox path, and use standard Metro dev query params.
+      // We intentionally drop all Expo-specific transform params (routerRoot, bytecode, etc.)
+      // since the sandbox bundle doesn't use Expo Router.
+      NSURLComponents *components = [NSURLComponents new];
+      components.scheme = sourceUrl.scheme;
+      components.host = sourceUrl.host;
+      components.port = sourceUrl.port;
+      NSString *dir = [sourceUrl.path stringByDeletingLastPathComponent];
+      components.path = [NSString stringWithFormat:@"%@/%@.bundle", dir, bundleName];
+      components.query = @"platform=ios&dev=true&hot=false";
+      return [components URL];
+    }
+  }
+#endif
+
+  return nil;
 }
 
 - (void)postMessage:(const std::string &)message

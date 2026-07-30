@@ -16,6 +16,8 @@ apply plugin: "com.android.library"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
+def hasExpo = rootProject.file("node_modules/expo-modules-core").exists()
+
 def safeExtGet(prop, fallback) {
   rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
 }
@@ -27,6 +29,7 @@ android {
   defaultConfig {
     minSdkVersion safeExtGet("minSdkVersion", 24)
     targetSdkVersion safeExtGet("targetSdkVersion", 35)
+    buildConfigField "boolean", "HAS_EXPO_MODULES", "${hasExpo}"
 
     externalNativeBuild {
       cmake {
@@ -45,6 +48,7 @@ android {
   sourceSets {
     main {
       java.srcDirs += ["src/main/java"]
+      if (hasExpo) java.srcDirs += ["src/expo/java"]
     }
   }
 
@@ -59,6 +63,7 @@ android {
 
   buildFeatures {
     prefab true
+    buildConfig true
   }
 }
 
@@ -69,4 +74,7 @@ repositories {
 
 dependencies {
   implementation "com.facebook.react:react-android:+"
+  if (hasExpo) {
+    implementation "expo.modules:expo-modules-core:+"
+  }
 }

@@ -14,6 +14,11 @@
 
 #import "SandboxReactNativeDelegate.h"
 
+#if RNS_HAS_EXPO_MODULES
+#import "SandboxExpoFactory.h"
+#endif
+#import <objc/runtime.h>
+
 #include "SandboxRegistry.h"
 
 using namespace facebook::react;
@@ -40,6 +45,8 @@ static void ensureSharedFactories()
   });
 }
 
+static void *kExpoSourceUrlKVOContext = &kExpoSourceUrlKVOContext;
+
 #pragma mark - SandboxReactNativeViewComponentView
 
 @interface SandboxReactNativeViewComponentView () <RCTSandboxReactNativeViewViewProtocol>
@@ -48,6 +55,9 @@ static void ensureSharedFactories()
 @property (nonatomic, assign) BOOL didScheduleLoad;
 @property (nonatomic, assign) BOOL usesSharedFactory;
 @property (nonatomic, copy, nullable) NSString *currentOrigin;
+// Non-nil while we are KVO-observing EXDevLauncherController.sourceUrl (Expo dev-client path).
+// Cleared once sourceUrl becomes non-nil and the sandbox load is triggered.
+@property (nonatomic, assign) BOOL isObservingExpoSourceUrl;
 @end
 
 @implementation SandboxReactNativeViewComponentView {
@@ -197,6 +207,21 @@ static void ensureSharedFactories()
   [self.reactNativeDelegate postMessage:messageStr];
 }
 
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context
+{
+  if (context == kExpoSourceUrlKVOContext && change[NSKeyValueChangeNewKey] != [NSNull null]) {
+    [object removeObserver:self forKeyPath:@"sourceUrl" context:kExpoSourceUrlKVOContext];
+    self.isObservingExpoSourceUrl = NO;
+    self.didScheduleLoad = NO;
+    [self scheduleReactViewLoad];
+  } else {
+    [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+  }
+}
+
 - (void)scheduleReactViewLoad
 {
   if (self.didScheduleLoad)
@@ -243,6 +268,34 @@ static void ensureSharedFactories()
   }
 
   if (!self.reactNativeFactory) {
+    // Guard: verify the bundle URL is resolvable before creating the factory.
+    // In Expo dev-client builds EXDevLauncherController.sourceUrl is nil until the
+    // host app JS bundle finishes loading (~1-2s after deep-link, set asynchronously on
+    // main thread after the network check in EXDevLauncherController completes).
+    // If it's nil we register a one-shot KVO observer and retry when it becomes non-nil.
+    NSURL *resolvedURL = [self.reactNativeDelegate bundleURL];
+    if (!resolvedURL) {
+#if DEBUG
+      // EXDevLauncherController.sourceUrl is set asynchronously after the deep-link
+      // network check completes. If EXDevLauncherController is present at runtime,
+      // use KVO on its sourceUrl property to retry the load once it's non-nil.
+      // We use objc_getClass() to avoid a hard compile-time dependency on the header.
+      if (!self.isObservingExpoSourceUrl) {
+        Class devLauncherClass = objc_getClass("EXDevLauncherController");
+        if (devLauncherClass) {
+          id controller = [devLauncherClass performSelector:@selector(sharedInstance)];
+          if (controller) {
+            self.isObservingExpoSourceUrl = YES;
+            [controller addObserver:self
+                         forKeyPath:@"sourceUrl"
+                            options:NSKeyValueObservingOptionNew
+                            context:kExpoSourceUrlKVOContext];
+          }
+        }
+      }
+#endif
+      return;
+    }
     [self acquireFactory];
   }
 
@@ -296,7 +349,11 @@ static void ensureSharedFactories()
     }
   }
 
+#if RNS_HAS_EXPO_MODULES
+  self.reactNativeFactory = [[SandboxExpoFactory alloc] initWithDelegate:self.reactNativeDelegate origin:origin];
+#else
   self.reactNativeFactory = [[RCTReactNativeFactory alloc] initWithDelegate:self.reactNativeDelegate];
+#endif
 
   if (origin.length > 0) {
     SharedFactory *shared = [SharedFactory new];
@@ -365,12 +422,33 @@ static void ensureSharedFactories()
   [self.reactNativeRootView removeFromSuperview];
   self.reactNativeRootView = nil;
 
+  if (self.isObservingExpoSourceUrl) {
+    Class devLauncherClass = objc_getClass("EXDevLauncherController");
+    if (devLauncherClass) {
+      id controller = [devLauncherClass performSelector:@selector(sharedInstance)];
+      if (controller) {
+        [controller removeObserver:self forKeyPath:@"sourceUrl" context:kExpoSourceUrlKVOContext];
+      }
+    }
+    self.isObservingExpoSourceUrl = NO;
+  }
+
   [self releaseSharedFactory];
   self.reactNativeFactory = nil;
 }
 
 - (void)dealloc
 {
+  if (self.isObservingExpoSourceUrl) {
+    Class devLauncherClass = objc_getClass("EXDevLauncherController");
+    if (devLauncherClass) {
+      id controller = [devLauncherClass performSelector:@selector(sharedInstance)];
+      if (controller) {
+        [controller removeObserver:self forKeyPath:@"sourceUrl" context:kExpoSourceUrlKVOContext];
+      }
+    }
+    self.isObservingExpoSourceUrl = NO;
+  }
   [self releaseSharedFactory];
 }
 

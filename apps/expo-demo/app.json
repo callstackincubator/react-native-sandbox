@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "expo-demo",
+    "slug": "expo-demo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.callstack.expodemo",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.callstack.expodemo"
+    },
+    "plugins": ["expo-dev-client"]
+  }
+}
