@@ -15,10 +15,7 @@
 #import "SandboxReactNativeDelegate.h"
 
 #if RNS_HAS_EXPO_MODULES
-// Generated ObjC interface for the pod's Swift types (SandboxExpoFactory, etc.).
-// The file is named with an underscore because CocoaPods uses the module name,
-// not the pod name (hyphens → underscores).
-#import "React_Sandbox-Swift.h"
+#import "SandboxExpoFactory.h"
 #endif
 #import <objc/runtime.h>
 
@@ -353,7 +350,7 @@ static void *kExpoSourceUrlKVOContext = &kExpoSourceUrlKVOContext;
   }
 
 #if RNS_HAS_EXPO_MODULES
-  self.reactNativeFactory = [SandboxExpoFactory createWithDelegate:self.reactNativeDelegate];
+  self.reactNativeFactory = [[SandboxExpoFactory alloc] initWithDelegate:self.reactNativeDelegate origin:origin];
 #else
   self.reactNativeFactory = [[RCTReactNativeFactory alloc] initWithDelegate:self.reactNativeDelegate];
 #endif
